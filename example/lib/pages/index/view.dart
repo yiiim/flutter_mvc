@@ -1,4 +1,5 @@
 import 'package:example/pages/index/controller.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
@@ -21,6 +22,7 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
             const Text(
               'You have pushed the button this many times:',
             ),
+            CupertinoButton(onPressed: ctx.controller.tapPush, child: const Text("push")),
             MvcStateScope<IndexPageController>(
               (state) {
                 return Text("${state.get<int>()}");

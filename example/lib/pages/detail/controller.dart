@@ -2,9 +2,9 @@ import 'package:example/pages/detail/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
-class DetailPageController extends MvcController<DetailPageModel> {
+class DetailPageController extends MvcController {
   @override
-  MvcView view() => DetailPage();
+  MvcView view(context) => DetailPage();
 
   void updateIndex() {
     var p = previousSibling<DetailPageController>();
@@ -12,18 +12,18 @@ class DetailPageController extends MvcController<DetailPageModel> {
   }
 
   void tapPush() {
-    Navigator.of(context).push(
+    Navigator.of(context.buildContext).push(
       MaterialPageRoute(
-        builder: (context) => Mvc(creater: () => DetailPageController(), model: DetailPageModel("from detail 1", model.index + 1)),
+        builder: (context) => Mvc(creater: () => DetailPageController()),
       ),
     );
   }
 
   void tapReplace() {
-    Navigator.of(context).replace(
-      oldRoute: ModalRoute.of(previousSibling<DetailPageController>()!.previousSibling<DetailPageController>()!.context)!,
+    Navigator.of(context.buildContext).replace(
+      oldRoute: ModalRoute.of(previousSibling<DetailPageController>()!.previousSibling<DetailPageController>()!.context.buildContext)!,
       newRoute: MaterialPageRoute(
-        builder: (context) => Mvc(creater: () => DetailPageController(), model: DetailPageModel("from detail 2", 8)),
+        builder: (context) => Mvc(creater: () => DetailPageController()),
       ),
     );
   }

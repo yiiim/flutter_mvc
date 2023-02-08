@@ -10,7 +10,7 @@ class DetailPageModel {
   final int index;
 }
 
-class DetailPage extends MvcView<DetailPageController, DetailPageModel> {
+class DetailPage extends MvcModelessView<DetailPageController> {
   @override
   Widget buildView(ctx) {
     return Mvc(
@@ -18,7 +18,7 @@ class DetailPage extends MvcView<DetailPageController, DetailPageModel> {
       model: ScaffoldModel(
         body: Column(
           children: [
-            Text("${ctx.model.index}"),
+            Text("${ctx}"),
             CupertinoButton(
               onPressed: ctx.controller.updateIndex,
               child: const Text("update index"),

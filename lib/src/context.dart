@@ -1,6 +1,6 @@
 part of './flutter_mvc.dart';
 
-abstract class MvcContext<TControllerType extends MvcController<TModelType>, TModelType> extends BuildContext {
+abstract class MvcContext<TControllerType extends MvcController<TModelType>, TModelType> {
   /// 从父级查找指定类型的Controller
   T? parent<T extends MvcController>();
 
@@ -42,4 +42,34 @@ abstract class MvcContext<TControllerType extends MvcController<TModelType>, TMo
 
   TControllerType get controller;
   TModelType get model;
+  BuildContext get buildContext;
+}
+
+class MvcProxyContext<TControllerType extends MvcController<TModelType>, TModelType> extends MvcContext<TControllerType, TModelType> {
+  MvcProxyContext(this.context) {
+    assert(context.controller is TControllerType);
+  }
+  final MvcContext context;
+  @override
+  T? parent<T extends MvcController>() => context.parent<T>();
+  @override
+  T? child<T extends MvcController>({bool sort = false}) => context.child<T>(sort: sort);
+  @override
+  T? find<T extends MvcController>({bool sort = false}) => context.find<T>(sort: sort);
+  @override
+  T? previousSibling<T extends MvcController>({bool sort = false}) => context.previousSibling<T>(sort: sort);
+  @override
+  T? nextSibling<T extends MvcController>({bool sort = false}) => context.nextSibling<T>(sort: sort);
+  @override
+  T? sibling<T extends MvcController>({bool sort = false, bool includeSelf = false}) => context.sibling<T>(sort: sort, includeSelf: includeSelf);
+  @override
+  T? forward<T extends MvcController>({bool sort = false}) => context.forward<T>(sort: sort);
+  @override
+  T? backward<T extends MvcController>({bool sort = false}) => context.backward<T>(sort: sort);
+  @override
+  TControllerType get controller => context.controller as TControllerType;
+  @override
+  BuildContext get buildContext => context.buildContext;
+  @override
+  TModelType get model => context.model;
 }

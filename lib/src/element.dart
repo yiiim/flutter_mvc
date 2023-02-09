@@ -1,19 +1,39 @@
 part of './flutter_mvc.dart';
 
+class MvcSingleEasyTreeNodeKeyValue {
+  MvcSingleEasyTreeNodeKeyValue(this.controllerType);
+
+  Type controllerType;
+
+  @override
+  int get hashCode => controllerType.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return other is MvcSingleEasyTreeNodeKeyValue && other.controllerType == controllerType;
+  }
+}
+
+
 class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement implements MvcContext<TControllerType, TModelType> {
-  MvcElement(super.widget, TControllerType controller)
-      : _controller = controller,
-        assert(MvcOwner.sharedOwner.easyTreeGetChildInAll(EasyTreeNodeKey(controller)) == null),
+  MvcElement(super.widget, TControllerType Function() creater, {this.single = false})
+      : assert(single == false || TControllerType != MvcController, "当使用单例时，请指定泛型[TControllerType]具体的类型"),
+        _controller = (() {
+          if (!single) return creater();
+          var existSingleController = MvcOwner.sharedOwner.getSingle<TControllerType>();
+          return existSingleController ?? creater();
+        }()),
         super(easyTreeOwner: MvcOwner.sharedOwner);
 
   final TControllerType _controller;
+  final bool single;
 
   @override
   void update(covariant Widget newWidget) {
     var oldWidget = widget;
     super.update(newWidget);
-    if ((oldWidget as Mvc<TControllerType, TModelType>?)?.model != (newWidget as Mvc<TControllerType, TModelType>?)?.model) {
-      _controller.updateState<TModelType>(updater: (state) => state?.value = (widget as Mvc<TControllerType, TModelType>).model, key: _controller._element == this ? null : this);
+    if ((oldWidget as Mvc<TControllerType,TModelType>?)?.model != (newWidget as Mvc<TControllerType,TModelType>?)?.model) {
+      _controller.updateState<TModelType>(updater: (state) => state?.value = (widget as Mvc<TControllerType,TModelType>).model, key: _controller._element == this ? null : this);
     }
   }
 
@@ -21,7 +41,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
     _controller.addListener(markNeedsBuild);
-    _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: _controller._element == null ? null : this);
+    _controller.initState<TModelType>((widget as Mvc<TControllerType,TModelType>).model, key: _controller._element == null ? null : this);
     _controller._initForElement(this);
   }
 
@@ -77,7 +97,12 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   T? backward<T extends MvcController>({bool sort = false}) => nextSibling<T>(sort: sort) ?? find<T>(sort: sort);
 
   @override
-  List<EasyTreeNodeKey> get keys => [EasyTreeNodeKey<Type>(_controller.runtimeType), const EasyTreeNodeKey<Type>(MvcController), EasyTreeNodeKey(_controller)];
+  List<EasyTreeNodeKey> get keys => [
+        EasyTreeNodeKey<Type>(_controller.runtimeType),
+        const EasyTreeNodeKey<Type>(MvcController),
+        EasyTreeNodeKey<MvcController>(_controller),
+        if (single) EasyTreeNodeKey<MvcSingleEasyTreeNodeKeyValue>(MvcSingleEasyTreeNodeKeyValue(TControllerType)),
+      ];
 
   @override
   Widget buildChild() => _controller.view(this)._buildView(this);
@@ -86,7 +111,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   TControllerType get controller => _controller;
 
   @override
-  TModelType get model => (widget as Mvc<TControllerType, TModelType>).model;
+  TModelType get model => (widget as Mvc<TControllerType,TModelType>).model;
 
   @override
   BuildContext get buildContext => this;

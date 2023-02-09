@@ -34,8 +34,8 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     assert(element._controller == this);
     if (element == _element) {
       _element = null;
+      dispose();
     }
-    dispose();
   }
 
   /// 从父级查找指定类型的Controller
@@ -102,22 +102,28 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   }
 
   /// 获取状态值
-  MvcStateValue<T>? getStateValue<T>({Object? key, bool fromParent = true}) {
+  MvcStateValue<T>? _getStateValue<T>({Object? key, bool fromParent = true, MvcController? originController}) {
     var stateValue = _internalState[MvcStateKey(stateType: T, key: key)] as MvcStateValue<T>?;
     if (stateValue == null && fromParent) {
       var p = parent();
-      assert(() {
-        if (p != null) {
-          debugPrint("Warning!!!当前Controller($runtimeType)未获取到状态$T,将尝试从父级获取");
-        } else {
-          debugPrint("Warning!!!当前Controller($runtimeType)未获取到状态$T");
-        }
-        return true;
-      }());
-      return p?.getStateValue<T>(key: key);
+      var result = p?._getStateValue<T>(key: key, originController: originController ?? this);
+      // assert(() {
+      //   if (originController == null) {
+      //     if (result == null) {
+      //       debugPrint("Controller($runtimeType)未获取到状态$T");
+      //     } else {
+      //       debugPrint("Controller($runtimeType)未获取到状态$T${key == null ? "" : ",key:$key"},已从父级${result.controller.runtimeType}获取");
+      //     }
+      //   }
+      //   return true;
+      // }());
+      return result;
     }
     return stateValue;
   }
+
+  /// 获取状态值
+  MvcStateValue<T>? getStateValue<T>({Object? key, bool fromParent = true}) => _getStateValue(key: key, fromParent: fromParent);
 
   /// 获取状态
   T? getState<T>({Object? key, bool fromParent = true}) => getStateValue<T>(key: key, fromParent: fromParent)?.value;

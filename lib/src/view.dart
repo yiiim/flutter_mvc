@@ -3,6 +3,7 @@ part of './flutter_mvc.dart';
 abstract class MvcView<TControllerType extends MvcController<TModelType>, TModelType> {
   Widget _buildView(MvcContext ctx) {
     if (ctx is MvcContext<TControllerType, TModelType>) return buildView(ctx);
+    assert(ctx.model is TModelType, "Controller所使用的Model类型和View不匹配");
     return buildView(MvcProxyContext<TControllerType, TModelType>(ctx));
   }
 

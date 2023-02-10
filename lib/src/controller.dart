@@ -2,6 +2,7 @@ part of './flutter_mvc.dart';
 
 abstract class MvcController<TModelType> extends ChangeNotifier {
   final Map<MvcStateKey, MvcStateValue> _internalState = HashMap<MvcStateKey, MvcStateValue>();
+  final Map<MvcStateKey, MvcStateValue> _globalState = HashMap<MvcStateKey, MvcStateValue>();
   MvcElement? _element;
   MvcContext get context {
     assert(_element != null, "请在Controller init后使用context");
@@ -80,16 +81,29 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// 更新View，将会触发View重建
   void update() => notifyListeners();
 
+  @override
+  void dispose() {
+    super.dispose();
+    for (var element in _globalState.keys) {
+      MvcOwner.sharedOwner._globalState.remove(element);
+    }
+  }
+
   /// 初始化状态
   ///
   /// [state]状态初始值
   /// [key]名称
   /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
-  MvcStateValue<T> initState<T>(T state, {Object? key}) {
+  MvcStateValue<T> initState<T>(T state, {Object? key, bool global = false, bool forChild = true}) {
     var stateKey = MvcStateKey(stateType: T, key: key);
     assert(_internalState.containsKey(stateKey) == false, "创建了重复的状态类型,你可以使用key区分状态");
-    var stateValue = MvcStateValue<T>(state, controller: this);
+    var stateValue = MvcStateValue<T>(state, controller: this, global: global, forChild: forChild);
     _internalState[stateKey] = stateValue;
+    if (global) {
+      assert(MvcOwner.sharedOwner._globalState.containsKey(stateKey) == false, "创建了重复的全局状态类型,你可以使用key区分状态");
+      MvcOwner.sharedOwner._globalState[stateKey] = stateValue;
+      _globalState[stateKey] = stateValue;
+    }
     return stateValue;
   }
 
@@ -104,20 +118,15 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// 获取状态值
   MvcStateValue<T>? _getStateValue<T>({Object? key, bool fromParent = true, MvcController? originController}) {
     var stateValue = _internalState[MvcStateKey(stateType: T, key: key)] as MvcStateValue<T>?;
-    if (stateValue == null && fromParent) {
-      var p = parent();
-      var result = p?._getStateValue<T>(key: key, originController: originController ?? this);
-      // assert(() {
-      //   if (originController == null) {
-      //     if (result == null) {
-      //       debugPrint("Controller($runtimeType)未获取到状态$T");
-      //     } else {
-      //       debugPrint("Controller($runtimeType)未获取到状态$T${key == null ? "" : ",key:$key"},已从父级${result.controller.runtimeType}获取");
-      //     }
-      //   }
-      //   return true;
-      // }());
-      return result;
+    if (stateValue == null) {
+      if (fromParent) {
+        var p = parent();
+        var result = p?._getStateValue<T>(key: key, originController: originController ?? this);
+        if (result?.forChild == true || result?.global == true) {
+          return result;
+        }
+      }
+      return MvcOwner.sharedOwner.getGlobalStateValue<T>(key: key);
     }
     return stateValue;
   }

@@ -12,6 +12,7 @@ class MvcStateKey {
   MvcStateKey({required this.stateType, this.key});
   final Type stateType;
   final Object? key;
+
   @override
   int get hashCode => Object.hashAll([stateType, key]);
 
@@ -22,8 +23,9 @@ class MvcStateKey {
 }
 
 class MvcStateValue<T> extends ValueNotifier<T> {
-  MvcStateValue(super.value, {required this.controller});
+  MvcStateValue(super.value, {required this.controller, this.global = false, this.forChild = true});
   final MvcController controller;
-
+  final bool global;
+  final bool forChild;
   void update() => notifyListeners();
 }

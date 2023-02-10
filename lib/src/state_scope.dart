@@ -49,6 +49,8 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
     if (controller != null && controller != _controller) {
       _controller = controller;
     }
+    markNeedsBuild();
+    rebuild();
   }
 
   @override

@@ -14,7 +14,6 @@ class MvcSingleEasyTreeNodeKeyValue {
   }
 }
 
-
 class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement implements MvcContext<TControllerType, TModelType> {
   MvcElement(super.widget, TControllerType Function() creater, {this.single = false})
       : assert(single == false || TControllerType != MvcController, "当使用单例时，请指定泛型[TControllerType]具体的类型"),
@@ -32,8 +31,8 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void update(covariant Widget newWidget) {
     var oldWidget = widget;
     super.update(newWidget);
-    if ((oldWidget as Mvc<TControllerType,TModelType>?)?.model != (newWidget as Mvc<TControllerType,TModelType>?)?.model) {
-      _controller.updateState<TModelType>(updater: (state) => state?.value = (widget as Mvc<TControllerType,TModelType>).model, key: _controller._element == this ? null : this);
+    if ((oldWidget as Mvc<TControllerType, TModelType>?)?.model != (newWidget as Mvc<TControllerType, TModelType>?)?.model) {
+      _controller.updateState<TModelType>(updater: (state) => state?.value = (widget as Mvc<TControllerType, TModelType>).model, key: _controller._element == this ? null : this);
     }
   }
 
@@ -41,7 +40,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
     _controller.addListener(markNeedsBuild);
-    _controller.initState<TModelType>((widget as Mvc<TControllerType,TModelType>).model, key: _controller._element == null ? null : this);
+    _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: _controller._element == null ? null : this);
     _controller._initForElement(this);
   }
 
@@ -111,7 +110,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   TControllerType get controller => _controller;
 
   @override
-  TModelType get model => (widget as Mvc<TControllerType,TModelType>).model;
+  TModelType get model => (widget as Mvc<TControllerType, TModelType>).model;
 
   @override
   BuildContext get buildContext => this;

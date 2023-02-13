@@ -29,3 +29,20 @@ class MvcStateValue<T> extends ValueNotifier<T> {
   final bool forChild;
   void update() => notifyListeners();
 }
+
+class MvcStateValueTransformer<T, E> extends MvcStateValue<T> {
+  MvcStateValueTransformer(super.value, this._source, this._transformer, {required super.controller, super.global, super.forChild}) : super() {
+    _source.addListener(_transformListener);
+  }
+  void _transformListener() async {
+    value = await _transformer(_source.value);
+  }
+
+  final MvcStateValue<E> _source;
+  final FutureOr<T> Function(E state) _transformer;
+  @override
+  void dispose() {
+    _source.removeListener(_transformListener);
+    super.dispose();
+  }
+}

@@ -89,22 +89,28 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     }
   }
 
-  /// 初始化状态
-  ///
-  /// [state]状态初始值
-  /// [key]名称
-  /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
-  MvcStateValue<T> initState<T>(T state, {Object? key, bool global = false, bool forChild = true}) {
-    var stateKey = MvcStateKey(stateType: T, key: key);
+  MvcStateValue<T> _initState<T>(MvcStateKey stateKey, MvcStateValue<T> stateValue) {
     assert(_internalState.containsKey(stateKey) == false, "创建了重复的状态类型,你可以使用key区分状态");
-    var stateValue = MvcStateValue<T>(state, controller: this, global: global, forChild: forChild);
     _internalState[stateKey] = stateValue;
-    if (global) {
+    if (stateValue.global) {
       assert(MvcOwner.sharedOwner._globalState.containsKey(stateKey) == false, "创建了重复的全局状态类型,你可以使用key区分状态");
       MvcOwner.sharedOwner._globalState[stateKey] = stateValue;
       _globalState[stateKey] = stateValue;
     }
     return stateValue;
+  }
+
+  /// 初始化状态
+  ///
+  /// [state]状态初始值
+  /// [key]名称
+  /// [global]是否设置为全局状态
+  /// [forChild]是否将状态共享给子级
+  /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
+  MvcStateValue<T> initState<T>(T state, {Object? key, bool global = false, bool forChild = true}) {
+    var stateKey = MvcStateKey(stateType: T, key: key);
+    var stateValue = MvcStateValue<T>(state, controller: this, global: global, forChild: forChild);
+    return _initState<T>(stateKey, stateValue);
   }
 
   /// 更新状态
@@ -113,6 +119,65 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     updater?.call(s);
     s?.update();
     return s;
+  }
+
+  /// 使用指定值更新状态，如果状态不存在则初始化状态
+  MvcStateValue<T> updateStateInitIfNeed<T>(T state, {Object? key}) {
+    var s = getStateValue<T>(key: key);
+    s ??= initState<T>(state, key: key);
+    s.update();
+    return s;
+  }
+
+  /// 链接状态到当前Controller,如果获取状态失败则返回null
+  /// 如果被链接的状态发生更新，则这个状态也将更新
+  /// 这个操作相当于[transformState]不做任何转换
+  ///
+  /// [T]要链接状态的类型
+  /// [key]要链接状态的key
+  /// [linkedToKey]链接之后的key
+  /// [global]链接之后是否设置为全局状态
+  /// [forChild]是否将链接之后的状态共享给子级
+  MvcStateValue<T>? linkedState<T>({Object? key, Object? linkedToKey, bool global = false, bool forChild = true}) => transformState<T, T>((e) => e, key: key, transformToKey: linkedToKey, global: global, forChild: forChild);
+
+  /// 转换状态到当前Controller,如果获取状态失败则返回null
+  /// 转换后的状态依赖之前的状态更新而更新
+  ///
+  /// 将指定状态转换一份
+  /// [T]要转换状态的类型 [E]转换之后的状态类型
+  /// [transformer]转换方法
+  /// [key]要转换状态的key
+  /// [transformToKey]转换之后的key
+  /// [global]是否设置为全局状态
+  /// [forChild]是否将状态共享给子级
+  MvcStateValue<T>? transformState<T, E>(T Function(E state) transformer, {Object? key, Object? transformToKey, bool global = false, bool forChild = true}) {
+    var state = getStateValue<E>(key: key);
+    if (state != null) {
+      var stateKey = MvcStateKey(stateType: T, key: key);
+      var stateValue = MvcStateValueTransformer<T, E>(transformer(state.value), state, transformer, controller: this, global: global, forChild: forChild);
+      return _initState<T>(stateKey, stateValue);
+    }
+    return null;
+  }
+
+  /// 转换状态到当前Controller,如果获取状态失败则返回null
+  /// 转换后的状态依赖之前的状态更新而更新
+  ///
+  /// 将指定状态转换一份
+  /// [T]要转换状态的类型 [E]转换之后的状态类型
+  /// [transformer]转换方法
+  /// [key]要转换状态的key
+  /// [transformToKey]转换之后的key
+  /// [global]是否设置为全局状态
+  /// [forChild]是否将状态共享给子级
+  MvcStateValue<T>? asyncTransformState<T, E>(T initialValue, Future<T> Function(E state) transformer, {Object? key, Object? transformToKey, bool global = false, bool forChild = true}) {
+    var state = getStateValue<E>(key: key);
+    if (state != null) {
+      var stateKey = MvcStateKey(stateType: T, key: key);
+      var stateValue = MvcStateValueTransformer<T, E>(initialValue, state, transformer, controller: this, global: global, forChild: forChild);
+      return _initState<T>(stateKey, stateValue);
+    }
+    return null;
   }
 
   /// 获取状态值

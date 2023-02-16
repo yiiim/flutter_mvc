@@ -35,7 +35,23 @@ class MvcStateValueTransformer<T, E> extends MvcStateValue<T> {
     _source.addListener(_transformListener);
   }
   void _transformListener() async {
-    value = await _transformer(_source.value);
+    var transformValue = _transformer(_source.value);
+    if (transformValue is Future) {
+      Future(
+        () async {
+          var newValue = await transformValue;
+          if(newValue == value){
+            notifyListeners();
+          }
+          value = newValue;
+        },
+      );
+    } else {
+      if (value == transformValue) {
+        notifyListeners();
+      }
+      value = transformValue;
+    }
   }
 
   final MvcStateValue<E> _source;

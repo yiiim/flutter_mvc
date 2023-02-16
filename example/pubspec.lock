@@ -37,7 +37,7 @@ packages:
     source: hosted
     version: "1.1.0"
   collection:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: collection
       url: "https://pub.dartlang.org"
@@ -53,9 +53,11 @@ packages:
   easy_tree:
     dependency: transitive
     description:
-      path: "../../easy_tree"
-      relative: true
-    source: path
+      path: "."
+      ref: HEAD
+      resolved-ref: "81b52169d7940001d1cf45e5efae87f09e3ec8f4"
+      url: "https://github.com/yiiim/easy_tree.git"
+    source: git
     version: "0.0.1"
   fake_async:
     dependency: transitive

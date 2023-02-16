@@ -22,12 +22,12 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
             const Text(
               'You have pushed the button this many times:',
             ),
-            CupertinoButton(onPressed: ctx.controller.tapPush, child: const Text("push")),
             MvcStateScope<IndexPageController>(
               (state) {
                 return Text("${state.get<int>()}");
               },
             ),
+            CupertinoButton(onPressed: ctx.controller.tapPush, child: const Text("start demo")),
           ],
         ),
       ),

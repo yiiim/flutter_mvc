@@ -1,3 +1,5 @@
+# Flutter Mvc
+
 Flutter Mvc 是为了解决UI与逻辑分离的一个状态管理框架.
 
 ## Getting started
@@ -13,14 +15,14 @@ class IndexPageModel {
 /// Controller
 class IndexPageController extends MvcController<IndexPageModel> {
   @override
-  MvcView view() {
+  MvcView view(IndexPageModel model) {
     return IndexPage();
   }
 }
 /// View
 class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
   @override
-  Widget buildView(ctx) {
+  Widget buildView(context) {
     //...
   }
 }
@@ -64,7 +66,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
 在View中使用状态
 
 ```dart
-Widget buildView(ctx) {
+Widget buildView(context) {
   return MvcStateScope<IndexPageController>(
     (state) {
       return Text("${state.get<int>()}");
@@ -81,13 +83,44 @@ updateState<int>(updater: ((state) => state?.value++));
 
 在更新状态时如果```MvcStateScope```曾获取过该状态，则```MvcStateScope```将会重建。如果在```MvcStateScope```区域中使用的多个状态，则任意状态发生更新这个```MvcStateScope```都会重建。
 
-状态依靠泛型类型以及一个字符串```name```来区分唯一性```initState```方法原型为：```MvcStateValue<T> initState<T>(T state, {String? name})```
+状态依靠泛型类型以及一个Object```key```来区分唯一性
 
 ## Controller
 
-1. Controller中保存了所有的状态，除了从```MvcStateScope```获取状态之外，Controller同样可以获取全部状态
-1. 在Controller中可以获取Model，Model同样是一个状态，也可以被```MvcStateScope```获取，在整个View被外部重建时Model状态将会更新
-1. 在Controller中可以获取当前Controller父级、同级、子级的其他类型Controller
+* Controller中保存了所有的状态，除了从```MvcStateScope```获取状态之外，Controller同样可以获取全部状态
+* 在Controller中可以获取Model，Model同样是一个状态，也可以被```MvcStateScope```获取，在整个View被外部重建时Model状态将会更新
+* 在Controller中可以获取当前Controller父级、同级、子级Controller
+* 可以通过Mvc静态方法获取当前树中的任意Controller。方法原型如下，不传递context，则查找当前Element树中全部的Controller，如果传递context参数表示只查找context之前的Controller
+
+```dart
+T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where})
+```
+
+## MvcProxy
+
+ 可以使用```MvcProxyController```来作为一个只有逻辑没有UI的Controller，使用方式为：
+
+```dart
+MvcProxy(
+  proxyCreater: () => Controller(),
+  child: ...,
+)
+```
+
+如果有很多个这样的Controller
+
+```dart
+MvcMultiProxy(
+    proxyCreater: [
+      () => Controller1(),
+      () => Controller2(),
+    ],
+    child: ...,
+  ),
+),
+```
+
+即使没有UI，MvcProxyController同样是树中的一个节点
 
 ## View
 
@@ -103,7 +136,7 @@ abstract class MvcView<TControllerType extends MvcController<TModelType>, TModel
 
 ## Model
 
-model可以为任意类型，如果不需要model，则可以将泛型类型设置为dynamic
+model可以为任意类型
 
 ## MvcStateScope
 
@@ -114,6 +147,8 @@ model可以为任意类型，如果不需要model，则可以将泛型类型设�
 ## 完整样例
 
 ```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -173,12 +208,13 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
     );
   }
 }
+
 /// Controller
 class IndexPageController extends MvcController<IndexPageModel> {
   @override
   void init() {
     super.init();
-    initState<int>(0);  // 初始化状态
+    initState<int>(0); // 初始化状态
   }
 
   void incrementCounter() {
@@ -186,7 +222,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   @override
-  MvcView view() {
+  MvcView view(model) {
     return IndexPage();
   }
 }

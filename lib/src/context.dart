@@ -1,6 +1,6 @@
 part of './flutter_mvc.dart';
 
-abstract class MvcContext<TControllerType extends MvcController<TModelType>, TModelType> {
+abstract class MvcControllerContext {
   /// 从父级查找指定类型的Controller
   T? parent<T extends MvcController>();
 
@@ -39,14 +39,16 @@ abstract class MvcContext<TControllerType extends MvcController<TModelType>, TMo
   ///
   /// [sort]表示是否保证在树中正确的顺序，保证顺序速度较慢，如果不保证顺序则使用挂载顺序
   T? backward<T extends MvcController>({bool sort = false});
+}
 
+abstract class MvcContext<TControllerType extends MvcController<TModelType>, TModelType> implements MvcControllerContext {
   TControllerType get controller;
   TModelType get model;
   BuildContext get buildContext;
 }
 
-class MvcProxyContext<TControllerType extends MvcController<TModelType>, TModelType> extends MvcContext<TControllerType, TModelType> {
-  MvcProxyContext(this.context) {
+class _MvcProxyContext<TControllerType extends MvcController<TModelType>, TModelType> extends MvcContext<TControllerType, TModelType> {
+  _MvcProxyContext(this.context) {
     assert(context.controller is TControllerType);
   }
   final MvcContext context;

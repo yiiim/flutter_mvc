@@ -113,6 +113,19 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     return _initState<T>(stateKey, stateValue);
   }
 
+  /// 初始化状态,如果状态存在直接返回状态
+  ///
+  /// [state]状态初始值
+  /// [key]名称
+  /// [global]是否设置为全局状态
+  /// [forChild]是否将状态共享给子级
+  /// [fromParent]查找状态是否存在时，是否从父级查找
+  MvcStateValue<T> initStateIfNeed<T>(T Function() state, {Object? key, bool global = false, bool forChild = true, bool fromParent = false}) {
+    var exist = getStateValue<T>(key: key, fromParent: fromParent);
+    if (exist != null) return exist;
+    return initState<T>(state(), key: key, global: global, forChild: forChild);
+  }
+
   /// 更新状态
   MvcStateValue<T>? updateState<T>({void Function(MvcStateValue<T>? state)? updater, Object? key}) {
     var s = getStateValue<T>(key: key);
@@ -153,23 +166,14 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   MvcStateValue<T>? transformState<T, E>(T Function(E state) transformer, {Object? key, Object? transformToKey, bool global = false, bool forChild = true}) {
     var state = getStateValue<E>(key: key);
     if (state != null) {
-      var stateKey = MvcStateKey(stateType: T, key: key);
+      var stateKey = MvcStateKey(stateType: T, key: transformToKey);
       var stateValue = MvcStateValueTransformer<T, E>(transformer(state.value), state, transformer, controller: this, global: global, forChild: forChild);
       return _initState<T>(stateKey, stateValue);
     }
     return null;
   }
 
-  /// 转换状态到当前Controller,如果获取状态失败则返回null
-  /// 转换后的状态依赖之前的状态更新而更新
-  ///
-  /// 将指定状态转换一份
-  /// [T]要转换状态的类型 [E]转换之后的状态类型
-  /// [transformer]转换方法
-  /// [key]要转换状态的key
-  /// [transformToKey]转换之后的key
-  /// [global]是否设置为全局状态
-  /// [forChild]是否将状态共享给子级
+  /// 与[transformState]类似，但是转换方法为异步，被转换的状态更新时，首先经过异步方法，异步方法结束后更新状态
   MvcStateValue<T>? asyncTransformState<T, E>(T initialValue, Future<T> Function(E state) transformer, {Object? key, Object? transformToKey, bool global = false, bool forChild = true}) {
     var state = getStateValue<E>(key: key);
     if (state != null) {
@@ -203,10 +207,13 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   T? getState<T>({Object? key, bool fromParent = true}) => getStateValue<T>(key: key, fromParent: fromParent)?.value;
 
   /// 返回视图
-  MvcView view(MvcContext context);
+  MvcView view(TModelType model);
 }
 
+/// 代理Controller，Model为一个Widget，在View中将只会返回Model
+///
+/// 这在只有逻辑的Controller时使用，它仍然会在Element树中占据一个节点
 class MvcProxyController extends MvcController<Widget> {
   @override
-  MvcView view(MvcContext context) => MvcViewBuilder<MvcProxyController, Widget>((ctx) => ctx.model);
+  MvcView view(Widget model) => MvcViewBuilder<MvcProxyController, Widget>((ctx) => model);
 }

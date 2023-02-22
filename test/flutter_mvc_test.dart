@@ -18,10 +18,10 @@ void main() {
   testWidgets(
     "test mvc",
     (tester) async {
-      await tester.pumpWidget(Mvc(creater: () => TestController(), model: TestModel("1")));
+      await tester.pumpWidget(Mvc(create: () => TestController(), model: TestModel("1")));
       final titleFinder = find.text("1");
       expect(titleFinder, findsOneWidget);
-      await tester.pumpWidget(Mvc(creater: () => TestController(), model: TestModel("2")));
+      await tester.pumpWidget(Mvc(create: () => TestController(), model: TestModel("2")));
       final titleUpdatedFinder = find.text("2");
       expect(titleUpdatedFinder, findsOneWidget);
     },
@@ -35,21 +35,21 @@ void main() {
       late TestPorxyController parent;
       await tester.pumpWidget(
         MvcProxy(
-          proxyCreater: () {
+          proxyCreate: () {
             parent = TestPorxyController();
             return parent;
           },
           child: Column(
             children: [
               Mvc(
-                creater: () {
+                create: () {
                   controller1 = TestController();
                   return controller1;
                 },
                 model: TestModel("1"),
               ),
               Mvc(
-                creater: () {
+                create: () {
                   controller2 = TestController();
                   return controller2;
                 },
@@ -81,13 +81,13 @@ void main() {
       var child2GlobalStateValue = child2.initState<String>("child2_global", global: true, key: "child2_global");
       await tester.pumpWidget(
         MvcProxy(
-          proxyCreater: () => controller,
+          proxyCreate: () => controller,
           child: MvcStateScope(
             (state) {
               return Column(
                 children: [
                   MvcProxy(
-                    proxyCreater: () => child1,
+                    proxyCreate: () => child1,
                     child: MvcStateScope(
                       (state) {
                         return Text("${state.get<int>()}-${state.get<int>(key: "parent")}-${state.get<String>()}-${state.get<String>(key: "child2_global")}", textDirection: TextDirection.ltr);
@@ -95,7 +95,7 @@ void main() {
                     ),
                   ),
                   MvcProxy(
-                    proxyCreater: () => child2,
+                    proxyCreate: () => child2,
                     child: MvcStateScope(
                       (state) {
                         return Text("${state.get<int>()}-${state.get<int>(key: "parent")}-${state.get<String>()}-${state.get<String>(key: "child1_global")}", textDirection: TextDirection.ltr);
@@ -115,12 +115,12 @@ void main() {
       child2TextFinder = find.text("${parentIntStateValue.value}-${parentIntKeyStateValue.value}-${child2StringStateValue.value}-${child1GlobalStateValue.value}");
       expect(child2TextFinder, findsOneWidget);
 
-      controller.updateState<int>(updater: (state) => state?.value = 2);
-      controller.updateState<int>(updater: (state) => state?.value = 3, key: "parent");
-      child1.updateState<String>(updater: (state) => state?.value = "child-1");
-      child1.updateState<String>(updater: (state) => state?.value = "child-1_global", key: "child1_global");
-      child2.updateState<String>(updater: (state) => state?.value = "child-2");
-      child2.updateState<String>(updater: (state) => state?.value = "child-2_global", key: "child2_global");
+      controller.updateState<int>(updater: (state) => state.value = 2);
+      controller.updateState<int>(updater: (state) => state.value = 3, key: "parent");
+      child1.updateState<String>(updater: (state) => state.value = "child-1");
+      child1.updateState<String>(updater: (state) => state.value = "child-1_global", key: "child1_global");
+      child2.updateState<String>(updater: (state) => state.value = "child-2");
+      child2.updateState<String>(updater: (state) => state.value = "child-2_global", key: "child2_global");
       await tester.pump();
 
       child1TextFinder = find.text("${parentIntStateValue.value}-${parentIntKeyStateValue.value}-${child1StringStateValue.value}-${child2GlobalStateValue.value}");

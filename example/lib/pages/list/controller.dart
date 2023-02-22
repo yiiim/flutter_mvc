@@ -8,7 +8,7 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 
 class ListPageController extends MvcController {
   @override
-  MvcView<MvcController, dynamic> view(context) => ListPage();
+  MvcView<MvcController, dynamic> view(model) => ListPage();
 
   void addShoppingCart(ProductModel product) {
     Mvc.get<ShoppingCartController>()?.addProduct(product);

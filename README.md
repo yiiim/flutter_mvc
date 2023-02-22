@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: Mvc<IndexPageController, IndexPageModel>(
-        creater: () => IndexPageController(),
+        create: () => IndexPageController(),
         model: IndexPageModel(title: "Flutter Mvc Demo"),
       ),
     );
@@ -102,7 +102,7 @@ T? get<T extends MvcController>({BuildContext? context, bool Function(T controll
 
 ```dart
 MvcProxy(
-  proxyCreater: () => Controller(),
+  proxyCreate: () => Controller(),
   child: ...,
 )
 ```
@@ -111,7 +111,7 @@ MvcProxy(
 
 ```dart
 MvcMultiProxy(
-    proxyCreater: [
+    proxyCreate: [
       () => Controller1(),
       () => Controller2(),
     ],
@@ -164,7 +164,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: Mvc<IndexPageController, IndexPageModel>(
-        creater: () => IndexPageController(),
+        create: () => IndexPageController(),
         model: IndexPageModel(title: "Flutter Demo"),
       ),
     );

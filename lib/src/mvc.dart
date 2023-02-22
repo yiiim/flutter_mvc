@@ -28,16 +28,16 @@ class MvcOwner extends EasyTreeRelationOwner {
 }
 
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends Widget {
-  const Mvc({required this.creater, TModelType? model, Key? key})
+  const Mvc({required this.create, TModelType? model, Key? key})
       : model = model ?? model as TModelType,
         super(key: key);
-  final TControllerType Function() creater;
+  final TControllerType Function() create;
   final TModelType model;
   static T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.get<T>(context: context, where: where);
   static Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.getAll<T>(context: context, where: where);
 
   @override
-  Element createElement() => MvcElement<TControllerType, TModelType>(this, creater);
+  Element createElement() => MvcElement<TControllerType, TModelType>(this, create);
 }
 
 /// 控制器代理
@@ -45,23 +45,23 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
 /// 控制器代理表示控制器没有View，使用child作为view
 /// 这在使用只有逻辑的控制器时很有用
 class MvcProxy<TProxyControllerType extends MvcProxyController> extends StatelessWidget {
-  const MvcProxy({Key? key, required this.proxyCreater, required this.child}) : super(key: key);
+  const MvcProxy({Key? key, required this.proxyCreate, required this.child}) : super(key: key);
   final Widget child;
-  final TProxyControllerType Function() proxyCreater;
+  final TProxyControllerType Function() proxyCreate;
   @override
-  Widget build(BuildContext context) => Mvc(creater: proxyCreater, model: child);
+  Widget build(BuildContext context) => Mvc(create: proxyCreate, model: child);
 }
 
 /// 多个控制器代理
 class MvcMultiProxy extends StatelessWidget {
-  const MvcMultiProxy({Key? key, required this.proxyCreater, required this.child}) : super(key: key);
+  const MvcMultiProxy({Key? key, required this.proxyCreate, required this.child}) : super(key: key);
   final Widget child;
-  final List<MvcProxyController Function()> proxyCreater;
+  final List<MvcProxyController Function()> proxyCreate;
   @override
   Widget build(BuildContext context) {
     var widget = child;
-    for (var element in proxyCreater) {
-      widget = Mvc(creater: element, model: widget);
+    for (var element in proxyCreate) {
+      widget = Mvc(create: element, model: widget);
     }
     return widget;
   }

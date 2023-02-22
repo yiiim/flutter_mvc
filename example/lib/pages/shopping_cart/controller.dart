@@ -7,7 +7,7 @@ import 'view.dart';
 
 class ShoppingCartPageController extends MvcController {
   @override
-  MvcView view(context) => ShoppingCartPage();
+  MvcView view(model) => ShoppingCartPage();
 
   void tapDelete(ProductModel product) {
     Mvc.get<ShoppingCartController>()?.removeProduct(product.id);

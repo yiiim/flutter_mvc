@@ -1,8 +1,8 @@
 part of './flutter_mvc.dart';
 
 class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement implements MvcContext<TControllerType, TModelType> {
-  MvcElement(super.widget, TControllerType Function() creater)
-      : _controller = creater(),
+  MvcElement(super.widget, TControllerType Function() create)
+      : _controller = create(),
         super(easyTreeOwner: MvcOwner.sharedOwner);
 
   final TControllerType _controller;
@@ -11,7 +11,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void update(covariant Widget newWidget) {
     var oldWidget = widget;
     if ((oldWidget as Mvc<TControllerType, TModelType>?)?.model != (newWidget as Mvc<TControllerType, TModelType>?)?.model) {
-      _controller.updateState<TModelType>(updater: (state) => state?.value = (newWidget as Mvc<TControllerType, TModelType>).model, key: this);
+      _controller.updateState<TModelType>(updater: (state) => state.value = (newWidget as Mvc<TControllerType, TModelType>).model, key: this);
     }
     super.update(newWidget);
   }
@@ -22,7 +22,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
     _controller.addListener(markNeedsBuild);
     if (_controller._element == null) {
       _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
-      _controller.linkedState<TModelType>(key: this, linkedToKey: null);
+      _controller.initLinkedState<TModelType>(key: this, linkedToKey: null, onlySelf: true);
     }
     _controller._initForElement(this);
   }

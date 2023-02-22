@@ -22,18 +22,18 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: MvcProxy(
-        proxyCreater: () => NavigatorController(),
+        proxyCreate: () => NavigatorController(),
         child: Mvc<IndexPageController, IndexPageModel>(
-          creater: () => IndexPageController(),
+          create: () => IndexPageController(),
           model: IndexPageModel(title: "Flutter Demo"),
         ),
       ),
       builder: (context, child) {
         return Mvc(
-          creater: () => ToastController(),
+          create: () => ToastController(),
           model: ToastModel(
             MvcMultiProxy(
-              proxyCreater: [
+              proxyCreate: [
                 () => ProductController(),
                 () => ShoppingCartController(),
               ],

@@ -20,14 +20,14 @@ class IndexPageController extends MvcController<IndexPageModel> {
     Navigator.of(context.buildContext).push(
       MaterialPageRoute(
         builder: (context) {
-          return Mvc(creater: () => ListPageController());
+          return Mvc(create: () => ListPageController());
         },
       ),
     );
   }
 
   @override
-  MvcView view(context) {
+  MvcView view(model) {
     return IndexPage();
   }
 }

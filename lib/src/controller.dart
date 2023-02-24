@@ -12,25 +12,8 @@ class _MvcControllerStateValue<T> {
   final _MvcControllerStateAccessibility accessibility;
 }
 
-/// [MvcControllerStateSession]可以获取[MvcController]在一次会话中获取过的状态
-class MvcControllerStateSession {
-  MvcControllerStateSession(this._controller);
-  final List<MvcStateValue> _states = [];
-  final MvcController _controller;
-  void _putStateValue(MvcStateValue state) => _states.add(state);
-
-  void start() => _controller._sessions.add(this);
-  List<MvcStateValue> done() {
-    _controller._sessions.remove(this);
-    var result = [..._states];
-    _states.clear();
-    return result;
-  }
-}
-
 abstract class MvcController<TModelType> extends ChangeNotifier {
   final Map<MvcStateKey, _MvcControllerStateValue> _internalState = HashMap<MvcStateKey, _MvcControllerStateValue>();
-  final List<MvcControllerStateSession> _sessions = [];
   MvcElement? _element;
   MvcContext get context {
     assert(_element != null, "请在Controller init后使用context");
@@ -169,7 +152,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   }
 
   /// 初始化一个链接状态,如果没有获取目标状态则返回null
-  /// 链接状态的值和被连接状态保持一致，这其实相当于一个拷贝操作
+  /// 链接状态的值和被的连接状态保持一致，这其实相当于一个拷贝操作
   /// 如果被链接的状态发生更新，则这个状态也将更新
   /// 这个操作相当于[initTransformState]不做任何转换
   ///
@@ -178,7 +161,9 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// [onlySelf]获取要链接的状态时，是否仅在当前状态获取
   /// [linkedToKey]链接之后的key
   /// [global]链接之后是否设置为全局状态
-  /// [private]是否将链接之后的状态共享给子级
+  /// [private]是否将链接之后的状态私有
+  ///
+  /// 请勿手动update这种State，可能不会有任何效果
   MvcStateValue<T>? initLinkedState<T>({Object? key, bool onlySelf = false, Object? linkedToKey, bool global = false, bool private = false}) => initTransformState<T, T>((e) => e, key: key, onlySelf: onlySelf, transformToKey: linkedToKey, global: global, private: private);
 
   /// 初始化一个转换状态,如果没有获取到目标状态则返回null
@@ -186,108 +171,46 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// 转换后的状态依赖之前的状态更新而更新
   ///
   /// [T]要转换状态的类型 [E]转换之后的状态类型
+  /// [initialStateBuilder]初始状态提供方法，如果[transformer]是异步的，此项不能为空
   /// [transformer]转换方法
   /// [key]被转换状态的key
   /// [onlySelf]获取被装换状态时，是否仅在当前状态获取
   /// [transformToKey]转换之后的key
   /// [global]是否设置为全局状态
-  /// [private]是否将状态共享给子级
-  MvcStateValue<T>? initTransformState<T, E>(T Function(E state) transformer, {Object? key, bool onlySelf = false, Object? transformToKey, bool global = false, bool private = false}) {
+  /// [private]是否将状态私有
+  MvcStateValue<T>? initTransformState<T, E>(FutureOr<T> Function(E state) transformer, {T Function()? initialStateBuilder, Object? key, bool onlySelf = false, Object? transformToKey, bool global = false, bool private = false}) {
     var state = getStateValue<E>(key: key, onlySelf: onlySelf);
     if (state != null) {
       var stateKey = MvcStateKey(stateType: T, key: transformToKey);
-      var stateValue = MvcStateValueTransformer<T, E>(transformer(state.value), state, transformer, controller: this);
+      late T initialState;
+      if (initialStateBuilder != null) {
+        initialState = initialStateBuilder();
+      } else {
+        var transformerState = transformer(state.value);
+        if (transformerState is T) {
+          initialState = transformerState;
+        } else {
+          throw "if transformer return future, must provider initialStateBuilder";
+        }
+      }
+      var stateValue = MvcStateValueTransformer<T, E>(initialState, state, transformer, controller: this);
       return _initState<T>(stateKey, stateValue, global: global, private: private);
     }
     return null;
   }
 
-  /// 与[initTransformState]类似，但是转换方法为异步，被转换的状态更新时，首先经过异步方法，异步方法结束后更新状态
-  Future<MvcStateValue<T>?> initAsyncTransformState<T, E>(Future<T> Function(E state) transformer, {Object? key, bool onlySelf = false, Object? transformToKey, bool global = false, bool private = false}) async {
-    var state = getStateValue<E>(key: key, onlySelf: onlySelf);
-    if (state != null) {
-      var stateKey = MvcStateKey(stateType: T, key: transformToKey);
-      var stateValue = MvcStateValueTransformer<T, E>(await transformer(state.value), state, transformer, controller: this);
-      return _initState<T>(stateKey, stateValue, global: global, private: private);
-    }
-    return null;
-  }
-
-  /// 初始化一个依赖状态
+  /// 初始化一个依赖其他状态更新的状态
   ///
-  /// [builder] 状态值构建者，在构建过程中使用当前Controller获取过的任何状态都将成为该状态的依赖状态，依赖状态更新时，该状态更新
+  /// [initialState]初始状态
+  /// [builder]状态值构建者，每次该状态更新时执行，并将状态值设置为返回值
+  /// [dependent]依赖的状态，任何依赖的状态更新，都将触发该状态更新
   /// [key]状态的key
   /// [global]是否设置为全局状态
-  /// [private]是否将状态共享给子级
-  MvcStateValue<T> initDependentState<T>(T Function() builder, {Object? key, bool global = false, bool private = false}) {
+  /// [private]是否将状态私有
+  MvcStateValue<T> initDependentBuilderState<T>(T initialState, {Set<MvcStateValue> dependent = const {}, FutureOr<T> Function(T state)? builder, Object? key, bool global = false, bool private = false}) {
     var stateKey = MvcStateKey(stateType: T, key: key);
-    var session = MvcControllerStateSession(this);
-    try {
-      session.start();
-      var value = builder();
-      var states = session.done();
-      MvcDependentStateValueBuilder<T>? stateValue;
-      stateValue = MvcDependentStateValueBuilder<T>(
-        value,
-        states.toSet(),
-        builder: () {
-          var session = MvcControllerStateSession(this);
-          try {
-            session.start();
-            var value = builder();
-            var states = session.done();
-            stateValue?.updateDependentStates(states.toSet());
-            return value;
-          } catch (_) {
-            rethrow;
-          } finally {
-            session.done();
-          }
-        },
-        controller: this,
-      );
-      return _initState(stateKey, stateValue, global: global, private: private);
-    } catch (_) {
-      rethrow;
-    } finally {
-      session.done();
-    }
-  }
-
-  /// 与[initDependentState]类似，但是[builder]方法为异步，被转换的状态更新时，首先经过异步方法，异步方法结束后更新状态
-  Future<MvcStateValue<T>> initAsyncDependentState<T>(Future<T> Function() builder, {Object? key, bool global = false, bool private = false}) async {
-    var stateKey = MvcStateKey(stateType: T, key: key);
-    var session = MvcControllerStateSession(this);
-    try {
-      session.start();
-      var value = await builder();
-      var states = session.done();
-      MvcDependentStateValueBuilder<T>? stateValue;
-      stateValue = MvcDependentStateValueBuilder<T>(
-        value,
-        states.toSet(),
-        builder: () async {
-          var session = MvcControllerStateSession(this);
-          try {
-            session.start();
-            var value = await builder();
-            var states = session.done();
-            stateValue?.updateDependentStates(states.toSet());
-            return value;
-          } catch (_) {
-            rethrow;
-          } finally {
-            session.done();
-          }
-        },
-        controller: this,
-      );
-      return _initState(stateKey, stateValue, global: global, private: private);
-    } catch (_) {
-      rethrow;
-    } finally {
-      session.done();
-    }
+    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: builder ?? (state) => state, controller: this)..updateDependentStates(dependent);
+    return _initState<T>(stateKey, stateValue, global: global, private: private);
   }
 
   /// 获取[_MvcControllerStateValue]状态值
@@ -310,11 +233,6 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// [onlySelf]是否仅在当前Controller获取
   MvcStateValue<T>? _getStateValue<T>({Object? key, bool onlySelf = false}) {
     var value = _getControllerStateValue<T>(key: key, onlySelf: onlySelf, originController: this)?.value ?? MvcOwner.sharedOwner.getGlobalStateValue<T>(key: key);
-    if (value != null) {
-      for (var element in _sessions) {
-        element._putStateValue(value);
-      }
-    }
     return value;
   }
 

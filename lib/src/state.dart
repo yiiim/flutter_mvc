@@ -22,19 +22,16 @@ class MvcStateKey {
   }
 }
 
-class MvcStateValue<T> extends ValueNotifier<T> {
-  MvcStateValue(super.value, {required this.controller});
+class MvcStateValue<T> extends ChangeNotifier {
+  MvcStateValue(this.value, {required this.controller});
   final MvcController controller;
-  void update() => notifyListeners();
-}
+  T value;
 
-class MvcDependentStateValue<T> extends MvcStateValue<T> {
-  MvcDependentStateValue(super.value, Set<MvcStateValue> dependentStates, {required super.controller}) {
-    _dependentStates = dependentStates..forEach(_dependentStatesAddListener);
-  }
+  void update() => notifyListeners();
+
   Set<MvcStateValue> _dependentStates = {};
   FutureOr _dependentStateListener() {
-    notifyListeners();
+    update();
   }
 
   void _dependentStatesRemoveListener(MvcStateValue stateValue) => stateValue.removeListener(_dependentStateListener);
@@ -60,35 +57,27 @@ class MvcDependentStateValue<T> extends MvcStateValue<T> {
   }
 }
 
-abstract class MvcDependentStateValueBuilderContext {
-  T? get<T>({Object? key});
-  MvcStateValue<T>? getValue<T>({Object? key});
-}
+class MvcDependentBuilderStateValue<T> extends MvcStateValue<T> {
+  MvcDependentBuilderStateValue(super.value, {required this.builder, required super.controller});
 
-class MvcDependentStateValueBuilder<T> extends MvcDependentStateValue<T> {
-  MvcDependentStateValueBuilder(super.value, super.dependentStates, {required super.controller, required this.builder});
-  final FutureOr<T> Function() builder;
+  final FutureOr<T> Function(T state) builder;
   @override
   FutureOr _dependentStateListener() async {
-    var builderValue = builder();
-    var newValue = builderValue is T ? builderValue : (await builderValue);
-    if (newValue == value) {
-      super._dependentStateListener();
-    }
-    value = newValue;
+    var buildValue = builder(value);
+    value = buildValue is T ? buildValue : (await buildValue);
+    update();
   }
 }
 
-class MvcStateValueTransformer<T, E> extends MvcDependentStateValue<T> {
-  MvcStateValueTransformer(T value, this._source, this._transformer, {required super.controller}) : super(value, {_source});
+class MvcStateValueTransformer<T, E> extends MvcStateValue<T> {
+  MvcStateValueTransformer(super.value, this._source, this._transformer, {required super.controller}) {
+    updateDependentStates({_source});
+  }
   @override
   FutureOr _dependentStateListener() async {
-    var transformValue = _transformer(_source.value);
-    var newValue = transformValue is T ? transformValue : (await transformValue);
-    if (newValue == value) {
-      super._dependentStateListener();
-    }
-    value = newValue;
+    var buildValue = _transformer(_source.value);
+    value = buildValue is T ? buildValue : (await buildValue);
+    update();
   }
 
   final MvcStateValue<E> _source;

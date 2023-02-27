@@ -99,6 +99,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
       if (_internalState[element]!.accessibility == _MvcControllerStateAccessibility.global) {
         MvcOwner.sharedOwner._globalState.remove(element);
       }
+      _internalState[element]?.value.dispose();
     }
   }
 
@@ -151,6 +152,11 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     return s;
   }
 
+  /// 添加状态监听
+  void addStateListener<T>(VoidCallback listener, {Object? key, bool onlySelf = false}) {
+    getStateValue<T>(key: key, onlySelf: onlySelf)?.addListener(listener);
+  }
+
   /// 初始化一个链接状态,如果没有获取目标状态则返回null
   /// 链接状态的值和被的连接状态保持一致，这其实相当于一个拷贝操作
   /// 如果被链接的状态发生更新，则这个状态也将更新
@@ -162,8 +168,6 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// [linkedToKey]链接之后的key
   /// [global]链接之后是否设置为全局状态
   /// [private]是否将链接之后的状态私有
-  ///
-  /// 请勿手动update这种State，可能不会有任何效果
   MvcStateValue<T>? initLinkedState<T>({Object? key, bool onlySelf = false, Object? linkedToKey, bool global = false, bool private = false}) => initTransformState<T, T>((e) => e, key: key, onlySelf: onlySelf, transformToKey: linkedToKey, global: global, private: private);
 
   /// 初始化一个转换状态,如果没有获取到目标状态则返回null
@@ -171,10 +175,10 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
   /// 转换后的状态依赖之前的状态更新而更新
   ///
   /// [T]要转换状态的类型 [E]转换之后的状态类型
-  /// [initialStateBuilder]初始状态提供方法，如果[transformer]是异步的，此项不能为空
   /// [transformer]转换方法
+  /// [initialStateBuilder]初始状态提供方法，如果为空，则初始状态直接调用[transformer]获得，如果[transformer]是异步的，此项不能为空
   /// [key]被转换状态的key
-  /// [onlySelf]获取被装换状态时，是否仅在当前状态获取
+  /// [onlySelf]获取被装换状态时，是否仅在当前控制器获取
   /// [transformToKey]转换之后的key
   /// [global]是否设置为全局状态
   /// [private]是否将状态私有
@@ -199,17 +203,28 @@ abstract class MvcController<TModelType> extends ChangeNotifier {
     return null;
   }
 
-  /// 初始化一个依赖其他状态更新的状态
+  /// 初始化一个根据其他状态而生成的状态
   ///
-  /// [initialState]初始状态
+  /// [initialStateBuilder]初始状态提供方法，如果为空，则初始状态直接调用[builder]获得，如果[builder]是异步的，此项不能为空
   /// [builder]状态值构建者，每次该状态更新时执行，并将状态值设置为返回值
   /// [dependent]依赖的状态，任何依赖的状态更新，都将触发该状态更新
   /// [key]状态的key
   /// [global]是否设置为全局状态
   /// [private]是否将状态私有
-  MvcStateValue<T> initDependentBuilderState<T>(T initialState, {Set<MvcStateValue> dependent = const {}, FutureOr<T> Function(T state)? builder, Object? key, bool global = false, bool private = false}) {
+  MvcStateValue<T> initDependentBuilderState<T>(FutureOr<T> Function() builder, {Set<MvcStateValue> dependent = const {}, T Function()? initialStateBuilder, Object? key, bool global = false, bool private = false}) {
     var stateKey = MvcStateKey(stateType: T, key: key);
-    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: builder ?? (state) => state, controller: this)..updateDependentStates(dependent);
+    late T initialState;
+    if (initialStateBuilder != null) {
+      initialState = initialStateBuilder();
+    } else {
+      var transformerState = builder();
+      if (transformerState is T) {
+        initialState = transformerState;
+      } else {
+        throw "if transformer return future, must provider initialStateBuilder";
+      }
+    }
+    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: builder, controller: this)..updateDependentStates(dependent);
     return _initState<T>(stateKey, stateValue, global: global, private: private);
   }
 

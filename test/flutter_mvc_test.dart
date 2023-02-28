@@ -75,10 +75,10 @@ void main() {
       MvcStateValue<int> parentIntKeyStateValue = controller.initState<int>(2, key: "parent");
       TestPorxyController child1 = TestPorxyController();
       var child1StringStateValue = child1.initState<String>("child1");
-      var child1GlobalStateValue = child1.initState<String>("child1_global", global: true, key: "child1_global");
+      var child1GlobalStateValue = child1.initState<String>("child1_global", key: "child1_global", accessibility: MvcStateAccessibility.global);
       TestPorxyController child2 = TestPorxyController();
       var child2StringStateValue = child2.initState<String>("child2");
-      var child2GlobalStateValue = child2.initState<String>("child2_global", global: true, key: "child2_global");
+      var child2GlobalStateValue = child2.initState<String>("child2_global", key: "child2_global", accessibility: MvcStateAccessibility.global);
       await tester.pumpWidget(
         MvcProxy(
           proxyCreate: () => controller,

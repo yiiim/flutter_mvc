@@ -8,7 +8,7 @@ abstract class _MvcStateScope<TControllerType extends MvcController> {
 /// 状态范围
 class MvcStateScope<TControllerType extends MvcController> extends Widget implements _MvcStateScope<TControllerType> {
   const MvcStateScope(this.builder, {this.controller, Key? key}) : super(key: key);
-  final Widget Function(MvcState<TControllerType> state) builder;
+  final Widget Function(MvcContextState<TControllerType> state) builder;
 
   /// 该状态范围使用的状态来源
   ///
@@ -27,7 +27,7 @@ class MvcStateScope<TControllerType extends MvcController> extends Widget implem
 /// 在状态重建时[child]不会重建，这可以增加性能
 class MvcChildStateScope<TControllerType extends MvcController> extends Widget implements _MvcStateScope<TControllerType> {
   const MvcChildStateScope(this.builder, {this.controller, this.child, super.key});
-  final Widget Function(MvcState<TControllerType> state, Widget? child) builder;
+  final Widget Function(MvcContextState<TControllerType> state, Widget? child) builder;
   final TControllerType? controller;
   final Widget? child;
   @override
@@ -37,11 +37,46 @@ class MvcChildStateScope<TControllerType extends MvcController> extends Widget i
   TControllerType? get stateScopeController => controller;
 }
 
-class MvcStateScopeElement<TControllerType extends MvcController> extends ComponentElement implements MvcState<TControllerType> {
+class MvcStateSession<TControllerType extends MvcController> extends MvcContextState<TControllerType> {
+  MvcStateSession(this.context, this.controller, this.state);
+
+  final MvcControllerState state;
+  @override
+  final BuildContext context;
+  @override
+  final TControllerType controller;
+
+  late final Set<MvcStateValue> _sessionStates = {};
+  void startSession() => _sessionStates.clear();
+  Set<MvcStateValue> doneSession() => _sessionStates;
+
+  @override
+  T? get<T>({Object? key}) => getValue<T>(key: key)?.value;
+  @override
+  MvcStateValue<T>? getValue<T>({Object? key}) {
+    var value = state.getStateValue<T>(key: key);
+    if (value != null) {
+      _sessionStates.add(value);
+    }
+    return value;
+  }
+
+  @override
+  T? part<T extends MvcControllerPart>() {
+    var part = controller.getPart<T>();
+    if (part == null) return null;
+    return MvcStateSession(context, controller, part._state);
+  }
+}
+
+class MvcStateScopeElement<TControllerType extends MvcController> extends ComponentElement {
   MvcStateScopeElement(super.widget);
   TControllerType? _controller;
   bool _firstBuild = true;
   Set<MvcStateValue>? _dependencies;
+
+  late final MvcStateSession<TControllerType> _sessionState = MvcStateSession<TControllerType>(this, _controller!, _controller!._state);
+
   @override
   void update(covariant Widget newWidget) {
     super.update(newWidget);
@@ -64,9 +99,29 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
 
   @override
   Widget build() {
-    if (widget is MvcStateScope<TControllerType>) return (widget as MvcStateScope<TControllerType>).builder(this);
-    if (widget is MvcChildStateScope<TControllerType>) return (widget as MvcChildStateScope<TControllerType>).builder(this, (widget as MvcChildStateScope<TControllerType>).child);
-    throw "unknow widget";
+    Widget? buildWidget;
+    _sessionState.startSession();
+    if (widget is MvcStateScope<TControllerType>) buildWidget = (widget as MvcStateScope<TControllerType>).builder(_sessionState);
+    if (widget is MvcChildStateScope<TControllerType>) buildWidget = (widget as MvcChildStateScope<TControllerType>).builder(_sessionState, (widget as MvcChildStateScope<TControllerType>).child);
+    if (buildWidget == null) "MvcStateScopeElement did get unknow widget";
+    var stateValues = _sessionState.doneSession();
+    _updateDependentStates(stateValues);
+    return buildWidget!;
+  }
+
+  void _updateDependentStates(Set<MvcStateValue> dependentStates) {
+    Set<MvcStateValue> addListenerDependentStates = {...dependentStates};
+    for (var element in _dependencies ?? {}) {
+      if (addListenerDependentStates.contains(element)) {
+        addListenerDependentStates.remove(element);
+      } else {
+        element.removeListener(markNeedsBuild);
+      }
+    }
+    for (var element in addListenerDependentStates) {
+      element.addListener(markNeedsBuild);
+    }
+    _dependencies = dependentStates;
   }
 
   @override
@@ -83,27 +138,5 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
       }
     }
     super.deactivate();
-  }
-
-  @override
-  T? get<T>({Object? key}) => getValue<T>(key: key)?.value;
-  @override
-  MvcStateValue<T>? getValue<T>({Object? key}) {
-    var stateValue = controller.getStateValue<T>(key: key);
-    if (stateValue != null && _dependencies?.contains(stateValue) != true) {
-      stateValue.addListener(markNeedsBuild);
-      _dependencies ??= HashSet<MvcStateValue>();
-      _dependencies!.add(stateValue);
-    }
-    return stateValue;
-  }
-
-  @override
-  BuildContext get context => this;
-
-  @override
-  TControllerType get controller {
-    assert(_controller != null, "状态区域内无法获取Controller");
-    return _controller!;
   }
 }

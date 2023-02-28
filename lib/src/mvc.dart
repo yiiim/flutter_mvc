@@ -2,7 +2,7 @@ part of './flutter_mvc.dart';
 
 class MvcOwner extends EasyTreeRelationOwner {
   static final MvcOwner sharedOwner = MvcOwner();
-  final Map<MvcStateKey, MvcStateValue> _globalState = HashMap<MvcStateKey, MvcStateValue>();
+  final Map<_MvcControllerStateKey, MvcStateValue> _globalState = HashMap<_MvcControllerStateKey, MvcStateValue>();
   T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => getAll(context: context, where: where).firstOrNull;
 
   Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) sync* {
@@ -23,7 +23,7 @@ class MvcOwner extends EasyTreeRelationOwner {
   }
 
   MvcStateValue<T>? getGlobalStateValue<T>({Object? key}) {
-    return _globalState[MvcStateKey(stateType: T, key: key)] as MvcStateValue<T>?;
+    return _globalState[_MvcControllerStateKey(stateType: T, key: key)] as MvcStateValue<T>?;
   }
 }
 

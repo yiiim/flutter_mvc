@@ -1,22 +1,5 @@
 part of './flutter_mvc.dart';
 
-/// 状态贮存者
-abstract class MvcStateStorage {
-  T? getState<T>({Object? key});
-  MvcStateValue<T>? getStateValue<T>({Object? key});
-  T? part<T extends MvcStateStorage>();
-}
-
-/// 上下文状态
-abstract class MvcContextState<TControllerType extends MvcController> {
-  BuildContext get context;
-  TControllerType get controller;
-
-  T? get<T>({Object? key});
-  MvcStateValue<T>? getValue<T>({Object? key});
-  MvcStateStorage? part<T extends MvcStateStorage>();
-}
-
 /// 状态值
 class MvcStateValue<T> extends ChangeNotifier {
   MvcStateValue(this.value, {required this.controller});
@@ -61,10 +44,10 @@ class MvcDependentStateValue<T> extends MvcStateValue<T> {
 class MvcDependentBuilderStateValue<T> extends MvcDependentStateValue<T> {
   MvcDependentBuilderStateValue(super.value, {required this.builder, required super.controller});
 
-  final FutureOr<T> Function() builder;
+  final FutureOr<T> Function(MvcStateValue<T>) builder;
   @override
   FutureOr _dependentStateListener() async {
-    var buildValue = builder();
+    var buildValue = builder(this);
     value = buildValue is T ? buildValue : (await buildValue);
     super._dependentStateListener();
   }

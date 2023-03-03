@@ -37,13 +37,14 @@ class _MvcControllerStateKey {
   }
 }
 
+/// 实际为[MvcController]或[MvcControllerPart]存取状态的类
 class MvcControllerState {
   MvcControllerState(this.controller, {this.controllerPart});
 
   /// 全部的状态
   final Map<_MvcControllerStateKey, _MvcControllerStateValue> _internalState = HashMap<_MvcControllerStateKey, _MvcControllerStateValue>();
 
-  /// 获取状态的最终方法
+  /// 获取状态
   ///
   /// [key]状态的key
   /// [onlySelf]是否仅从当前state获取
@@ -71,6 +72,12 @@ class MvcControllerState {
     return null;
   }
 
+  /// 初始化状态
+  _MvcControllerStateValue<T> _initControllerStateValue<T>(_MvcControllerStateKey key, _MvcControllerStateValue<T> value) {
+    _internalState[key] = value;
+    return value;
+  }
+
   /// 当前状态所属的Controller
   final MvcController controller;
 
@@ -90,8 +97,7 @@ class MvcControllerState {
     if (accessibility == MvcStateAccessibility.global) {
       MvcOwner.sharedOwner._globalState[stateKey] = stateValue;
     }
-    _internalState[stateKey] = _MvcControllerStateValue<T>(value: stateValue, accessibility: accessibility);
-    return stateValue;
+    return _initControllerStateValue(stateKey, _MvcControllerStateValue<T>(value: stateValue, accessibility: accessibility)).value;
   }
 
   /// 初始化状态
@@ -139,71 +145,5 @@ class MvcControllerState {
       }
       _internalState[element]?.value.dispose();
     }
-  }
-
-  /// 初始化一个链接状态,如果没有获取目标状态则返回null
-  /// 链接状态的值和被的连接状态保持一致，这其实相当于一个拷贝操作
-  /// 如果被链接的状态发生更新，则这个状态也将更新
-  /// 这个操作相当于[initTransformState]不做任何转换
-  ///
-  /// [T]要链接状态的类型
-  /// [key]要链接状态的key
-  /// [onlySelf]获取要链接的状态时，是否仅在当前状态获取
-  /// [linkedToKey]链接之后的key
-  /// [accessibility]状态访问级别
-  MvcStateValue<T>? initLinkedState<T>({Object? key, bool onlySelf = false, Object? linkedToKey, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) => initTransformState<T, T>((e) => e, key: key, onlySelf: onlySelf, transformToKey: linkedToKey, accessibility: accessibility);
-
-  /// 初始化一个转换状态,如果没有获取到目标状态则返回null
-  /// 将指定状态转换为新的状态
-  /// 转换后的状态依赖之前的状态更新而更新
-  ///
-  /// [T]要转换状态的类型 [E]转换之后的状态类型
-  /// [transformer]转换方法
-  /// [initialStateBuilder]初始状态提供方法，如果为空，则初始状态直接调用[transformer]获得，如果[transformer]是异步的，此项不能为空
-  /// [key]被转换状态的key
-  /// [onlySelf]获取被装换状态时，是否仅在当前控制器获取
-  /// [transformToKey]转换之后的key
-  /// [accessibility]状态访问级别
-  MvcStateValue<T>? initTransformState<T, E>(FutureOr<T> Function(E state) transformer, {T Function()? initialStateBuilder, Object? key, bool onlySelf = false, Object? transformToKey, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) {
-    var state = getStateValue<E>(key: key, onlySelf: onlySelf);
-    if (state != null) {
-      late T initialState;
-      if (initialStateBuilder != null) {
-        initialState = initialStateBuilder();
-      } else {
-        var transformerState = transformer(state.value);
-        if (transformerState is T) {
-          initialState = transformerState;
-        } else {
-          throw "if transformer return future, must provider initialStateBuilder";
-        }
-      }
-      var stateValue = MvcStateValueTransformer<T, E>(initialState, state, transformer, controller: controller);
-      return initStateValue<T>(stateValue, key: key, accessibility: accessibility);
-    }
-    return null;
-  }
-
-  /// 初始化一个根据其他状态而生成的状态
-  ///
-  /// [initialStateBuilder]初始状态提供方法，如果为空，则初始状态直接调用[builder]获得，如果[builder]是异步的，此项不能为空
-  /// [builder]状态值构建者，每次该状态更新时执行，并将状态值设置为返回值
-  /// [dependent]依赖的状态，任何依赖的状态更新，都将触发该状态更新
-  /// [key]状态的key
-  /// [accessibility]状态访问级别
-  MvcStateValue<T> initDependentBuilderState<T>(FutureOr<T> Function() builder, {Set<MvcStateValue> dependent = const {}, T Function()? initialStateBuilder, Object? key, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) {
-    late T initialState;
-    if (initialStateBuilder != null) {
-      initialState = initialStateBuilder();
-    } else {
-      var transformerState = builder();
-      if (transformerState is T) {
-        initialState = transformerState;
-      } else {
-        throw "if transformer return future, must provider initialStateBuilder";
-      }
-    }
-    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: builder, controller: controller)..updateDependentStates(dependent);
-    return initStateValue<T>(stateValue, key: key, accessibility: accessibility);
   }
 }

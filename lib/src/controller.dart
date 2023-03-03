@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, MvcControllerContextMixin {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin {
   MvcElement? _element;
 
   @override
@@ -16,7 +16,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   /// 获取model
   ///
   /// model同样保存在状态中，如果视图被外部更新时，将获取到不同的model
-  /// 同样[MvcContextState]也可以使用[TModelType]获得model
+  /// 同样[MvcWidgetStateProvider]也可以使用[TModelType]获得model
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
@@ -64,13 +64,12 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     _partsTypeMap[part] = TPartType;
   }
 
-  /// 获取指定类型的[MvcControllerPart]
+  /// 获取指定类型的[MvcControllerPart]，指定的类型必须和[registerPart]方法注册时的类型一致
   ///
-  /// [tryGetFromParent]是否尝试父级获取
-  @override
-  T? part<T extends MvcStateStorage>({bool tryGetFromParent = true}) {
-    var part = (_typePartsMap[T] as T?);
-    if (part == null && tryGetFromParent) part = parent()?.part<T>();
+  /// [tryGetFromParent]是否尝试父级获取，默认为true
+  TPartType? part<TPartType extends MvcControllerPart>({bool tryGetFromParent = true}) {
+    var part = (_typePartsMap[TPartType] as TPartType?);
+    if (part == null && tryGetFromParent) part = parent()?.part<TPartType>();
     return part;
   }
 

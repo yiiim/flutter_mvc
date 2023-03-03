@@ -20,9 +20,9 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
     _controller.addListener(markNeedsBuild);
+    _controller.updateStateInitIfNeed<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
     if (_controller._element == null) {
-      _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
-      _controller.initLinkedState<TModelType>(key: this, linkedToKey: null, onlySelf: true);
+      _controller.initLinkedState<TModelType>(key: this, onlySelf: true);
     }
     _controller._initForElement(this);
   }

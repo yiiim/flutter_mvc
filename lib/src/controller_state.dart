@@ -138,6 +138,18 @@ class MvcControllerState {
   /// [onlySelf]是否仅在当前Controller或当前Part获取
   T? getState<T>({Object? key, bool onlySelf = false}) => getStateValue<T>(key: key, onlySelf: onlySelf)?.value;
 
+  /// 删除状态
+  T? deleteState<T>({Object? key}) {
+    _MvcControllerStateKey stateKey = _MvcControllerStateKey(stateType: T, key: key);
+    var state = _getControllerStateValue<T>(stateKey, onlySelf: true, originController: controller);
+    if (state != null) {
+      _internalState.remove(stateKey);
+      if (state.accessibility == MvcStateAccessibility.global) {
+        MvcOwner.sharedOwner._globalState.remove(stateKey);
+      }
+    }
+  }
+
   void dispose() {
     for (var element in _internalState.keys) {
       if (_internalState[element]!.accessibility == MvcStateAccessibility.global) {

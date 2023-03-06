@@ -39,4 +39,7 @@ mixin MvcControllerStateMixin implements MvcStateProvider {
   /// [key]要更新状态的key
   /// [onlySelf]是否仅在当前Controller或当前Part获取
   MvcStateValue<T>? updateState<T>({void Function(MvcStateValue<T> state)? updater, Object? key, bool onlySelf = true}) => _state.updateState(updater: updater, key: key, onlySelf: onlySelf);
+
+  /// 删除状态
+  void deleteState<T>({Object? key}) => _state.deleteState<T>(key: key);
 }

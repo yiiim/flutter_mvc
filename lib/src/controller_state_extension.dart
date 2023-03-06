@@ -128,6 +128,7 @@ extension MvcControllerStateMixinExtension on MvcControllerStateMixin {
   MvcStateValue<T> updateStateInitIfNeed<T>(T state, {Object? key, bool onlySelf = true}) {
     var s = _state.getStateValue<T>(key: key, onlySelf: onlySelf);
     s ??= _state.initState<T>(state, key: key);
+    s.value = state;
     s.update();
     return s;
   }

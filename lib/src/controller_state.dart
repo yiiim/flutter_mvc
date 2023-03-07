@@ -24,22 +24,29 @@ class _MvcControllerStateValue<T> {
 
 /// 在字典中保存状态的键
 class _MvcControllerStateKey {
-  _MvcControllerStateKey({required this.stateType, this.key});
+  _MvcControllerStateKey({required this.stateType, this.key, this.partType});
   final Type stateType;
   final Object? key;
+  final Type? partType;
 
   @override
-  int get hashCode => Object.hashAll([stateType, key]);
+  int get hashCode => Object.hashAll([stateType, key, partType]);
 
   @override
   bool operator ==(Object other) {
-    return other is _MvcControllerStateKey && stateType == other.stateType && other.key == key;
+    return other is _MvcControllerStateKey && stateType == other.stateType && other.key == key && other.partType == partType;
   }
 }
 
 /// 实际为[MvcController]或[MvcControllerPart]存取状态的类
 class MvcControllerState {
   MvcControllerState(this.controller, {this.controllerPart});
+
+  /// 当前状态所属的Controller
+  final MvcController controller;
+
+  /// 如果不为null，则表示这是一个Part的状态
+  final MvcControllerPart? controllerPart;
 
   /// 全部的状态
   final Map<_MvcControllerStateKey, _MvcControllerStateValue> _internalState = HashMap<_MvcControllerStateKey, _MvcControllerStateValue>();
@@ -52,21 +59,26 @@ class MvcControllerState {
   /// [originPart]最开始获取状态的Part
   _MvcControllerStateValue<T>? _getControllerStateValue<T>(_MvcControllerStateKey key, {bool onlySelf = false, required MvcController originController, MvcControllerPart? originPart}) {
     var stateValue = _internalState[key] as _MvcControllerStateValue<T>?;
-    if (stateValue == null && controllerPart == null) {
-      for (var element in controller._typePartsMap.values) {
-        if (element == originPart) continue;
-        stateValue = element._state._getControllerStateValue(key, onlySelf: true, originController: originController, originPart: element);
-        if (stateValue != null) break;
-      }
-    }
     if (stateValue != null) {
       if (stateValue.accessibility == MvcStateAccessibility.global) return stateValue;
       if (stateValue.accessibility == MvcStateAccessibility.public) return stateValue;
       if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) return stateValue;
       if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) return stateValue;
     }
+    if (controllerPart == null) {
+      for (var element in controller._typePartsMap.values) {
+        if (element == originPart) continue;
+        stateValue = element._state._getControllerStateValue(key, onlySelf: true, originController: originController, originPart: originPart);
+        if (stateValue != null) {
+          if (stateValue.accessibility == MvcStateAccessibility.global) return stateValue;
+          if (stateValue.accessibility == MvcStateAccessibility.public) return stateValue;
+          if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) return stateValue;
+          if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) return stateValue;
+        }
+      }
+    }
     if (!onlySelf) {
-      if (originPart != null && originPart == controllerPart) return originPart.controller._state._getControllerStateValue(key, originController: originController);
+      if (originPart != null && originPart == controllerPart) return originPart.controller._state._getControllerStateValue(key, originController: originController, originPart: originPart);
       return controller.parent()?._state._getControllerStateValue<T>(key, originController: originController, originPart: originPart);
     }
     return null;
@@ -77,12 +89,6 @@ class MvcControllerState {
     _internalState[key] = value;
     return value;
   }
-
-  /// 当前状态所属的Controller
-  final MvcController controller;
-
-  /// 如果不为null，则表示这是一个Part的状态
-  final MvcControllerPart? controllerPart;
 
   /// 初始化一个状态值
   ///
@@ -116,8 +122,8 @@ class MvcControllerState {
   /// [updater]更新状态的方法，即使没有[updater]状态也会更新
   /// [key]要更新状态的key
   /// [onlySelf]是否仅在当前Controller获取
-  MvcStateValue<T>? updateState<T>({void Function(MvcStateValue<T> state)? updater, Object? key, bool onlySelf = true}) {
-    var s = getStateValue<T>(key: key, onlySelf: onlySelf);
+  MvcStateValue<T>? updateState<T>({void Function(MvcStateValue<T> state)? updater, Object? key}) {
+    var s = getStateValue<T>(key: key, onlySelf: true);
     if (s != null) updater?.call(s);
     s?.update();
     return s;
@@ -132,14 +138,29 @@ class MvcControllerState {
     return value;
   }
 
+  /// 获取Part中的状态值
+  ///
+  /// [key]状态的key
+  /// [onlySelf]是否仅在当前Controller或当前Part获取
+  MvcStateValue<T>? getPartStateValue<T, TPartType extends MvcControllerPart>({Object? key, bool onlySelf = false}) {
+    var value = _getControllerStateValue<T>(_MvcControllerStateKey(stateType: T, key: key, partType: TPartType), onlySelf: onlySelf, originController: controller, originPart: controllerPart)?.value ?? MvcOwner.sharedOwner.getGlobalStateValue<T>(key: key);
+    return value;
+  }
+
   /// 获取状态
   ///
   /// [key]状态的key
   /// [onlySelf]是否仅在当前Controller或当前Part获取
   T? getState<T>({Object? key, bool onlySelf = false}) => getStateValue<T>(key: key, onlySelf: onlySelf)?.value;
 
+  /// 获取Part中的状态
+  ///
+  /// [key]状态的key
+  /// [onlySelf]是否仅在当前Controller或当前Part获取
+  T? getPartState<T, TPartType extends MvcControllerPart>({Object? key, bool onlySelf = false}) => getPartStateValue<T, TPartType>(key: key, onlySelf: onlySelf)?.value;
+
   /// 删除状态
-  T? deleteState<T>({Object? key}) {
+  void deleteState<T>({Object? key}) {
     _MvcControllerStateKey stateKey = _MvcControllerStateKey(stateType: T, key: key);
     var state = _getControllerStateValue<T>(stateKey, onlySelf: true, originController: controller);
     if (state != null) {

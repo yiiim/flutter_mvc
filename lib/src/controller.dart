@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, MvcControllerPartMixin implements MvcHasPartStateProvider {
   MvcElement? _element;
 
   @override
@@ -48,6 +48,9 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   void dispose() {
     super.dispose();
     _state.dispose();
+    for (var element in _typePartsMap.values) {
+      element.dispose();
+    }
   }
 
   late final Map<Type, MvcControllerPart> _typePartsMap = {};
@@ -58,19 +61,21 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     assert(TPartType != MvcControllerPart, "必须指定Part的类型");
     assert(_typePartsMap[TPartType] == null, "不能注册相同类型的多个Part");
     assert(_partsTypeMap[part] == null, "同一Part实例不能注册多次");
-    part._controller = this;
-    part.init();
     _typePartsMap[TPartType] = part;
     _partsTypeMap[part] = TPartType;
+    part._controller = this;
+    part.init();
   }
 
   /// 获取指定类型的[MvcControllerPart]，指定的类型必须和[registerPart]方法注册时的类型一致
-  ///
-  /// [tryGetFromParent]是否尝试父级获取，默认为true
-  TPartType? part<TPartType extends MvcControllerPart>({bool tryGetFromParent = true}) {
-    var part = (_typePartsMap[TPartType] as TPartType?);
-    if (part == null && tryGetFromParent) part = parent()?.part<TPartType>();
-    return part;
+  TPartType? part<TPartType extends MvcControllerPart>() {
+    return (_typePartsMap[TPartType] as TPartType?);
+  }
+
+  @override
+  T? getStatePart<T extends MvcStateProvider>() {
+    if (_typePartsMap[T] != null) return _typePartsMap[T] as T;
+    return parent()?.getStatePart<T>();
   }
 
   /// 更新，将会触发View重建

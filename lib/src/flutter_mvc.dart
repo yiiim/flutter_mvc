@@ -12,6 +12,7 @@ part 'controller.dart';
 part 'controller_part.dart';
 part 'controller_state.dart';
 part 'controller_state_mixin.dart';
+part 'controller_part_mixin.dart';
 part 'controller_context_mixin.dart';
 part 'controller_state_extension.dart';
 part 'element.dart';

@@ -146,7 +146,7 @@ extension MvcControllerStateExtension on MvcController {
   /// [linkedToKey]链接之后的key
   /// [accessibility]链接之后的状态访问级别
   MvcStateValue<T>? initPartLinkedState<TPartType, T>({Object? key, bool onlySelf = false, Object? linkedToKey, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) {
-    var transformState = part<MvcControllerPart>(tryGetFromParent: onlySelf == false)?.getStateValue<T>(key: key, onlySelf: onlySelf);
+    var transformState = part<MvcControllerPart>()?.getStateValue<T>(key: key, onlySelf: onlySelf);
     if (transformState != null) {
       return initStateValueTransformState<T, T>((state) => state, transformState, transformToKey: linkedToKey, accessibility: accessibility);
     }
@@ -165,7 +165,7 @@ extension MvcControllerStateExtension on MvcController {
   /// [transformToKey]转换之后的key
   /// [accessibility]转换之后的状态访问级别
   MvcStateValue<T>? initPartTransformState<TPartType, T, E>(FutureOr<T> Function(E state) transformer, {Object? key, bool onlySelf = false, T Function()? initialStateBuilder, Object? transformToKey, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) {
-    var transformState = part<MvcControllerPart>(tryGetFromParent: onlySelf == false)?.getStateValue<E>(key: key, onlySelf: onlySelf);
+    var transformState = part<MvcControllerPart>()?.getStateValue<E>(key: key, onlySelf: onlySelf);
     if (transformState != null) {
       return initStateValueTransformState<T, E>(transformer, transformState, initialStateBuilder: initialStateBuilder, transformToKey: transformToKey, accessibility: accessibility);
     }

@@ -12,7 +12,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   void incrementCounter() {
-    updateState<int>(updater: ((state) => state?.value++));
+    updateState<int>(updater: ((state) => state.value++));
     update();
   }
 

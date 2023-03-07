@@ -18,7 +18,7 @@ class ToastController extends MvcController<ToastModel> with MvcSingleTickerProv
   }
 
   void showToast(String msg) {
-    updateState<String>(updater: (state) => state?.value = msg);
+    updateState<String>(updater: (state) => state.value = msg);
     WidgetsBinding.instance.addPostFrameCallback(
       (timeStamp) {
         animationController.forward();

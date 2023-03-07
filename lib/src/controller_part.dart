@@ -16,4 +16,5 @@ abstract class MvcControllerPart<TControllerType extends MvcController> with Mvc
   }
 
   void init() {}
+  void dispose() {}
 }

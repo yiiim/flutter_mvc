@@ -13,13 +13,16 @@ abstract class MvcStateProvider {
   MvcStateValue<T>? getStateValue<T>({Object? key});
 }
 
+/// 具有分部的状态提供接口
+abstract class MvcHasPartStateProvider extends MvcStateProvider {
+  /// 获取指定类型的状态分部
+  T? getStatePart<T extends MvcStateProvider>();
+}
+
 /// Widget状态提供接口
-abstract class MvcWidgetStateProvider<TControllerType extends MvcController> {
+abstract class MvcWidgetStateProvider {
   /// 当前build的[BuildContext]
   BuildContext get context;
-
-  /// 关联的Controller， 通常时Widget最近的指定类型的[MvcController]
-  TControllerType get controller;
 
   /// 获取状态
   ///
@@ -34,5 +37,10 @@ abstract class MvcWidgetStateProvider<TControllerType extends MvcController> {
   /// 获取分部状态提供接口
   ///
   /// [MvcStateProvider]分部状态的类型
-  MvcWidgetStateProvider? part<T extends MvcControllerPart>();
+  MvcWidgetStateProvider? part<T extends MvcStateProvider>();
+
+  /// 有状态更新时不需要更新的[Widget]
+  ///
+  /// 在Mvc中是[MvcStateScope]的child
+  Widget? get child;
 }

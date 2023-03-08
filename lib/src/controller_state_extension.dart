@@ -61,7 +61,7 @@ extension MvcControllerStateMixinExtension on MvcControllerStateMixin {
         throw "if transformer return future, must provider initialStateBuilder";
       }
     }
-    var stateValue = MvcStateValueTransformer<T, E>(initialState, transformState, transformer, controller: _state.controller);
+    var stateValue = MvcStateValueTransformer<T, E>(initialState, transformState, transformer);
     return initStateValue<T>(stateValue, key: transformToKey, accessibility: accessibility);
   }
 
@@ -90,7 +90,7 @@ extension MvcControllerStateMixinExtension on MvcControllerStateMixin {
         throw "if transformer return future, must provider initialStateBuilder";
       }
     }
-    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: (s) => builder(), controller: _state.controller)..updateDependentStates(dependent);
+    var stateValue = MvcDependentBuilderStateValue<T>(initialState, builder: (s) => builder())..updateDependentStates(dependent);
     return initStateValue<T>(stateValue, key: key, accessibility: accessibility);
   }
 
@@ -115,7 +115,6 @@ extension MvcControllerStateMixinExtension on MvcControllerStateMixin {
         if (updateResult is Future) return Future.value(state.value);
         return state.value;
       },
-      controller: _state.controller,
     )..updateDependentStates(dependent);
     return initStateValue<T>(stateValue, key: key, accessibility: accessibility);
   }

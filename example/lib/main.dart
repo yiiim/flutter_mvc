@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
       ),
       home: MvcProxy(
         proxyCreate: () => NavigatorController(),
-        child: Mvc<IndexPageController, IndexPageModel>(
+        child: Mvc(
           create: () => IndexPageController(),
           model: IndexPageModel(title: "Flutter Demo"),
         ),

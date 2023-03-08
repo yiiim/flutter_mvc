@@ -34,6 +34,12 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   }
 
   @override
+  void deactivate() {
+    super.deactivate();
+    _controller._deactivateForElement(this);
+  }
+
+  @override
   void unmount() {
     super.unmount();
     _controller.removeListener(markNeedsBuild);

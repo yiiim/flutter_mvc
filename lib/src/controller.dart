@@ -28,6 +28,13 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     }
   }
 
+  void deactivate() {}
+  void _deactivateForElement(MvcElement element) {
+    if (element == _element) {
+      deactivate();
+    }
+  }
+
   void _initForElement(MvcElement element) {
     assert(element._controller == this);
     if (_element == null) {

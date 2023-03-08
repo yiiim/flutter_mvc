@@ -113,7 +113,7 @@ class MvcControllerState {
   /// [accessibility]状态访问级别
   /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
   MvcStateValue<T> initState<T>(T state, {Object? key, MvcStateAccessibility accessibility = MvcStateAccessibility.public}) {
-    var stateValue = MvcStateValue<T>(state, controller: controller);
+    var stateValue = MvcStateValue<T>(state);
     return initStateValue<T>(stateValue, key: key, accessibility: accessibility);
   }
 

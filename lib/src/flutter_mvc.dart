@@ -7,6 +7,7 @@ import 'package:collection/collection.dart';
 
 import 'package:easy_tree/easy_tree.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_mvc/flutter_mvc.dart';
 
 part 'controller.dart';
 part 'controller_part.dart';

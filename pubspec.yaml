@@ -1,7 +1,7 @@
 name: flutter_mvc
-description: A new Flutter package project.
+description: Flutter state management framework.
 version: 0.0.1
-homepage:
+homepage: https://github.com/yiiim/flutter_mvc
 
 environment:
   sdk: ">=2.17.6 <3.0.0"
@@ -10,9 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   collection: any
-  easy_tree: 
-    git:
-      url: https://github.com/yiiim/easy_tree.git
+  easy_tree: ^0.0.1
 
 
 dev_dependencies:

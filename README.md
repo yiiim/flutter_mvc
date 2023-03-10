@@ -1,6 +1,6 @@
 # Flutter Mvc
 
-Flutter Mvc 是为了解决UI与逻辑分离的一个状态管理框架.
+Flutter Mvc 是为了解决UI与逻辑分离的一个状态管理框架。 完整文档请[阅读此处](https://github.com/yiiim/flutter_mvc/wiki)
 
 ## Getting started
 

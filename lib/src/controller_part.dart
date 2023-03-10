@@ -12,7 +12,8 @@ abstract class MvcControllerPart<TControllerType extends MvcController> with Mvc
 
   @override
   MvcStateValue<T> initState<T>(T state, {Object? key, MvcStateAccessibility accessibility = MvcStateAccessibility.internal}) {
-    return super.initState(state, key: key, accessibility: accessibility);
+    assert(accessibility == MvcStateAccessibility.internal, "Part中仅可初始化访问级别为internal的状态");
+    return super.initState(state, key: key, accessibility: MvcStateAccessibility.internal);
   }
 
   void init() {}

@@ -65,18 +65,6 @@ class MvcControllerState {
       if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) return stateValue;
       if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) return stateValue;
     }
-    if (controllerPart == null) {
-      for (var element in controller._typePartsMap.values) {
-        if (element == originPart) continue;
-        stateValue = element._state._getControllerStateValue(key, onlySelf: true, originController: originController, originPart: originPart);
-        if (stateValue != null) {
-          if (stateValue.accessibility == MvcStateAccessibility.global) return stateValue;
-          if (stateValue.accessibility == MvcStateAccessibility.public) return stateValue;
-          if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) return stateValue;
-          if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) return stateValue;
-        }
-      }
-    }
     if (!onlySelf) {
       if (originPart != null && originPart == controllerPart) return originPart.controller._state._getControllerStateValue(key, originController: originController, originPart: originPart);
       return controller.parent()?._state._getControllerStateValue<T>(key, originController: originController, originPart: originPart);

@@ -34,7 +34,7 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
   }
 
   @override
-  void rebuild() {
+  void rebuild({bool force = false}) {
     if (_firstBuild) {
       var stateProvider = (widget as MvcStateScope<TControllerType>?)?.stateProvider ?? Mvc.get<TControllerType>(context: this);
       assert(stateProvider != null, "[MvcStateScope]无法从当前上下文获取[MvcStateScope]");

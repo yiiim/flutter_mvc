@@ -46,11 +46,9 @@ packages:
   easy_tree:
     dependency: transitive
     description:
-      path: "."
-      ref: HEAD
-      resolved-ref: "81b52169d7940001d1cf45e5efae87f09e3ec8f4"
-      url: "https://github.com/yiiim/easy_tree.git"
-    source: git
+      name: easy_tree
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "0.0.1"
   fake_async:
     dependency: transitive

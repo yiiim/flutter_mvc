@@ -75,7 +75,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   }
 
   /// 获取指定类型的[MvcControllerPart]，指定的类型必须和[registerPart]方法注册时的类型一致
-  TPartType? part<TPartType extends MvcControllerPart>() {
+  TPartType? getPart<TPartType extends MvcControllerPart>() {
     return (_typePartsMap[TPartType] as TPartType?);
   }
 

@@ -43,6 +43,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.5"
+  dart_dependency_injection:
+    dependency: transitive
+    description:
+      name: dart_dependency_injection
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   easy_tree:
     dependency: transitive
     description:
@@ -75,7 +82,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.1+1"
   flutter_test:
     dependency: "direct dev"
     description: flutter

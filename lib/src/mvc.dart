@@ -1,7 +1,16 @@
 part of './flutter_mvc.dart';
 
-class MvcOwner extends EasyTreeRelationOwner {
+class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
   static final MvcOwner sharedOwner = MvcOwner();
+  late final ServiceCollection _serviceCollection = ServiceCollection()..addSingleton<MvcOwner>((serviceProvider) => this);
+  ServiceCollection get serviceCollection => _serviceCollection;
+  ServiceProvider? _serviceProvider;
+  @override
+  ServiceProvider get serviceProvider {
+    _serviceProvider ??= serviceCollection.buildServiceProvider();
+    return _serviceProvider!;
+  }
+
   final Map<_MvcControllerStateKey, MvcStateValue> _globalState = HashMap<_MvcControllerStateKey, MvcStateValue>();
   T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => getAll(context: context, where: where).firstOrNull;
 

@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, MvcControllerPartMixin implements MvcHasPartStateProvider {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, MvcControllerPartMixin, DependencyInjectionService implements MvcHasPartStateProvider {
   MvcElement? _element;
 
   @override

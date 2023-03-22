@@ -11,7 +11,11 @@ dependencies:
     sdk: flutter
   collection: ^1.16.0
   easy_tree: ^0.0.1
+  dart_dependency_injection: ^1.0.0
 
+dependency_overrides:
+  dart_dependency_injection:
+    path: ../dart_dependency_injection
 
 dev_dependencies:
   flutter_test:

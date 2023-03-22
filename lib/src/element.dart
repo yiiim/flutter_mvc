@@ -19,6 +19,18 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   @override
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
+    var scopedBuilder = ((easyTreeGetParent(const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder)) as MvcElement?)?.controller ?? MvcOwner.sharedOwner);
+    var provider = scopedBuilder.buildScopeService(
+      builder: (collection) {
+        collection.addSingleton<MvcController>((_) => _controller);
+        if (_controller is MvcServiceScopedBuilder) {
+          (_controller as MvcServiceScopedBuilder).onServiceScopedBuild(collection);
+        }
+      },
+      scope: _controller,
+    );
+    provider.get<MvcController>();
+
     _controller.addListener(markNeedsBuild);
     _controller.updateStateInitIfNeed<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
     if (_controller._element == null) {
@@ -90,6 +102,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         const EasyTreeNodeKey<Type>(MvcController),
         EasyTreeNodeKey<MvcController>(_controller),
         if (TControllerType != MvcController && TControllerType != _controller.runtimeType) EasyTreeNodeKey<Type>(TControllerType),
+        if (controller is MvcServiceScopedBuilder) const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder),
       ];
 
   @override

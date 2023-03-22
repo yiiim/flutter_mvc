@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:dart_dependency_injection/dart_dependency_injection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -23,3 +24,6 @@ part 'context.dart';
 part 'view.dart';
 part 'ticker_provider.dart';
 part 'mvc.dart';
+
+part './dependency_injection/scoped.dart';
+part './dependency_injection/provider.dart';

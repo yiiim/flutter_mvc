@@ -56,7 +56,7 @@ packages:
       name: easy_tree
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.1"
+    version: "0.0.1+1"
   fake_async:
     dependency: transitive
     description:

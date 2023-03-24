@@ -1,11 +1,28 @@
 part of './flutter_mvc.dart';
 
 class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement implements MvcContext<TControllerType, TModelType> {
-  MvcElement(super.widget, TControllerType Function() create)
-      : _controller = create(),
-        super(easyTreeOwner: MvcOwner.sharedOwner);
+  MvcElement(super.widget, this.create) : super(easyTreeOwner: MvcOwner.sharedOwner);
 
-  final TControllerType _controller;
+  final TControllerType Function()? create;
+  late final TControllerType _controller = () {
+    var scopedBuilder = ((easyTreeGetParent(const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder)) as MvcElement?)?.controller ?? MvcOwner.sharedOwner);
+    var controller = create?.call() ?? scopedBuilder.getService<TControllerType>();
+    var provider = scopedBuilder.buildScopeService(
+      builder: (collection) {
+        assert(collection is MvcControllerCollection);
+        collection.addSingleton<MvcController>((_) => controller);
+        if (TControllerType != MvcController) collection.addSingleton<TControllerType>((_) => controller);
+        if (controller is MvcServiceScopedBuilder) {
+          (controller as MvcServiceScopedBuilder).serviceScopedBuild(collection);
+        }
+        if (controller is MvcControllerScopedBuilder) {
+          (controller as MvcControllerScopedBuilder).mvcControllerScopedBuild(collection as MvcControllerCollection);
+        }
+      },
+      scope: controller,
+    );
+    return provider.get<TControllerType>();
+  }();
 
   @override
   void update(covariant Widget newWidget) {
@@ -19,18 +36,6 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   @override
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
-    var scopedBuilder = ((easyTreeGetParent(const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder)) as MvcElement?)?.controller ?? MvcOwner.sharedOwner);
-    var provider = scopedBuilder.buildScopeService(
-      builder: (collection) {
-        collection.addSingleton<MvcController>((_) => _controller);
-        if (_controller is MvcServiceScopedBuilder) {
-          (_controller as MvcServiceScopedBuilder).onServiceScopedBuild(collection);
-        }
-      },
-      scope: _controller,
-    );
-    provider.get<MvcController>();
-
     _controller.addListener(markNeedsBuild);
     _controller.updateStateInitIfNeed<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
     if (_controller._element == null) {

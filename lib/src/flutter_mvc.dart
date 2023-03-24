@@ -24,6 +24,9 @@ part 'context.dart';
 part 'view.dart';
 part 'ticker_provider.dart';
 part 'mvc.dart';
+part 'scoped.dart';
+part 'provider.dart';
 
 part './dependency_injection/scoped.dart';
 part './dependency_injection/provider.dart';
+part './dependency_injection/collection.dart';

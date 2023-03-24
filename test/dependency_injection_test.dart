@@ -58,7 +58,7 @@ class TestPorxyController extends MvcProxyController {
 class TestScopedBuilderPorxyController extends MvcProxyController implements MvcServiceScopedBuilder {
   void Function(ServiceCollection collection)? onServiceScopedBuildBlock;
   @override
-  void onServiceScopedBuild(ServiceCollection collection) {
+  void serviceScopedBuild(ServiceCollection collection) {
     onServiceScopedBuildBlock?.call(collection);
   }
 }

@@ -2,8 +2,10 @@ part of './flutter_mvc.dart';
 
 class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
   static final MvcOwner sharedOwner = MvcOwner();
-  late final ServiceCollection _serviceCollection = ServiceCollection()..addSingleton<MvcOwner>((serviceProvider) => this);
-  ServiceCollection get serviceCollection => _serviceCollection;
+  late final MvcServiceCollection _serviceCollection = MvcServiceCollection()
+    ..addSingleton<MvcOwner>((serviceProvider) => this)
+    ..add<ServiceCollection>((serviceProvider) => MvcServiceCollection());
+  MvcServiceCollection get serviceCollection => _serviceCollection;
   ServiceProvider? _serviceProvider;
   @override
   ServiceProvider get serviceProvider {
@@ -37,10 +39,11 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
 }
 
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends Widget {
-  const Mvc({required this.create, TModelType? model, Key? key})
+  // ignore: prefer_const_constructors_in_immutables
+  Mvc({this.create, TModelType? model, Key? key})
       : model = model ?? model as TModelType,
         super(key: key);
-  final TControllerType Function() create;
+  final TControllerType Function()? create;
   final TModelType model;
   static T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.get<T>(context: context, where: where);
   static Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.getAll<T>(context: context, where: where);
@@ -48,6 +51,8 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
   @override
   Element createElement() => MvcElement<TControllerType, TModelType>(this, create);
 }
+
+typedef ModellessMvc<TControllerType extends MvcController> = Mvc<TControllerType, dynamic>;
 
 /// 控制器代理
 ///

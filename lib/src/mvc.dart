@@ -3,7 +3,7 @@ part of './flutter_mvc.dart';
 class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
   static final MvcOwner sharedOwner = MvcOwner();
   late final MvcServiceCollection _serviceCollection = MvcServiceCollection()
-    ..addSingleton<MvcOwner>((serviceProvider) => this)
+    ..addSingleton<MvcOwner>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true)
     ..add<ServiceCollection>((serviceProvider) => MvcServiceCollection());
   MvcServiceCollection get serviceCollection => _serviceCollection;
   ServiceProvider? _serviceProvider;

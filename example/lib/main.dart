@@ -17,31 +17,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MvcProxy(
-        proxyCreate: () => NavigatorController(),
-        child: Mvc(
-          create: () => IndexPageController(),
-          model: IndexPageModel(title: "Flutter Demo"),
-        ),
-      ),
-      builder: (context, child) {
-        return Mvc(
-          create: () => ToastController(),
-          model: ToastModel(
-            MvcMultiProxy(
-              proxyCreate: [
-                () => ProductController(),
-                () => ShoppingCartController(),
-              ],
-              child: child!,
-            ),
-          ),
-        );
+    return MvcDependencyProvider(
+      provider: (collection) {
+        collection.addController<IndexPageController>((provider) => IndexPageController());
       },
+      child: MaterialApp(
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: MvcProxy(
+          proxyCreate: () => NavigatorController(),
+          child: Mvc<IndexPageController, IndexPageModel>(model: IndexPageModel(title: "Flutter Demo")),
+        ),
+        builder: (context, child) {
+          return Mvc(
+            create: () => ToastController(),
+            model: ToastModel(
+              MvcMultiProxy(
+                proxyCreate: [
+                  () => ProductController(),
+                  () => ShoppingCartController(),
+                ],
+                child: child!,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

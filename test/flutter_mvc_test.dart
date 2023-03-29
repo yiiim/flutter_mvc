@@ -17,7 +17,7 @@ class TestController extends MvcController<TestModel> {
     return MvcViewBuilder<TestController, TestModel>(
       (context) {
         if (viewBuilder != null) return viewBuilder!(context);
-        return Text(model.title, textDirection: TextDirection.ltr);
+        return Text(context.model.title, textDirection: TextDirection.ltr);
       },
     );
   }

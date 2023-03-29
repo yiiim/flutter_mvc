@@ -15,11 +15,9 @@ class DeepAsyncInitializeService with DependencyInjectionService {
   void Function()? didInit;
   @override
   Future dependencyInjectionServiceInitialize() async {
-    print("Deep begin init");
     getService<AsyncInitializeService>();
     await Future.delayed(const Duration(seconds: 3));
     didInit?.call();
-    print("Deep done init");
   }
 }
 
@@ -27,12 +25,10 @@ class DeepAwaitAsyncInitializeService with DependencyInjectionService {
   void Function()? didInit;
   @override
   Future dependencyInjectionServiceInitialize() async {
-    print("Deep Await begin init");
     getService<AsyncInitializeService>();
     await waitLatestServiceInitialize();
     await Future.delayed(const Duration(seconds: 3));
     didInit?.call();
-    print("Deep Await done init");
   }
 }
 
@@ -40,19 +36,13 @@ class AsyncInitializeService with DependencyInjectionService {
   void Function()? didInit;
   @override
   Future dependencyInjectionServiceInitialize() async {
-    print("begin init");
     await Future.delayed(const Duration(seconds: 3));
     didInit?.call();
-    print("done init");
   }
 }
 
 class TestPorxyController extends MvcProxyController {
-  String text = "not init service";
-  @override
-  FutureOr dependencyInjectionServiceInitialize() {
-    text = "init service";
-  }
+  String text = "test";
 }
 
 class TestScopedBuilderPorxyController extends MvcProxyController implements MvcServiceScopedBuilder {
@@ -107,43 +97,19 @@ void main() {
   );
 
   testWidgets(
-    "test service init",
+    "test MvcControllerProvider",
     (tester) async {
-      var controller = TestPorxyController();
-      await tester.pumpWidget(
-        MvcProxy(
-          proxyCreate: () => controller,
-          child: Builder(
-            builder: (context) {
-              return Text(controller.text, textDirection: TextDirection.ltr);
-            },
-          ),
-        ),
-      );
-      expect(tester.takeException(), isNull);
-      expect(find.text("init service"), findsOneWidget);
-    },
-  );
-  testWidgets(
-    "test service async init",
-    (tester) async {
-      var controller = TestPorxyController();
       await tester.pumpWidget(
         MvcDependencyProvider(
-          child: MvcProxy(
-            proxyCreate: () => controller,
-            child: const Placeholder(),
-          ),
           provider: (collection) {
-            collection.add((serviceProvider) => AsyncInitializeService());
-            collection.add((serviceProvider) => DeepAsyncInitializeService());
-            collection.add((serviceProvider) => DeepAwaitAsyncInitializeService());
+            collection.addController<TestPorxyController>((p) => TestPorxyController());
           },
+          child: Mvc<TestPorxyController, Widget>(
+            model: const Text("test", textDirection: TextDirection.ltr),
+          ),
         ),
       );
-      expect(find.text("wait init"), findsOneWidget);
-      await controller.waitLatestServiceInitialize();
-      expect(find.text("did init"), findsOneWidget);
+      expect(find.text("test"), findsOneWidget);
     },
   );
 

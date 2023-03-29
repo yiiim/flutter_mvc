@@ -1,22 +1,21 @@
 part of './flutter_mvc.dart';
 
-class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement implements MvcContext<TControllerType, TModelType> {
+class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement with DependencyInjectionService implements MvcContext<TControllerType, TModelType> {
   MvcElement(super.widget, this.create) : super(easyTreeOwner: MvcOwner.sharedOwner);
 
   final TControllerType Function()? create;
   late final TControllerType _controller = () {
-    var scopedBuilder = ((easyTreeGetParent(const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder)) as MvcElement?)?.controller ?? MvcOwner.sharedOwner);
-    var controller = create?.call() ?? scopedBuilder.getService<TControllerType>();
+    var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
+    var controller = create?.call() ?? scopedBuilder.getService<MvcControllerProvider<TControllerType>>().create();
     var provider = scopedBuilder.buildScopeService(
       builder: (collection) {
-        assert(collection is MvcControllerCollection);
-        collection.addSingleton<MvcController>((_) => controller);
-        if (TControllerType != MvcController) collection.addSingleton<TControllerType>((_) => controller);
+        assert(collection is MvcServiceCollection);
+        collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
+        collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
+        collection.addSingleton<MvcView>((serviceProvider) => controller.view(serviceProvider.get<MvcContext>().model));
+        if (TControllerType != MvcController) collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
         if (controller is MvcServiceScopedBuilder) {
           (controller as MvcServiceScopedBuilder).serviceScopedBuild(collection);
-        }
-        if (controller is MvcControllerScopedBuilder) {
-          (controller as MvcControllerScopedBuilder).mvcControllerScopedBuild(collection as MvcControllerCollection);
         }
       },
       scope: controller,
@@ -111,7 +110,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
       ];
 
   @override
-  Widget buildChild() => _controller.view(model)._buildView(this);
+  Widget buildChild() => getService<MvcView>()._buildView(this);
 
   @override
   TControllerType get controller => _controller;

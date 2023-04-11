@@ -176,4 +176,27 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
       floatingActionButton: FloatingActionButton(
         onPressed: ctx.controller.incrementCounter,
         tooltip: 'Increment',
-        child: const Icon(Icons.add
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+/// Controller
+class IndexPageController extends MvcController<IndexPageModel> {
+  @override
+  void init() {
+    super.init();
+    initState<int>(0); // 初始化状态
+  }
+
+  void incrementCounter() {
+    updateState<int>(updater: ((state) => state?.value++)); // 更新状态
+  }
+
+  @override
+  MvcView view(model) {
+    return IndexPage();
+  }
+}
+```

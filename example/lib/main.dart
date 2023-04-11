@@ -7,7 +7,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 import 'common/navigator/controller.dart';
-import 'src/test_object.dart';
+
+class TestModellessController extends MvcController {
+  TestModellessController({this.viewBuilder});
+  final Widget Function(MvcContext<TestModellessController, void> context)? viewBuilder;
+  @override
+  MvcView<MvcController, dynamic> view(model) {
+    return MvcModelessViewBuilder<TestModellessController>(
+      (context) {
+        if (viewBuilder != null) return viewBuilder!(context);
+        return Text(model.title, textDirection: TextDirection.ltr);
+      },
+    );
+  }
+
+  @override
+  void buildPart(MvcControllerPartCollection collection) {
+    super.buildPart(collection);
+  }
+}
 
 void main() {
   runApp(const MyApp());
@@ -21,9 +39,6 @@ class MyApp extends StatelessWidget {
     return MvcDependencyProvider(
       provider: (collection) {
         collection.addController<IndexPageController>((serviceProvider) => IndexPageController());
-        collection.addSingleton((serviceProvider) => TestObject());
-        collection.addScopedSingleton((serviceProvider) => TestObject());
-        collection.add((serviceProvider) => TestObject());
       },
       child: MaterialApp(
         theme: ThemeData(
@@ -31,8 +46,14 @@ class MyApp extends StatelessWidget {
         ),
         home: MvcProxy(
           proxyCreate: () => NavigatorController(),
-          child: Mvc<IndexPageController, IndexPageModel>(
-            model: IndexPageModel(title: "Flutter Demo"),
+          child: Mvc(
+            create: () => TestModellessController(
+              viewBuilder: (context) {
+                return Center(
+                  child: Text("data"),
+                );
+              },
+            ),
           ),
         ),
         builder: (context, child) {

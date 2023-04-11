@@ -39,7 +39,7 @@ class TestModellessController extends MvcController {
   @override
   void buildPart(MvcControllerPartCollection collection) {
     super.buildPart(collection);
-    collection.addPart(TestModellessControllerPart());
+    collection.addPart(() => TestModellessControllerPart());
   }
 }
 
@@ -67,7 +67,11 @@ void main() {
         viewBuilder: (context) {
           return MvcStateScope(
             (state) {
-              return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
+              return Builder(
+                builder: (context) {
+                  return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
+                },
+              );
             },
           );
         },
@@ -126,12 +130,18 @@ void main() {
         },
       );
       await tester.pumpWidget(Mvc(create: () => controller));
-
       var controllerPart = controller.getPart<TestModellessControllerPart>()!;
-      controllerPart.initState("1");
+      expect(controllerPart.controller == controller, isTrue);
 
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
+      final partNoneStateFinder = find.text("0");
+      expect(partNoneStateFinder, findsOneWidget);
+
+      controllerPart.initState("1");
+      controller.update();
+      await tester.pumpWidget(Mvc(create: () => controller));
+
+      final partInitStateFinder = find.text("1");
+      expect(partInitStateFinder, findsOneWidget);
       controllerPart.updateState<String>(updater: (state) => state.value = "2");
       await tester.pumpWidget(Mvc(create: () => controller));
       final titleUpdatedFinder = find.text("2");

@@ -27,7 +27,7 @@
   * [注入依赖](./DependencyInjection/#注入依赖)
   * [获取依赖](./DependencyInjection/#获取依赖)
   * [服务范围](./DependencyInjection/#服务范围)
-  * [MvcServiceScopedBuilder](./DependencyInjection/#MvcServiceScopedBuilder)
+  * [MvcbuildScopedServiceer](./DependencyInjection/#MvcbuildScopedServiceer)
 
 # Getting started
 

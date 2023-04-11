@@ -50,12 +50,12 @@ T getService<T extends Object>();
 
 每一个MvcController都会在创建时**使用它父级MvcController范围**生成一个服务范围，如果没有父级则使用```MvcOwner```。在Controller所在的服务范围中，默认注册了```MvcController```、```MvcContext```、```MvcView```三个类型的单例服务，其中```MvcController```为Controller本身，```MvcContext```为Controller所在的Element，```MvcView```使用Controller创建。
 
-## MvcServiceScopedBuilder
+## MvcbuildScopedServiceer
 
 ```dart
-abstract class MvcServiceScopedBuilder {
-  void serviceScopedBuild(ServiceCollection collection);
+abstract class MvcbuildScopedServiceer {
+  void buildScopedService(ServiceCollection collection);
 }
 ```
 
-在Controller中实现```MvcServiceScopedBuilder```接口可以通过```serviceScopedBuild```方法在生成该Controller的服务范围时，向该范围注入额外的服务，由于创建服务范围时是基于父级创建的，所以这些额外的服务子级可以获取。
+在Controller中实现```MvcbuildScopedServiceer```接口可以通过```buildScopedService```方法在生成该Controller的服务范围时，向该范围注入额外的服务，由于创建服务范围时是基于父级创建的，所以这些额外的服务子级可以获取。

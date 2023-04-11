@@ -1,34 +1,37 @@
 part of './flutter_mvc.dart';
 
-class MvcControllerPartManager extends ServiceCollection with DependencyInjectionService implements MvcControllerPartCollection {
+class _MvcControllerPartCollection extends ServiceCollection implements MvcControllerPartCollection {
+  _MvcControllerPartCollection(this.manager);
+  final MvcControllerPartManager manager;
+  @override
+  void addPart<TPartType extends MvcControllerPart<MvcController>>(TPartType Function() partCreate) {
+    manager._partTypes.add(TPartType);
+    addSingleton<TPartType>((serviceProvider) => partCreate());
+  }
+}
+
+class MvcControllerPartManager extends ServiceCollection with DependencyInjectionService {
   late final List<Type> _partTypes = [];
+  late final ServiceProvider _partProvider;
   void init() {
     for (var element in _partTypes) {
-      (getServiceByType(element) as MvcControllerPart).init();
+      (_partProvider.getByType(element) as MvcControllerPart).init();
     }
   }
 
-  TPartType? getPart<TPartType extends MvcControllerPart>() => tryGetService<TPartType>();
-  dynamic getPartByType(Type partType) => tryGetServiceByType(partType);
-
-  @override
-  void addPart<TPartType extends MvcControllerPart>(TPartType part) {
-    _partTypes.add(TPartType);
-    addSingleton<TPartType>((serviceProvider) => part, initializeWhenServiceProviderBuilt: true);
-  }
+  TPartType? getPart<TPartType extends MvcControllerPart>() => _partProvider.tryGet<TPartType>();
+  dynamic getPartByType(Type partType) => _partProvider.tryGetByType(partType);
 
   @override
   FutureOr dependencyInjectionServiceInitialize() {
-    waitServicesInitialize();
     var privoider = buildScopeService(
       builder: (collection) {
-        collection.addSingleton<ServiceCollection>((serviceProvider) => this);
+        collection.addSingleton<ServiceCollection>((serviceProvider) => _MvcControllerPartCollection(this));
       },
     );
-    privoider.buildScope(
+    _partProvider = privoider.buildScope(
       builder: (collection) {
-        assert(collection == this);
-        getService<MvcController>().buildPart(this);
+        getService<MvcController>().buildPart(privoider.get<ServiceCollection>() as MvcControllerPartCollection);
       },
     );
   }

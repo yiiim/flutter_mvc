@@ -46,10 +46,14 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
 
   @override
   Widget build() {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (timeStamp) {
+        var stateValues = _sessionState.doneSession();
+        _updateDependentStates(stateValues);
+      },
+    );
     _sessionState.startSession();
     var buildWidget = (widget as MvcStateScope<TControllerType>).builder(_sessionState);
-    var stateValues = _sessionState.doneSession();
-    _updateDependentStates(stateValues);
     return buildWidget;
   }
 

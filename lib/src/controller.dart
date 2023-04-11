@@ -20,7 +20,11 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
-  void init() {}
+  @mustCallSuper
+  void init() {
+    getService<MvcControllerPartManager>().init();
+  }
+
   void activate() {}
   void _activateForElement(MvcElement element) {
     if (element == _element) {
@@ -72,7 +76,10 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   /// 返回视图
   MvcView view(TModelType model);
 
+  /// build part
   void buildPart(MvcControllerPartCollection collection) {}
+
+  /// build当前Controler的服务
   void buildScopedService(ServiceCollection collection) {}
 }
 

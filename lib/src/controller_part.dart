@@ -1,11 +1,11 @@
 part of './flutter_mvc.dart';
 
-abstract class MvcControllerPart<TControllerType extends MvcController> with MvcControllerStateMixin {
-  TControllerType? _controller;
-  TControllerType get controller {
-    assert(_controller != null, "");
-    return _controller!;
-  }
+abstract class MvcControllerPartCollection {
+  void addPart<TPartType extends MvcControllerPart>(TPartType part);
+}
+
+abstract class MvcControllerPart<TControllerType extends MvcController> with MvcControllerStateMixin, DependencyInjectionService {
+  TControllerType get controller => getService<MvcController>() as TControllerType;
 
   @override
   late final MvcControllerState _state = MvcControllerState(controller, controllerPart: this);
@@ -17,5 +17,4 @@ abstract class MvcControllerPart<TControllerType extends MvcController> with Mvc
   }
 
   void init() {}
-  void dispose() {}
 }

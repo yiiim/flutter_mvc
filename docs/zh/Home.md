@@ -1,10 +1,39 @@
-# Flutter Mvc
 
-语言: [English](https://github.com/yiiim/flutter_mvc) | 中文
+# 文档目录
 
-Flutter Mvc 是一个包含了逻辑分离、状态管理、依赖注入的Flutter框架。 完整文档请[阅读此处](https://github.com/yiiim/flutter_mvc/wiki)
+* [Getting started](./#Getting-started)
+  * [开始使用](./#开始使用)
+  * [状态管理](./#状态管理)
+  * [样例](./#样例)
+* [Mvc](./Mvc/#Mvc)
+  * [Model](./Mvc/#Model)
+  * [View](./Mvc/#View)
+  * [Controller](./Mvc/#Controller)
+    * [创建Controller](./Mvc/#创建Controller)
+    * [创建无View的Controller](./Mvc/#创建无View的Controller)
+    * [Controller生命周期](./Mvc/#Controller生命周期)
+    * [获取其他Controller](./Mvc/#获取其他Controller)
+    * [MvcControllerPart](./Mvc/#MvcControllerPart)
+* [状态管理](./Status/#状态管理)
+  * [更新Widget](./Status/#更新Widget)
+  * [初始化状态](./Status/#初始化状态)
+  * [获取状态](./Status/#获取状态)
+  * [更新状态](./Status/#更新状态)
+  * [删除状态](./Status/#删除状态)
+  * [StatePart](./Status/#StatePart)
+  * [Model状态](./Status/#Model状态)
+  * [状态总结](./Status/#状态总结)
+* [依赖注入](./DependencyInjection/#依赖注入)
+  * [注入依赖](./DependencyInjection/#注入依赖)
+  * [获取依赖](./DependencyInjection/#获取依赖)
+  * [服务范围](./DependencyInjection/#服务范围)
+  * [MvcServiceScopedBuilder](./DependencyInjection/#MvcServiceScopedBuilder)
 
-## 快速开始
+# Getting started
+
+Flutter Mvc 是为了解决UI与逻辑分离的一个状态管理框架.
+
+## 开始使用
 
 分别创建```Model，MvcView<TModelType,TControllerType>，MvcController<TModelType>```
 
@@ -51,8 +80,6 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-## Mvc
-
 ## 状态管理
 
 首先在Controller的init方法中初始化状态
@@ -85,43 +112,9 @@ Widget buildView(context) {
 updateState<int>(updater: ((state) => state.value++));
 ```
 
-在更新状态时如果```MvcStateScope```曾获取过该状态，则```MvcStateScope```将会重建。如果在```MvcStateScope```的```builder```中使用了多个状态，则任意状态发生更新这个```MvcStateScope```都会重建。
+在更新状态时如果```MvcStateScope```曾获取过该状态，则```MvcStateScope```将会重建。如果在```MvcStateScope```区域中使用的多个状态，则任意状态发生更新这个```MvcStateScope```都会重建。
 
-## 依赖注入
-
-使用```MvcDependencyProvider```向子级注入依赖
-
-```dart
-MvcDependencyProvider(
-  provider: (collection) {
-    collection.addSingleton<Object>((serviceProvider) => Object());
-    collection.addScopedSingleton<Object>((serviceProvider) => Object());
-    collection.add<Object>((serviceProvider) => Object());
-  },
-  child: ...,
-);
-```
-
-```addSingleton```，表示注入单例，所有子级获取该类型的依赖时，都为同一个实例
-
-```addScopedSingleton```，表示注入范围单例，在Mvc中，每个Mvc都有自己的范围服务，这种类型的依赖，在不同的Controller实例中获取的都是不同实例，是在同一个Controller实例中获取的是同一个实例
-
-```add```，注入普通服务，每次获取均为重新创建实例
-
-还可以注入```MvcController```，注入```MvcController```后在使用```Mvc```时可以不用传递```create```参数，```Mvc```会从依赖注入中创建Controller。
-
-```dart
-MvcDependencyProvider(
-  provider: (collection) {
-    collection.addController<IndexPageController>((provider) => IndexPageController());
-  },
-  child: Mvc<IndexPageController,IndexPageModel>(model: IndexPageModel()),
-);
-```
-
-有关详细依赖注入的文档请阅读此处：[依赖注入](https://github.com/yiiim/flutter_mvc/blob/master/docs/zh/DependencyInjection.md)
-
-## 完整样例
+## 样例
 
 ```dart
 import 'package:flutter/material.dart';

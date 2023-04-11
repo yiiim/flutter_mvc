@@ -35,6 +35,12 @@ class TestModellessController extends MvcController {
       },
     );
   }
+
+  @override
+  void buildPart(MvcControllerPartCollection collection) {
+    super.buildPart(collection);
+    collection.addPart(TestModellessControllerPart());
+  }
 }
 
 class TestModellessControllerPart extends MvcControllerPart<TestModellessController> {}
@@ -119,11 +125,11 @@ void main() {
           );
         },
       );
-      var controllerPart = TestModellessControllerPart();
-      controller.registerPart(controllerPart);
+      await tester.pumpWidget(Mvc(create: () => controller));
+
+      var controllerPart = controller.getPart<TestModellessControllerPart>()!;
       controllerPart.initState("1");
 
-      await tester.pumpWidget(Mvc(create: () => controller));
       final titleFinder = find.text("1");
       expect(titleFinder, findsOneWidget);
       controllerPart.updateState<String>(updater: (state) => state.value = "2");

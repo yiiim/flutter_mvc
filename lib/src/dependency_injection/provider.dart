@@ -1,9 +1,8 @@
 part of '../flutter_mvc.dart';
 
-class _MvcDependencyProviderController extends MvcProxyController implements MvcServiceScopedBuilder {
+class _MvcDependencyProviderController extends MvcProxyController {
   _MvcDependencyProviderController(this.provider);
   final void Function(MvcServiceCollection collection)? provider;
-  @override
   void serviceScopedBuild(ServiceCollection collection) {
     provider?.call(collection as MvcServiceCollection);
   }

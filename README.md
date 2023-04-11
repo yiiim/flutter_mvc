@@ -1,6 +1,6 @@
 # Flutter Mvc
 
-语言: English | [中文](https://github.com/yiiim/flutter_mvc/blob/main/README-zh.md)
+语言: English | [中文](https://github.com/yiiim/flutter_mvc/blob/master/README-zh.md)
 
 Flutter Mvc is a Flutter framework that includes logic separation, state management, and dependency injection. For full documentation, please [read here](https://github.com/yiiim/flutter_mvc/wiki).
 

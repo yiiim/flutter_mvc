@@ -1,12 +1,12 @@
 # Flutter Mvc
 
-语言: English | [中文](https://github.com/yiiim/flutter_mvc/blob/main/README-zh.md)
+语言: [English](https://github.com/yiiim/flutter_mvc) | 中文
 
-Flutter Mvc is a Flutter framework that includes logic separation, state management, and dependency injection. For full documentation, please [read here](https://github.com/yiiim/flutter_mvc/wiki).
+Flutter Mvc 是一个包含了逻辑分离、状态管理、依赖注入的Flutter框架。 完整文档请[阅读此处](https://github.com/yiiim/flutter_mvc/wiki)
 
 ## Getting started
 
-Create `Model`, `MvcView<TModelType, TControllerType>`, and `MvcController<TModelType>` separately.
+分别创建```Model，MvcView<TModelType,TControllerType>，MvcController<TModelType>```
 
 ```dart
 /// Model
@@ -30,7 +30,7 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
 }
 ```
 
-Then use `Mvc`.
+然后使用```Mvc```
 
 ```dart
 class MyApp extends StatelessWidget {
@@ -51,9 +51,9 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-## State management
+## 状态管理
 
-First initialize the state in the Controller's `init` method.
+首先在Controller的init方法中初始化状态
 
 ```dart
 class IndexPageController extends MvcController<IndexPageModel> {
@@ -65,7 +65,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
 }
 ```
 
-Use the state in the View.
+在View中使用状态
 
 ```dart
 Widget buildView(context) {
@@ -77,15 +77,15 @@ Widget buildView(context) {
 }
 ```
 
-Update the state in the Controller.
+在Controller中更新状态
 
 ```dart
-updateState<int>(updater: ((state) => state?.value++));
+updateState<int>(updater: ((state) => state.value++));
 ```
 
-When updating the state, if `MvcStateScope` has ever accessed the state, `MvcStateScope` will be rebuilt. If multiple states are used in the `builder` of `MvcStateScope`, this `MvcStateScope` will be rebuilt whenever any state is updated.
+在更新状态时如果```MvcStateScope```曾获取过该状态，则```MvcStateScope```将会重建。如果在```MvcStateScope```的```builder```中使用了多个状态，则任意状态发生更新这个```MvcStateScope```都会重建。
 
-## Dependency injection
+## 依赖注入
 
 ```dart
 MvcDependencyProvider(
@@ -99,25 +99,25 @@ MvcDependencyProvider(
 );
 ```
 
-`addController` adds an `MvcController`. Controllers added in this way can be created without providing a `create` parameter when using `Mvc`. `Mvc` will create the controller from the injected dependencies.
+```addController``` 添加```MvcController```，通过该方式添加过的Controller，在使用```Mvc```时可以不用提供```create```参数创建Controller，```Mvc```会从注入的依赖中创建Controller。
 
-`addSingleton` adds a singleton object, which always returns the same instance when retrieved.
+```addSingleton```添加单例，每次获取都为同一个实例
 
-`addScopedSingleton` adds a scoped singleton object, which returns the same instance within the same scope. Each `MvcController` is a scope.
+```addScopedSingleton```添加范围单例，在同一个范围内获取的是都一个实例，每个```MvcController```都是一个范围。
 
-`add` creates a new instance every time it is retrieved.
+```add```每次获取都重新创建实例
 
-`MvcDependencyProvider` provides dependencies for child widgets and can override dependencies provided by parent widgets.
+```MvcDependencyProvider```对子级提供依赖，并且可以覆盖父级提供的依赖。
 
-Get dependencies:
+获取依赖：
 
-Use the `getService` method in `MvcController`:
+在```MvcController```中使用```getService```方法：
 
 ```dart
 getService<TestObject>();
 ```
 
-## Full example
+## 完整样例
 
 ```dart
 import 'package:flutter/material.dart';
@@ -176,4 +176,27 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
       floatingActionButton: FloatingActionButton(
         onPressed: ctx.controller.incrementCounter,
         tooltip: 'Increment',
-        child: const Icon(Icons.add
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+/// Controller
+class IndexPageController extends MvcController<IndexPageModel> {
+  @override
+  void init() {
+    super.init();
+    initState<int>(0); // 初始化状态
+  }
+
+  void incrementCounter() {
+    updateState<int>(updater: ((state) => state?.value++)); // 更新状态
+  }
+
+  @override
+  MvcView view(model) {
+    return IndexPage();
+  }
+}
+```

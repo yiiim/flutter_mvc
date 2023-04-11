@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 import 'common/navigator/controller.dart';
+import 'src/test_object.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,7 +20,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MvcDependencyProvider(
       provider: (collection) {
-        collection.addController<IndexPageController>((provider) => IndexPageController());
+        collection.addController<IndexPageController>((serviceProvider) => IndexPageController());
+        collection.addSingleton((serviceProvider) => TestObject());
+        collection.addScopedSingleton((serviceProvider) => TestObject());
+        collection.add((serviceProvider) => TestObject());
       },
       child: MaterialApp(
         theme: ThemeData(
@@ -27,7 +31,9 @@ class MyApp extends StatelessWidget {
         ),
         home: MvcProxy(
           proxyCreate: () => NavigatorController(),
-          child: Mvc<IndexPageController, IndexPageModel>(model: IndexPageModel(title: "Flutter Demo")),
+          child: Mvc<IndexPageController, IndexPageModel>(
+            model: IndexPageModel(title: "Flutter Demo"),
+          ),
         ),
         builder: (context, child) {
           return Mvc(

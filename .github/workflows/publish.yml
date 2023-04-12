@@ -11,7 +11,8 @@ on:
     # - '[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: ''
     # If your repository contains multiple packages consider a pattern like:
     # - 'my_package_name-v[0-9]+.[0-9]+.[0-9]+*'
-
+    branches:
+      - master
 # Publish using the reusable workflow from dart-lang.
 jobs:
   publish:
@@ -23,11 +24,18 @@ jobs:
     steps:
       # Checkout repository
       - uses: actions/checkout@v3
-      # Setup Dart SDK with JWT token
-      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
+      - name: Install Flutter
+        - run: |
+            echo "Installing Flutter SDK stable"
+            git clone https://github.com/flutter/flutter.git --depth 1 --branch stable "$HOME/.flutter"
+            echo "$HOME/.flutter/bin" >> $GITHUB_PATH
+            echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+          shell: bash
+        - run: flutter precache
+          shell: bash
       # Minimal package setup and dry run checks.
       - name: Install dependencies
-        run: dart pub get
+        run: flutter pub get
         working-directory: ${{ inputs.working-directory }}
       - name: format dart code
         run: dart format .

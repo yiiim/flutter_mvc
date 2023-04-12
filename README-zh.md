@@ -4,8 +4,6 @@
 
 Flutter Mvc 是一个包含了UI与逻辑分离、状态管理、依赖注入的Flutter框架。
 
-## 目录
-
 - [快速开始](#快速开始)
 - [Mvc](#mvc)
   - [Model](#model)

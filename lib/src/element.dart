@@ -13,10 +13,9 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcView>((serviceProvider) => controller.view(serviceProvider.get<MvcContext>().model));
+        collection.addSingleton<MvcControllerPartManager>((serviceProvider) => MvcControllerPartManager());
         if (TControllerType != MvcController) collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
-        if (controller is MvcServiceScopedBuilder) {
-          (controller as MvcServiceScopedBuilder).serviceScopedBuild(collection);
-        }
+        controller.buildScopedService(collection);
       },
       scope: controller,
     );
@@ -106,7 +105,6 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         const EasyTreeNodeKey<Type>(MvcController),
         EasyTreeNodeKey<MvcController>(_controller),
         if (TControllerType != MvcController && TControllerType != _controller.runtimeType) EasyTreeNodeKey<Type>(TControllerType),
-        if (controller is MvcServiceScopedBuilder) const EasyTreeNodeKey<Type>(MvcServiceScopedBuilder),
       ];
 
   @override

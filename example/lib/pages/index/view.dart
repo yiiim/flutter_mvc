@@ -24,7 +24,11 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
             ),
             MvcStateScope<IndexPageController>(
               (MvcWidgetStateProvider state) {
-                return Text("${state.get<int>()}");
+                return Builder(
+                  builder: (context) {
+                    return Text("${state.get<int>()}");
+                  },
+                );
               },
             ),
             CupertinoButton(onPressed: ctx.controller.tapPush, child: const Text("start demo")),

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:dart_dependency_injection/src/dart_dependency_injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
@@ -45,11 +43,11 @@ class TestPorxyController extends MvcProxyController {
   String text = "test";
 }
 
-class TestScopedBuilderPorxyController extends MvcProxyController implements MvcServiceScopedBuilder {
-  void Function(ServiceCollection collection)? onServiceScopedBuildBlock;
+class TestScopedBuilderPorxyController extends MvcProxyController {
+  void Function(ServiceCollection collection)? onbuildScopedServiceBlock;
   @override
-  void serviceScopedBuild(ServiceCollection collection) {
-    onServiceScopedBuildBlock?.call(collection);
+  void buildScopedService(ServiceCollection collection) {
+    onbuildScopedServiceBlock?.call(collection);
   }
 }
 
@@ -114,12 +112,12 @@ void main() {
   );
 
   testWidgets(
-    "test MvcServiceScopedBuilder",
+    "test MvcbuildScopedServiceer",
     (tester) async {
       var controller = TestPorxyController();
       var controller1 = TestPorxyController();
       var copedBuilderController = TestScopedBuilderPorxyController();
-      copedBuilderController.onServiceScopedBuildBlock = (collection) {
+      copedBuilderController.onbuildScopedServiceBlock = (collection) {
         collection.addSingleton<String>((serviceProvider) => "test_scoped");
         collection.addSingleton<TestSingletonObject>((serviceProvider) => TestSingletonObject());
         collection.add<TestObject>((serviceProvider) => TestObject());

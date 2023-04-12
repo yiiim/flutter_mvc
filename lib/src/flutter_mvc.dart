@@ -11,9 +11,9 @@ import 'package:flutter/scheduler.dart';
 
 part 'controller.dart';
 part 'controller_part.dart';
+part 'controller_part_manager.dart';
 part 'controller_state.dart';
 part 'controller_state_mixin.dart';
-part 'controller_part_mixin.dart';
 part 'controller_context_mixin.dart';
 part 'controller_state_extension.dart';
 part 'element.dart';
@@ -26,6 +26,5 @@ part 'ticker_provider.dart';
 part 'mvc.dart';
 part 'provider.dart';
 
-part './dependency_injection/scoped.dart';
 part './dependency_injection/provider.dart';
 part './dependency_injection/collection.dart';

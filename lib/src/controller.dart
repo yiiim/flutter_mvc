@@ -1,12 +1,12 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, MvcControllerPartMixin, DependencyInjectionService implements MvcHasPartStateProvider {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, DependencyInjectionService implements MvcHasPartStateProvider {
   MvcElement? _element;
 
   @override
   MvcContext get context {
-    assert(_element != null, "请在Controller init后使用context");
+    assert(_element != null, "Controller has not been initialized");
     return _element!;
   }
 
@@ -20,7 +20,11 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
-  void init() {}
+  @mustCallSuper
+  void init() {
+    getService<MvcControllerPartManager>().init();
+  }
+
   void activate() {}
   void _activateForElement(MvcElement element) {
     if (element == _element) {
@@ -30,6 +34,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
 
   void deactivate() {}
   void _deactivateForElement(MvcElement element) {
+    assert(element._controller == this);
     if (element == _element) {
       deactivate();
     }
@@ -55,41 +60,27 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   void dispose() {
     super.dispose();
     _state.dispose();
-    for (var element in _typePartsMap.values) {
-      element.dispose();
-    }
-  }
-
-  late final Map<Type, MvcControllerPart> _typePartsMap = {};
-  late final Map<MvcControllerPart, Type> _partsTypeMap = {};
-
-  /// 注册[MvcControllerPart]，需要指定[TPartType]的类型
-  void registerPart<TPartType extends MvcControllerPart>(TPartType part) {
-    assert(TPartType != MvcControllerPart, "必须指定Part的类型");
-    assert(_typePartsMap[TPartType] == null, "不能注册相同类型的多个Part");
-    assert(_partsTypeMap[part] == null, "同一Part实例不能注册多次");
-    _typePartsMap[TPartType] = part;
-    _partsTypeMap[part] = TPartType;
-    part._controller = this;
-    part.init();
-  }
-
-  /// 获取指定类型的[MvcControllerPart]，指定的类型必须和[registerPart]方法注册时的类型一致
-  TPartType? getPart<TPartType extends MvcControllerPart>() {
-    return (_typePartsMap[TPartType] as TPartType?);
   }
 
   @override
   T? getStatePart<T extends MvcStateProvider>() {
-    if (_typePartsMap[T] != null) return _typePartsMap[T] as T;
-    return parent()?.getStatePart<T>();
+    return getService<MvcControllerPartManager>().getPartByType(T) ?? parent()?.getStatePart<T>();
   }
+
+  /// 获取[MvcControllerPart]
+  T? getPart<T extends MvcControllerPart>() => getService<MvcControllerPartManager>().getPart<T>();
 
   /// 更新，将会触发View重建
   void update() => notifyListeners();
 
   /// 返回视图
   MvcView view(TModelType model);
+
+  /// build part
+  void buildPart(MvcControllerPartCollection collection) {}
+
+  /// build当前Controler的服务
+  void buildScopedService(ServiceCollection collection) {}
 }
 
 /// 代理Controller，Model为一个Widget，在View中将只会返回Model

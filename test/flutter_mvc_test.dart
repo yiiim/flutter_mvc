@@ -35,11 +35,24 @@ class TestModellessController extends MvcController {
       },
     );
   }
+
+  @override
+  void buildPart(MvcControllerPartCollection collection) {
+    super.buildPart(collection);
+    collection.addPart(() => TestModellessControllerPart());
+  }
 }
 
 class TestModellessControllerPart extends MvcControllerPart<TestModellessController> {}
 
-class TestPorxyController extends MvcProxyController {}
+class TestPorxyController extends MvcProxyController {
+  void Function()? didDispose;
+  @override
+  void dispose() {
+    super.dispose();
+    didDispose?.call();
+  }
+}
 
 void main() {
   testWidgets(
@@ -61,7 +74,11 @@ void main() {
         viewBuilder: (context) {
           return MvcStateScope(
             (state) {
-              return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
+              return Builder(
+                builder: (context) {
+                  return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
+                },
+              );
             },
           );
         },
@@ -119,13 +136,19 @@ void main() {
           );
         },
       );
-      var controllerPart = TestModellessControllerPart();
-      controller.registerPart(controllerPart);
-      controllerPart.initState("1");
-
       await tester.pumpWidget(Mvc(create: () => controller));
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
+      var controllerPart = controller.getPart<TestModellessControllerPart>()!;
+      expect(controllerPart.controller == controller, isTrue);
+
+      final partNoneStateFinder = find.text("0");
+      expect(partNoneStateFinder, findsOneWidget);
+
+      controllerPart.initState("1");
+      controller.update();
+      await tester.pumpWidget(Mvc(create: () => controller));
+
+      final partInitStateFinder = find.text("1");
+      expect(partInitStateFinder, findsOneWidget);
       controllerPart.updateState<String>(updater: (state) => state.value = "2");
       await tester.pumpWidget(Mvc(create: () => controller));
       final titleUpdatedFinder = find.text("2");
@@ -293,6 +316,21 @@ void main() {
       expect(controller1.nextSibling<TestController>() == controller2, isTrue);
       expect(controller2.previousSibling<TestController>() == controller1, isTrue);
       expect(parent.child<TestController>() == controller1 || parent.child<TestController>() == controller2, isTrue);
+    },
+  );
+
+  testWidgets(
+    "test dispose",
+    (tester) async {
+      bool isDispose = false;
+      TestPorxyController controller = TestPorxyController();
+      controller.didDispose = () {
+        isDispose = true;
+      };
+      await tester.pumpWidget(MvcProxy(proxyCreate: () => controller, child: const Placeholder()));
+      expect(isDispose, isFalse);
+      await tester.pumpWidget(const Placeholder());
+      expect(isDispose, isTrue);
     },
   );
 }

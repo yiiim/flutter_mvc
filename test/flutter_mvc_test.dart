@@ -45,7 +45,14 @@ class TestModellessController extends MvcController {
 
 class TestModellessControllerPart extends MvcControllerPart<TestModellessController> {}
 
-class TestPorxyController extends MvcProxyController {}
+class TestPorxyController extends MvcProxyController {
+  void Function()? didDispose;
+  @override
+  void dispose() {
+    super.dispose();
+    didDispose?.call();
+  }
+}
 
 void main() {
   testWidgets(
@@ -309,6 +316,21 @@ void main() {
       expect(controller1.nextSibling<TestController>() == controller2, isTrue);
       expect(controller2.previousSibling<TestController>() == controller1, isTrue);
       expect(parent.child<TestController>() == controller1 || parent.child<TestController>() == controller2, isTrue);
+    },
+  );
+
+  testWidgets(
+    "test dispose",
+    (tester) async {
+      bool isDispose = false;
+      TestPorxyController controller = TestPorxyController();
+      controller.didDispose = () {
+        isDispose = true;
+      };
+      await tester.pumpWidget(MvcProxy(proxyCreate: () => controller, child: const Placeholder()));
+      expect(isDispose, isFalse);
+      await tester.pumpWidget(const Placeholder());
+      expect(isDispose, isTrue);
     },
   );
 }

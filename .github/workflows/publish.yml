@@ -11,8 +11,6 @@ on:
     # - '[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: ''
     # If your repository contains multiple packages consider a pattern like:
     # - 'my_package_name-v[0-9]+.[0-9]+.[0-9]+*'
-    branches:
-      - master
 # Publish using the reusable workflow from dart-lang.
 jobs:
   publish:

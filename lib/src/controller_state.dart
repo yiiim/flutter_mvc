@@ -74,7 +74,9 @@ class MvcControllerState {
       }
     }
     if (!onlySelf) {
-      if (originPart != null && originPart == controllerPart) return originPart.controller._state._getControllerStateValue(key, originController: originController, originPart: originPart);
+      if (originPart != null && originPart == controllerPart) {
+        return originPart.controller._state._getControllerStateValue(key, originController: originController, originPart: originPart);
+      }
       return controller.parent()?._state._getControllerStateValue<T>(key, originController: originController, originPart: originPart);
     }
     return null;

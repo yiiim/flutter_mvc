@@ -24,6 +24,7 @@ jobs:
     steps:
       # Checkout repository
       - uses: actions/checkout@v3
+      # Setup Flutter SDK
       - name: Install Flutter
         - run: |
             echo "Installing Flutter SDK stable"

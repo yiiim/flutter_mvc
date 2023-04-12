@@ -60,10 +60,18 @@ class MvcControllerState {
   _MvcControllerStateValue<T>? _getControllerStateValue<T>(_MvcControllerStateKey key, {bool onlySelf = false, required MvcController originController, MvcControllerPart? originPart}) {
     var stateValue = _internalState[key] as _MvcControllerStateValue<T>?;
     if (stateValue != null) {
-      if (stateValue.accessibility == MvcStateAccessibility.global) return stateValue;
-      if (stateValue.accessibility == MvcStateAccessibility.public) return stateValue;
-      if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) return stateValue;
-      if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) return stateValue;
+      if (stateValue.accessibility == MvcStateAccessibility.global) {
+        return stateValue;
+      }
+      if (stateValue.accessibility == MvcStateAccessibility.public) {
+        return stateValue;
+      }
+      if (stateValue.accessibility == MvcStateAccessibility.private && originController == controller) {
+        return stateValue;
+      }
+      if (stateValue.accessibility == MvcStateAccessibility.internal && originController == controller && ((originPart == null && controllerPart == null) || originPart == controllerPart)) {
+        return stateValue;
+      }
     }
     if (!onlySelf) {
       if (originPart != null && originPart == controllerPart) return originPart.controller._state._getControllerStateValue(key, originController: originController, originPart: originPart);

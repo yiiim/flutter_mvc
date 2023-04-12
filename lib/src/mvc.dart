@@ -27,7 +27,10 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
     } else {
       EasyTreeNode? element = EasyTreeElement.getEasyTreeElementFromContext(context, easyTreeOwner: this);
       while (element != null && element is MvcElement) {
-        if (element._controller is T && (where?.call(element._controller as T) ?? true)) yield element._controller as T;
+        if (element._controller is T && (where?.call(element._controller as T) ?? true)) {
+          yield element._controller as T;
+        }
+
         element = element.easyTreeGetParent(EasyTreeNodeKey<Type>(T));
       }
     }

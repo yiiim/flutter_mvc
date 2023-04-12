@@ -14,7 +14,9 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcView>((serviceProvider) => controller.view(serviceProvider.get<MvcContext>().model));
         collection.addSingleton<MvcControllerPartManager>((serviceProvider) => MvcControllerPartManager());
-        if (TControllerType != MvcController) collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
+        if (TControllerType != MvcController) {
+          collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
+        }
         controller.buildScopedService(collection);
       },
       scope: controller,
@@ -65,31 +67,41 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   T? parent<T extends MvcController>() => (easyTreeGetParent(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   @override
   T? child<T extends MvcController>({bool sort = false}) {
-    if (sort) return (easyTreeGetSortedChild(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    if (sort) {
+      return (easyTreeGetSortedChild(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    }
     return (easyTreeGetChild(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   }
 
   @override
   T? find<T extends MvcController>({bool sort = false}) {
-    if (sort) return (easyTreeGetSortedChildInAll(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    if (sort) {
+      return (easyTreeGetSortedChildInAll(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    }
     return (easyTreeGetChildInAll(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   }
 
   @override
   T? previousSibling<T extends MvcController>({bool sort = false}) {
-    if (sort) return (easyTreeGetSortedPreviousSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    if (sort) {
+      return (easyTreeGetSortedPreviousSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    }
     return (easyTreeGetPreviousSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   }
 
   @override
   T? nextSibling<T extends MvcController>({bool sort = false}) {
-    if (sort) return (easyTreeGetSortedNextSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    if (sort) {
+      return (easyTreeGetSortedNextSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    }
     return (easyTreeGetNextSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   }
 
   @override
   T? sibling<T extends MvcController>({bool sort = false, bool includeSelf = false}) {
-    if (sort) return (easyTreeGetSortedSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    if (sort) {
+      return (easyTreeGetSortedSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
+    }
     return (easyTreeGetSibling(EasyTreeNodeKey<Type>(T)) as MvcElement?)?._controller as T?;
   }
 

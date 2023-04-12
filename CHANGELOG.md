@@ -21,3 +21,7 @@
 ## 1.0.1+4
 
 * publish with github action
+
+## 1.0.1+5
+
+* optimization

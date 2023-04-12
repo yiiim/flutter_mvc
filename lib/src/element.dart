@@ -7,7 +7,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   late final TControllerType _controller = () {
     var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
     var controller = create?.call() ?? scopedBuilder.getService<MvcControllerProvider<TControllerType>>().create();
-    var provider = scopedBuilder.buildScopeService(
+    var provider = scopedBuilder.buildScopedServiceProvider(
       builder: (collection) {
         assert(collection is MvcServiceCollection);
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);

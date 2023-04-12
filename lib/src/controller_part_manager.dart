@@ -10,7 +10,7 @@ class _MvcControllerPartCollection extends ServiceCollection implements MvcContr
   }
 }
 
-class MvcControllerPartManager extends ServiceCollection with DependencyInjectionService {
+class MvcControllerPartManager with DependencyInjectionService {
   late final List<Type> _partTypes = [];
   late final ServiceProvider _partProvider;
   void init() {
@@ -24,12 +24,12 @@ class MvcControllerPartManager extends ServiceCollection with DependencyInjectio
 
   @override
   FutureOr dependencyInjectionServiceInitialize() {
-    var privoider = buildScopeService(
+    var privoider = buildScopedServiceProvider(
       builder: (collection) {
         collection.addSingleton<ServiceCollection>((serviceProvider) => _MvcControllerPartCollection(this));
       },
     );
-    _partProvider = privoider.buildScope(
+    _partProvider = privoider.buildScoped(
       builder: (collection) {
         getService<MvcController>().buildPart(privoider.get<ServiceCollection>() as MvcControllerPartCollection);
       },

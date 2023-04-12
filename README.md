@@ -4,6 +4,34 @@ Language: English | [中文](https://github.com/yiiim/flutter_mvc/blob/master/RE
 
 Flutter Mvc is a Flutter framework that includes UI and logic separation, state management, and dependency injection. 
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Mvc](#mvc)
+  - [Model](#model)
+  - [View](#view)
+  - [Controller](#controller)
+    - [Creating a Controller](#creating-a-controller)
+    - [Getting Other Controllers](#getting-other-controllers)
+    - [Getting Controllers from Anywhere](#getting-controllers-from-anywhere)
+    - [MvcControllerPart](#mvccontrollerpart)
+- [State Management](#state-management)
+  - [Example](#example)
+  - [MvcStateScope](#mvcstatescope)
+  - [MvcStateProvider](#mvcstateprovider)
+  - [MvcStateValue](#mvcstatevalue)
+  - [Initialize State](#initialize-state)
+  - [Obtain State](#obtain-state)
+  - [Updating State](#updating-state)
+  - [Deleting State](#deleting-state)
+  - [StatePart](#statepart)
+  - [Model State](#model-state)
+- [Dependency Injection](#dependency-injection)
+  - [MvcDependencyProvider](#mvcdependencyprovider)
+  - [Retrieving Dependencies](#retrieving-dependencies)
+  - [Service Scopes](#service-scopes)
+  - [buildScopedService](#buildscopedservice)
+
 ## Quick Start
 
 ```dart
@@ -556,7 +584,7 @@ The generic type must match the type used when injecting the service.
 
 Each MvcController generates a service scope **using the parent MvcController scope** when it is created. If there is no parent, ```MvcOwner``` is used. By default, the types of singleton services ```MvcController```, ```MvcContext```, and ```MvcView``` are registered in the service scope where the Controller resides. ```MvcController``` represents the Controller itself, ```MvcContext``` represents the Element where the Controller resides, and ```MvcView``` is created by the Controller. The service scope is released when the Controller is destroyed.
 
-## buildScopedService
+### buildScopedService
 
 ```dart
 @override

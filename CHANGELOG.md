@@ -17,3 +17,7 @@
 ## 1.0.1+2
 
 * change dependency
+
+## 1.0.1+3
+
+* publish with github action

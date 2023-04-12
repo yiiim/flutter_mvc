@@ -1,0 +1,41 @@
+# .github/workflows/publish.yml
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+    # must align with the tag-pattern configured on pub.dev, often just replace
+    #  with [0-9]+.[0-9]+.[0-9]+*
+    - 'v[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: 'v'
+    # If you prefer tags like '1.2.3', without the 'v' prefix, then use:
+    # - '[0-9]+.[0-9]+.[0-9]+*' # tag-pattern on pub.dev: ''
+    # If your repository contains multiple packages consider a pattern like:
+    # - 'my_package_name-v[0-9]+.[0-9]+.[0-9]+*'
+
+# Publish using the reusable workflow from dart-lang.
+jobs:
+  publish:
+    name: 'Publish to pub.dev'
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write # This is required for requesting the JWT
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout repository
+      - uses: actions/checkout@v3
+      # Setup Dart SDK with JWT token
+      - uses: dart-lang/setup-dart@d6a63dab3335f427404425de0fbfed4686d93c4f
+      # Minimal package setup and dry run checks.
+      - name: Install dependencies
+        run: dart pub get
+        working-directory: ${{ inputs.working-directory }}
+      - name: format dart code
+        run: dart format .
+        working-directory: ${{ inputs.working-directory }}
+      - name: Publish - dry run
+        run: dart pub publish --dry-run
+        working-directory: ${{ inputs.working-directory }}
+      # Publishing...
+      - name: Publish to pub.dev
+        run: dart pub publish -f
+        working-directory: ${{ inputs.working-directory }}

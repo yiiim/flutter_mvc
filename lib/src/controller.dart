@@ -53,14 +53,14 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcStatePro
     }
   }
 
+  /// 返回视图
+  MvcView view(TModelType model);
+
   /// 获取[MvcControllerPart]
   T? getPart<T extends MvcControllerPart>() => getService<MvcControllerPartManager>().getPart<T>();
 
   /// 更新，将会触发View重建
   void update() => notifyListeners();
-
-  /// 返回视图
-  MvcView view(TModelType model);
 
   /// build part
   void buildPart(MvcControllerPartCollection collection) {}

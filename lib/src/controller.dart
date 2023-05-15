@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, DependencyInjectionService implements MvcHasPartStateProvider {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcStateProviderMixin, MvcControllerContextMixin, DependencyInjectionService {
   MvcElement? _element;
 
   @override
@@ -9,9 +9,6 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     assert(_element != null, "Controller has not been initialized");
     return _element!;
   }
-
-  @override
-  late final MvcControllerState _state = MvcControllerState(this);
 
   /// 获取model
   ///
@@ -56,17 +53,6 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    _state.dispose();
-  }
-
-  @override
-  T? getStatePart<T extends MvcStateProvider>() {
-    return getService<MvcControllerPartManager>().getPartByType(T) ?? parent()?.getStatePart<T>();
-  }
-
   /// 获取[MvcControllerPart]
   T? getPart<T extends MvcControllerPart>() => getService<MvcControllerPartManager>().getPart<T>();
 
@@ -80,7 +66,7 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   void buildPart(MvcControllerPartCollection collection) {}
 
   /// build当前Controler的服务
-  void buildScopedService(ServiceCollection collection) {}
+  void buildScopedService(MvcServiceCollection collection) {}
 }
 
 /// 代理Controller，Model为一个Widget，在View中将只会返回Model

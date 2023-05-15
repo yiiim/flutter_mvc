@@ -48,11 +48,11 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
   Widget build() {
     WidgetsBinding.instance.addPostFrameCallback(
       (timeStamp) {
-        var stateValues = _sessionState.doneSession();
+        var stateValues = _sessionState.done();
         _updateDependentStates(stateValues);
       },
     );
-    _sessionState.startSession();
+    _sessionState.start();
     var buildWidget = (widget as MvcStateScope<TControllerType>).builder(_sessionState);
     return buildWidget;
   }
@@ -94,45 +94,23 @@ class MvcStateScopeElement<TControllerType extends MvcController> extends Compon
 /// 这会记录一次会话中获取过的所有状态
 class MvcStateProviderSession extends MvcWidgetStateProvider {
   MvcStateProviderSession(this.context, this.stateProvider, {this.child});
+  late final Set<MvcStateValue> _states = {};
 
   /// 状态提供者
   final MvcStateProvider stateProvider;
   @override
   final BuildContext context;
 
-  late final List<MvcStateProviderSession> _parts = [];
-  late final Set<MvcStateValue> _sessionStates = {};
-  void startSession() {
-    _parts.clear();
-    _sessionStates.clear();
-  }
+  void start() => _states.clear();
+  Set<MvcStateValue> done() => _states;
 
-  Set<MvcStateValue> doneSession() {
-    return {..._sessionStates, ..._parts.map((e) => e._sessionStates).expand((element) => element)};
-  }
-
-  @override
-  T? get<T>({Object? key}) => getValue<T>(key: key)?.value;
   @override
   MvcStateValue<T>? getValue<T>({Object? key}) {
     var value = stateProvider.getStateValue<T>(key: key);
     if (value != null) {
-      _sessionStates.add(value);
+      _states.add(value);
     }
     return value;
-  }
-
-  @override
-  MvcWidgetStateProvider? part<T extends MvcStateProvider>() {
-    if (stateProvider is MvcHasPartStateProvider) {
-      var part = (stateProvider as MvcHasPartStateProvider).getStatePart<T>();
-      if (part != null) {
-        var partSession = MvcStateProviderSession(context, part, child: child);
-        _parts.add(partSession);
-        return partSession;
-      }
-    }
-    return null;
   }
 
   @override

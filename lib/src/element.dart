@@ -6,18 +6,19 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   final TControllerType Function()? create;
   late final TControllerType _controller = () {
     var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
-    var controller = create?.call() ?? scopedBuilder.getService<MvcControllerProvider<TControllerType>>().create();
-    var provider = scopedBuilder.buildScopedServiceProvider(
+    var controller = create?.call() ?? (scopedBuilder as DependencyInjectionService).getService<MvcControllerProvider<TControllerType>>().create();
+    var provider = (scopedBuilder as DependencyInjectionService).buildScopedServiceProvider(
       builder: (collection) {
         assert(collection is MvcServiceCollection);
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcView>((serviceProvider) => controller.view(serviceProvider.get<MvcContext>().model));
         collection.addSingleton<MvcControllerPartManager>((serviceProvider) => MvcControllerPartManager());
+        collection.addSingleton((serviceProvider) => MvcStateProviderCollection()..addProvider(scopedBuilder));
         if (TControllerType != MvcController) {
           collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
         }
-        controller.buildScopedService(collection);
+        controller.buildScopedService(collection as MvcServiceCollection);
       },
       scope: controller,
     );

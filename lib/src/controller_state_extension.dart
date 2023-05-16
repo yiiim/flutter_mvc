@@ -14,10 +14,8 @@ extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
   ///
   /// [T]要链接状态的类型
   /// [key]要链接的状态的key
-  /// [onlySelf]获取要链接的状态时，是否仅从自身获取，仅从自身获取表示不从父级获取
   /// [linkedToKey]链接之后的key
-  /// [accessibility]链接之后的状态访问级别
-  MvcStateValue<T>? initLinkedState<T>({Object? key, bool onlySelf = false, Object? linkedToKey}) {
+  MvcStateValue<T>? initLinkedState<T>({Object? key, Object? linkedToKey}) {
     return initTransformState<T, T>((e) => e, key: key, transformToKey: linkedToKey);
   }
 
@@ -46,7 +44,6 @@ extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
   /// [transformState]要转换的状态
   /// [initialStateBuilder]初始状态提供方法，如果为空，则初始状态直接调用[transformer]获得，如果[transformer]是异步的，此项不能为空
   /// [transformToKey]转换之后的key
-  /// [accessibility]转换之后的状态访问级别
   MvcStateValue<T> initStateValueTransformState<T, E>(FutureOr<T> Function(E state) transformer, MvcStateValue<E> transformState, {T Function()? initialStateBuilder, Object? transformToKey}) {
     late T initialState;
     if (initialStateBuilder != null) {
@@ -69,7 +66,6 @@ extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
   /// [builder]状态值构建者，每次该状态更新时执行，并将状态值设置为返回值
   /// [dependent]依赖的状态，任何依赖的状态更新，都将触发该状态更新
   /// [key]状态的key
-  /// [accessibility]状态访问级别
   MvcStateValue<T> initDependentBuilderState<T>(
     FutureOr<T> Function() builder, {
     Set<MvcStateValue> dependent = const {},
@@ -97,7 +93,6 @@ extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
   /// [updater]更新器，每次依赖状态更新时都会执行的方法，并且执行完成之后触发状态更新
   /// [dependent]依赖的状态，任何依赖的状态更新，都将触发该状态更新
   /// [key]状态的key
-  /// [accessibility]状态访问级别
   MvcStateValue<T> initDependentState<T>(
     T state, {
     FutureOr Function(MvcStateValue<T> state)? updater,
@@ -119,7 +114,6 @@ extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
   ///
   /// [state]要更新或者初始化的状态
   /// [key]名称
-  /// [onlySelf]是否仅在当前Controller或当前Part获取
   MvcStateValue<T> updateStateInitIfNeed<T>(T state, {Object? key}) {
     var s = getStateValue<T>(key: key);
     s ??= initState<T>(state, key: key);

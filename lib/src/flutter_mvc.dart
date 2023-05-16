@@ -24,6 +24,7 @@ part 'context.dart';
 part 'view.dart';
 part 'ticker_provider.dart';
 part 'mvc.dart';
+part 'stateful_widget.dart';
 part 'provider.dart';
 
 part './dependency_injection/provider.dart';

@@ -40,7 +40,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
     _controller.addListener(markNeedsBuild);
     _controller.updateStateInitIfNeed<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
     if (_controller._element == null) {
-      _controller.initLinkedState<TModelType>(key: this, onlySelf: true);
+      _controller.initLinkedState<TModelType>(key: this);
     }
     _controller._initForElement(this);
   }

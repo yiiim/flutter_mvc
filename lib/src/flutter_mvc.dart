@@ -8,7 +8,6 @@ import 'package:collection/collection.dart';
 
 import 'package:easy_tree/easy_tree.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_mvc/src/state_provider_collection.dart';
 
 part 'controller.dart';
@@ -26,6 +25,8 @@ part 'view.dart';
 part 'ticker_provider.dart';
 part 'mvc.dart';
 part 'widget.dart';
+part 'widget_element.dart';
+part 'widget_manager.dart';
 part 'provider.dart';
 
 part './dependency_injection/provider.dart';

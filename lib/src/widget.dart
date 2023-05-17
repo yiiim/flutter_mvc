@@ -1,46 +1,22 @@
 part of './flutter_mvc.dart';
 
-abstract class MvcStatefulWidget extends StatefulWidget {
+abstract class MvcWidget extends Widget {
+  const MvcWidget({super.key});
+}
+
+abstract class MvcStatefulWidget<TControllerType extends MvcController> extends StatefulWidget implements MvcWidget {
   const MvcStatefulWidget({super.key});
 
   @override
   StatefulElement createElement() => MvcStatefulElement(this);
-}
-
-abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with DependencyInjectionService {
-  MvcController? _controller;
-  MvcController get controller => _controller!;
-}
-
-mixin MvcWidgetElement on Element {
-  MvcController? _controller;
-  bool _isFirstBuild = false;
-  void _myFirstBuild() {
-    _controller = Mvc.get(context: this);
-  }
 
   @override
-  void rebuild({bool force = false}) {
-    if (_isFirstBuild == false) {
-      _isFirstBuild = true;
-      _myFirstBuild();
-    }
-    super.rebuild(force: force);
-  }
+  MvcWidgetState createState();
 }
 
-class MvcStatefulElement extends StatefulElement with MvcWidgetElement {
-  MvcStatefulElement(super.widget);
+abstract class MvcWidgetState<TControllerType extends MvcController, T extends MvcStatefulWidget<TControllerType>> extends State<T> with DependencyInjectionService {
+  MvcStatefulElement<TControllerType>? _element;
+  TControllerType get controller => _element!._controller!;
 
-  @override
-  void _myFirstBuild() {
-    super._myFirstBuild();
-    if (state is MvcWidgetState) {
-      var mvcWidgetState = state as MvcWidgetState;
-      if (_controller != null) {
-        mvcWidgetState._controller = _controller;
-        _controller!.buildScopedServiceProvider(builder: (collection) => collection.add<MvcWidgetState>((serviceProvider) => mvcWidgetState, initializeWhenServiceProviderBuilt: true));
-      }
-    }
-  }
+  void initMvc() {}
 }

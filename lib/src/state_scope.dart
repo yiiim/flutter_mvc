@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// 状态范围
-class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWidget {
+class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWidget<TControllerType> {
   const MvcStateScope(this.builder, {this.stateProvider, this.child, Key? key}) : super(key: key);
   final Widget Function(MvcWidgetStateProvider state) builder;
   final Widget? child;
@@ -12,10 +12,10 @@ class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWi
   final MvcStateProvider? stateProvider;
 
   @override
-  State<StatefulWidget> createState() => _MvcStateScopeState();
+  MvcWidgetState createState() => _MvcStateScopeState();
 }
 
-class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidgetState<MvcStateScope<TControllerType>> {
+class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidgetState<TControllerType, MvcStateScope<TControllerType>> {
   Set<MvcStateValue>? _dependencies;
 
   @override

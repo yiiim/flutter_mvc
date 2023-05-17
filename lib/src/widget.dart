@@ -18,5 +18,5 @@ abstract class MvcWidgetState<TControllerType extends MvcController, T extends M
   MvcStatefulElement<TControllerType>? _element;
   TControllerType get controller => _element!._controller!;
 
-  void initMvc() {}
+  void initMvcWidgetState() {}
 }

@@ -22,8 +22,8 @@ class TestModellessController extends MvcController {
   }
 
   @override
-  void buildPart(MvcControllerPartCollection collection) {
-    super.buildPart(collection);
+  void initPart(MvcControllerPartCollection collection) {
+    super.initPart(collection);
   }
 }
 
@@ -47,13 +47,8 @@ class MyApp extends StatelessWidget {
         home: MvcProxy(
           proxyCreate: () => NavigatorController(),
           child: Mvc(
-            create: () => TestModellessController(
-              viewBuilder: (context) {
-                return Center(
-                  child: Text("data"),
-                );
-              },
-            ),
+            create: () => IndexPageController(),
+            model: IndexPageModel(title: "Mvc Demo"),
           ),
         ),
         builder: (context, child) {

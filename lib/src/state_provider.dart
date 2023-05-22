@@ -12,18 +12,16 @@ extension MvcStateProviderExtension on MvcStateProvider {
   /// 获取状态
   ///
   /// [key] 状态key
-  T? getState<T>({Object? key}) => getStateValue(key: key)?.value;
+  T? getState<T>({Object? key}) => getStateValue<T>(key: key)?.value;
 }
 
-/// Widget状态提供接口
-abstract class MvcWidgetStateProvider {
+/// 上下文状态
+abstract class MvcStateContext {
   /// 当前build的[BuildContext]
   BuildContext get context;
 
-  /// 获取状态值
-  ///
-  /// [key] 状态key
-  MvcStateValue<T>? getValue<T>({Object? key});
+  /// 状态提供者
+  MvcStateProvider get provider;
 
   /// 有状态更新时不需要更新的[Widget]
   ///
@@ -31,9 +29,14 @@ abstract class MvcWidgetStateProvider {
   Widget? get child;
 }
 
-extension MvcWidgetStateProviderExtension on MvcWidgetStateProvider {
+extension MvcStateContextExtension on MvcStateContext {
   /// 获取状态
   ///
   /// [key] 状态key
-  T? get<T>({Object? key}) => getValue(key: key)?.value;
+  T? get<T>({Object? key}) => getValue<T>(key: key)?.value;
+
+  /// 获取状态值
+  ///
+  /// [key] 状态key
+  MvcStateValue<T>? getValue<T>({Object? key}) => provider.getStateValue<T>(key: key);
 }

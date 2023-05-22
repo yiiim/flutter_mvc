@@ -3,20 +3,28 @@ part of './flutter_mvc.dart';
 /// 状态范围
 class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWidget<TControllerType> {
   const MvcStateScope(this.builder, {this.stateProvider, this.child, Key? key}) : super(key: key);
-  final Widget Function(MvcWidgetStateProvider state) builder;
+  final Widget Function(MvcStateContext state) builder;
   final Widget? child;
 
   /// 该状态范围使用的状态来源
   ///
-  /// 如果不指定，则使用离当前元素最近的[TControllerType]
+  /// 如果不指定，则从当前[TControllerType]服务范围获取[MvcStateProvider]
   final MvcStateProvider? stateProvider;
 
   @override
-  MvcWidgetState createState() => _MvcStateScopeState();
+  MvcWidgetState<MvcController, MvcStatefulWidget<MvcController>> createState() => _MvcStateScopeState();
 }
 
 class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidgetState<TControllerType, MvcStateScope<TControllerType>> {
   Set<MvcStateValue>? _dependencies;
+
+  @override
+  void initService(ServiceCollection collection) {
+    super.initService(collection);
+    if (widget.stateProvider != null) {
+      collection.addSingleton((serviceProvider) => widget.stateProvider!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +45,11 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
       if (addListenerDependentStates.contains(element)) {
         addListenerDependentStates.remove(element);
       } else {
-        element.removeListener(() => setState(() {}));
+        element.removeListener(update);
       }
     }
     for (var element in addListenerDependentStates) {
-      element.addListener(() => setState(() {}));
+      element.addListener(update);
     }
     _dependencies = dependentStates;
   }
@@ -50,27 +58,19 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
 /// 状态提供会话
 ///
 /// 这会记录一次会话中获取过的所有状态
-class MvcStateProviderSession extends MvcWidgetStateProvider {
-  MvcStateProviderSession(this.context, this.stateProvider, {this.child});
-  late final Set<MvcStateValue> _states = {};
+class MvcStateProviderSession extends MvcStateContext {
+  MvcStateProviderSession(this.context, this.provider, {this.child});
+  final Set<MvcStateValue> _states = {};
 
-  /// 状态提供者
-  final MvcStateProvider stateProvider;
+  @override
+  final MvcStateProvider provider;
+
   @override
   final BuildContext context;
 
+  @override
+  final Widget? child;
+
   void start() => _states.clear();
   Set<MvcStateValue> done() => _states;
-
-  @override
-  MvcStateValue<T>? getValue<T>({Object? key}) {
-    var value = stateProvider.getStateValue<T>(key: key);
-    if (value != null) {
-      _states.add(value);
-    }
-    return value;
-  }
-
-  @override
-  Widget? child;
 }

@@ -53,10 +53,10 @@ packages:
     dependency: transitive
     description:
       name: dart_dependency_injection
-      sha256: "9d642ac9ad0886e0d73b90fc14d91f9114cde4e6ba28fb4a50cf3cf13ffa1414"
+      sha256: e2b70db3b02a059260eaad0e476bd00c061493b1b0786768743170e7799a1926
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1+4"
+    version: "1.0.1+9"
   easy_tree:
     dependency: transitive
     description:
@@ -92,7 +92,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "1.0.1+3"
+    version: "1.0.1+5"
   flutter_test:
     dependency: "direct dev"
     description: flutter

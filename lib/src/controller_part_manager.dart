@@ -10,7 +10,7 @@ class _MvcControllerPartCollection extends ServiceCollection implements MvcContr
   }
 }
 
-class MvcControllerPartManager with DependencyInjectionService {
+class MvcControllerPartManager with DependencyInjectionService implements MvcStateProvider {
   late final List<Type> _partTypes = [];
   late final ServiceProvider _partProvider;
   void init() {
@@ -31,8 +31,19 @@ class MvcControllerPartManager with DependencyInjectionService {
     );
     _partProvider = privoider.buildScoped(
       builder: (collection) {
-        getService<MvcController>().buildPart(privoider.get<ServiceCollection>() as MvcControllerPartCollection);
+        getService<MvcController>().initPart(privoider.get<ServiceCollection>() as MvcControllerPartCollection);
       },
     );
+  }
+
+  @override
+  MvcStateValue<T>? getStateValue<T>({Object? key}) {
+    for (var element in _partTypes) {
+      var stateValue = (_partProvider.getByType(element) as MvcControllerPart).getStateValue<T>(key: key);
+      if (stateValue != null) {
+        return stateValue;
+      }
+    }
+    return null;
   }
 }

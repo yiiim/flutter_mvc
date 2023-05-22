@@ -37,8 +37,8 @@ class TestModellessController extends MvcController {
   }
 
   @override
-  void buildPart(MvcControllerPartCollection collection) {
-    super.buildPart(collection);
+  void initPart(MvcControllerPartCollection collection) {
+    super.initPart(collection);
     collection.addPart(() => TestModellessControllerPart());
   }
 }

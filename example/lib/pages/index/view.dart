@@ -23,7 +23,7 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
               'You have pushed the button this many times:',
             ),
             MvcStateScope<IndexPageController>(
-              (MvcWidgetStateProvider state) {
+              (MvcStateContext state) {
                 return Builder(
                   builder: (context) {
                     return Text("${state.get<int>()}");

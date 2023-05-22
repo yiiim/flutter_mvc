@@ -13,45 +13,30 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcStatePro
   /// 获取model
   ///
   /// model同样保存在状态中，如果视图被外部更新时，将获取到不同的model
-  /// 同样[MvcWidgetStateProvider]也可以使用[TModelType]获得model
+  /// 同样[MvcStateContext]也可以使用[TModelType]获得model
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
   @mustCallSuper
+  @protected
   void init() {
     getService<MvcControllerPartManager>().init();
   }
 
+  @mustCallSuper
+  @protected
+  void initPart(MvcControllerPartCollection collection) {}
+  @mustCallSuper
+  @protected
+  void initService(MvcServiceCollection collection) {}
+  @mustCallSuper
+  @protected
   void activate() {}
-  void _activateForElement(MvcElement element) {
-    if (element == _element) {
-      activate();
-    }
-  }
-
+  @mustCallSuper
+  @protected
   void deactivate() {}
-  void _deactivateForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (element == _element) {
-      deactivate();
-    }
-  }
 
-  void _initForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (_element == null) {
-      _element = element;
-      init();
-    } else {}
-  }
-
-  void _disposeForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (element == _element) {
-      _element = null;
-      dispose();
-    }
-  }
+  bool _debugTypesAreRight(model) => model is TModelType;
 
   /// 返回视图
   MvcView view(TModelType model);
@@ -62,11 +47,14 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcStatePro
   /// 更新，将会触发View重建
   void update() => notifyListeners();
 
-  /// build part
-  void buildPart(MvcControllerPartCollection collection) {}
+  @override
+  MvcStateValue<T>? getStateValue<T>({Object? key}) {
+    return super.getStateValue<T>(key: key) ?? stateValueForUndefined<T>(key: key);
+  }
 
-  /// build当前Controler的服务
-  void buildScopedService(MvcServiceCollection collection) {}
+  MvcStateValue<T>? stateValueForUndefined<T>({Object? key}) {
+    return getService<MvcControllerPartManager>().getStateValue<T>(key: key) ?? parent()?.getStateValue<T>(key: key);
+  }
 }
 
 /// 代理Controller，Model为一个Widget，在View中将只会返回Model

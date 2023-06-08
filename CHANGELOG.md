@@ -29,3 +29,7 @@
 ## 2.0.0-beta
 
 * upgrade to 2.0.0
+
+## 2.0.0
+
+* upgrade to 2.0.0

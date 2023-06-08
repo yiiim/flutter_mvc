@@ -113,7 +113,7 @@ void main() {
   );
 
   testWidgets(
-    "test MvcbuildScopedServiceer",
+    "test MvcbuildScopedService",
     (tester) async {
       var controller = TestPorxyController();
       var controller1 = TestPorxyController();

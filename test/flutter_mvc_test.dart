@@ -13,7 +13,7 @@ class TestController extends MvcController<TestModel> {
   });
   final Widget Function(MvcContext<TestController, TestModel> context)? viewBuilder;
   @override
-  MvcView view(TestModel model) {
+  MvcView view() {
     return MvcViewBuilder<TestController, TestModel>(
       (context) {
         if (viewBuilder != null) return viewBuilder!(context);
@@ -27,7 +27,7 @@ class TestModellessController extends MvcController {
   TestModellessController({this.viewBuilder});
   final Widget Function(MvcContext<TestModellessController, void> context)? viewBuilder;
   @override
-  MvcView<MvcController, dynamic> view(model) {
+  MvcView<MvcController, dynamic> view() {
     return MvcModelessViewBuilder<TestModellessController>(
       (context) {
         if (viewBuilder != null) return viewBuilder!(context);

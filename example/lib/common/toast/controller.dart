@@ -30,5 +30,5 @@ class ToastController extends MvcController<ToastModel> with MvcSingleTickerProv
   }
 
   @override
-  MvcView view(model) => ToastView();
+  MvcView view() => ToastView();
 }

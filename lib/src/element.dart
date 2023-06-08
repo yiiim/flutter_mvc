@@ -15,7 +15,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcView>(
           (serviceProvider) {
-            return controller.view(serviceProvider.get<MvcContext>().model);
+            return controller.view();
           },
         );
         collection.addSingleton<MvcControllerPartManager>((serviceProvider) => MvcControllerPartManager());

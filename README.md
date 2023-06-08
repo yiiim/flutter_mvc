@@ -2,35 +2,36 @@
 
 Language: English | [中文](https://github.com/yiiim/flutter_mvc/blob/master/README-zh.md)
 
-Flutter Mvc is a Flutter framework that includes UI and logic separation, state management, and dependency injection. 
+Flutter Mvc is a Flutter framework that includes UI and logic separation, state management, and dependency injection.
 
-- [Quick Start](#quick-start)
+- [Getting Started](#getting-started)
 - [Mvc](#mvc)
   - [Model](#model)
   - [View](#view)
   - [Controller](#controller)
     - [Creating a Controller](#creating-a-controller)
-    - [Getting Other Controllers](#getting-other-controllers)
-    - [Getting Controllers from Anywhere](#getting-controllers-from-anywhere)
+    - [Creating a Controller without View](#creating-a-controller-without-view)
+    - [Controller Lifecycle](#controller-lifecycle)
+    - [Accessing Other Controllers](#accessing-other-controllers)
+    - [Accessing Controllers from Anywhere](#accessing-controllers-from-anywhere)
     - [MvcControllerPart](#mvccontrollerpart)
 - [State Management](#state-management)
   - [Example](#example)
   - [MvcStateScope](#mvcstatescope)
   - [MvcStateProvider](#mvcstateprovider)
   - [MvcStateValue](#mvcstatevalue)
-  - [Initialize State](#initialize-state)
-  - [Obtain State](#obtain-state)
+  - [Initializing State](#initializing-state)
+  - [Accessing State](#accessing-state)
   - [Updating State](#updating-state)
-  - [Deleting State](#deleting-state)
-  - [StatePart](#statepart)
+  - [Removing State](#deleting-state)
   - [Model State](#model-state)
 - [Dependency Injection](#dependency-injection)
   - [MvcDependencyProvider](#mvcdependencyprovider)
-  - [Retrieving Dependencies](#retrieving-dependencies)
-  - [Service Scopes](#service-scopes)
-  - [buildScopedService](#buildscopedservice)
+  - [Accessing Dependencies](#accessing-dependencies)
+  - [Service Scope](#service-scope)
+  - [initService](#initservice)
 
-## Quick Start
+## Getting Started
 
 ```dart
 import 'package:flutter/material.dart';
@@ -100,11 +101,11 @@ class IndexPageController extends MvcController<IndexPageModel> {
   @override
   void init() {
     super.init();
-    initState<int>(0); // 初始化状态
+    initState<int>(0); // Initialize state
   }
 
   void incrementCounter() {
-    updateState<int>(updater: ((state) => state?.value++)); // 更新状态
+    updateState<int>(updater: ((state) => state?.value++)); // Update state
   }
 
   @override
@@ -118,11 +119,13 @@ class IndexPageController extends MvcController<IndexPageModel> {
 
 ### Model
 
-In Mvc, there are no restrictions on the Model, which can be of any type or even null. The main role of the Model is to pass new values when the `Mvc` is rebuilt from outside, and it must be passed through the Model. The `create` method of `Mvc` is only executed once when it is mounted, and the Controller is not recreated when `Mvc` is updated. **Therefore, do not use the Controller constructor to pass parameters that need to be updated during construction, but use the Model to pass them**. When the `Mvc` is rebuilt from outside, the Model status update will be received. For information on Model status updates, please refer to [this](#model-state).
+In Mvc, there are no restrictions on the Model. It can be of any type, including nullable types. The main purpose of the Model is to pass
+
+ new values during the reconstruction process of `Mvc` and facilitate communication between the View and Controller. The `create` function in `Mvc` is only executed once during mounting and is not re-executed when `Mvc` updates. **Therefore, instead of using the Controller's constructor to pass parameters during construction, you should use the Model to pass the necessary values**. When `Mvc` is externally reconstructed, the Model's state updates are received. For more information on Model state updates, please refer to [this section](#model-state).
 
 ### View
 
-The View is returned by the Controller and created as follows:
+The View is returned by the Controller and created using the following pattern:
 
 ```dart
 class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
@@ -140,11 +143,11 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
 }
 ```
 
-It has two generic parameters, one for the Model type and one for the Controller type, and a `buildView` method that returns the UI.
+It has two generic parameters: the type of the Model and the type of the Controller. It also includes a `buildView` method that returns the UI.
 
-In the `buildView` method, the Controller and Model can be obtained through the `context` parameter and used to build the UI.
+Inside the `buildView` method, you can access the Controller and Model using the `context` parameter and use them to build the UI.
 
-If a complicated Model is not needed, `MvcModelessView<TControllerType extends MvcController>` can be used, which only has a Controller generic type.
+If you don't need the Model, you can use `MvcModelessView<TControllerType extends MvcController>`, which has only one generic type for the Controller.
 
 ```dart
 class IndexPage extends MvcModelessView<IndexPageController> {
@@ -159,13 +162,13 @@ class IndexPage extends MvcModelessView<IndexPageController> {
 }
 ```
 
-If `MvcModelessView` is used, the Model cannot be accessed.
+When using `MvcModelessView`, you won't have access to the model.
 
 ### Controller
 
 #### Creating a Controller
 
-Inherited from `MvcController`, the `view` method is implemented to return an `MvcView`.
+Create a subclass of `MvcController` and implement the `view` method to return a `MvcView`.
 
 ```dart
 class IndexPageController extends MvcController<IndexPageModel> {
@@ -175,69 +178,105 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   @override
-  MvcView view(model) {
+  MvcView view() {
     return IndexPage();
   }
 }
 ```
 
-When returning the View, the generic Controller and Model types of the returned `MvcView` must match those of the Controller.
+When returning the View, make sure the generic types of the returned `MvcView` match the Controller's types.
 
-#### Getting Other Controllers
+#### Creating a Controller without View
 
-In the Controller, you can obtain the parent, sibling, and child Controllers.
+Create a subclass of `MvcProxyController`.
 
 ```dart
-/// Find a specified type of Controller from the parent
+class IndexDataController extends MvcProxyController {
+  @override
+  void init() {
+    super.init();
+  }
+}
+```
+
+Use `MvcProxy` to mount a Controller without a View.
+
+```dart
+MvcProxy(
+    proxyCreate: () => IndexDataController(),
+    child: ...,
+)
+```
+
+`MvcProxyController` doesn't need to return a View but can still provide state to its children. This can be useful in certain situations.
+
+#### Controller Lifecycle
+
+When `Mvc` is mounted, the Controller goes through the following lifecycle:
+
+- After the Controller is created, it performs necessary preparations and then immediately executes the Controller's `init` method.
+- When `Mvc` updates, there are no specific lifecycle methods for the Controller. Instead, it triggers Model state updates in the Controller.
+- When `Mvc` is unmounted, the `dispose` method is executed.
+
+Avoid passing the same Controller instance to multiple Mvc instances.
+
+#### Accessing Other Controllers
+
+Within a Controller, you can access the parent, sibling, and child Controllers:
+
+```dart
+/// Find a Controller of a specific type from the parent level
 T? parent<T extends MvcController>() => context.parent<T>();
 
-/// Find a specified type of Controller in the immediate children
+/// Find a Controller of a specific type among direct children
 T? child<T extends MvcController>({bool sort = false}) => context.child<T>(sort: sort);
 
-/// Find a specified type of Controller from all children
+/// Find a Controller of a
+
+ specific type among all children
 T? find<T extends MvcController>({bool sort = false}) => context.find<T>(sort: sort);
 
-/// Find the previous Controller among siblings
+/// Find the previous sibling Controller of a specific type
 T? previousSibling<T extends MvcController>({bool sort = false}) => context.previousSibling<T>(sort: sort);
 
-/// Find the next Controller among siblings
+/// Find the next sibling Controller of a specific type
 T? nextSibling<T extends MvcController>({bool sort = false}) => context.nextSibling<T>(sort: sort);
 
-/// Find a Controller among siblings
+/// Find a Controller of a specific type among siblings
 T? sibling<T extends MvcController>({bool sort = false, bool includeSelf = false}) => context.sibling<T>(sort: sort);
 
-/// Search forward, meaning to search for siblings before and parents,
+/// Find a Controller by searching forward, which means searching among previous siblings and parent (equivalent to [previousSibling] ?? [parent])
 T? forward<T extends MvcController>({bool sort = false}) => context.forward<T>(sort: sort);
 
-/// Search backward, meaning to search for siblings after and children,
+/// Find a Controller by searching backward, which means searching among next siblings and children (equivalent to [nextSibling] ?? [find])
 T? backward<T extends MvcController>({bool sort = false}) => context.backward<T>(sort: sort);
 ```
 
-Unless necessary, do not pass ```true``` for ```sort```. ```sort``` can ensure the order in which Controllers of the same level are obtained when obtaining same-level Controllers (sorted by the slot order of multiple sub-elements under the Mvc), but it will increase performance consumption. If the order is not guaranteed, the same-level Controllers are sorted by the mounting order.
+Avoid setting `sort` to `true` unless necessary. Setting `sort` ensures that the Controllers are retrieved in a specific order (based on the order of the multiple child Elements in the slots of the parent Mvc), but it increases performance overhead. If order is not important, the Controllers among siblings are returned in the order of mounting.
 
-#### Getting Controllers from Anywhere
+#### Accessing Controllers from Anywhere
 
-You can use the static method of ```Mvc``` to obtain Controllers of a specific type from all current ```Mvc```s.
+Using the static method of Mvc, you can retrieve a Controller of a specific type from the entire `Mvc` hierarchy.
 
 ```dart
 static T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where});
 ```
 
-Usage:
+Here's how you can use it:
 
 ```dart
 var controller = Mvc.get<IndexPageController>();
 ```
 
-**context**: If the ```context``` parameter is passed in, find the nearest Controller in its parent context.
+**context**: If the `context` parameter is provided, it searches for the nearest Controller in the parent hierarchy of that context.
 
-**where**: If there are multiple Controllers of the same type, use this parameter to filter.
+**where**: It allows you to provide a filter when there are multiple Controllers of the specified type. Only Controllers that satisfy the condition specified by the `where` parameter will be returned.
 
 #### MvcControllerPart
 
-When there is a lot of logic or state in the Controller, you can move some independent logic into ```MvcControllerPart```. Usage:
+When a Controller has a large amount of logic or state, you can extract some independent logic into an `MvcControllerPart`. Here's how you can do it:
 
-Create an ```MvcControllerPart```:
+Create an `MvcControllerPart`:
 
 ```dart
 class IndexPageControllerBannerPart extends MvcControllerPart<IndexPageController> {
@@ -248,41 +287,41 @@ class IndexPageControllerBannerPart extends MvcControllerPart<IndexPageControlle
 }
 ```
 
-Add a ```Part``` to the Controller, implement the ```buildPart``` method, and add it in the ```buildPart``` method:
+Add the `Part` to the Controller by implementing the `initPart` method:
 
 ```dart
 @override
-void buildPart(MvcControllerPartCollection collection) {
-  super.buildPart(collection);
-  collection.addPart<IndexPageControllerBannerPart>(() => IndexPageControllerBannerPart());
+void initPart(MvcControllerPartCollection collection) {
+  super.initPart(collection);
+  collection.addPart(() => IndexPageControllerBannerPart());
 }
 ```
 
-Multiple ```Part```s can be added to the same Controller, but only one of the same type can be added.
+You can add multiple `Parts` to the same Controller, but only one instance of each type can be added.
 
-Get the ```Part``` from the Controller:
+Retrieve a `Part` from the Controller:
 
 ```dart
-part<IndexPageControllerBannerPart>()
+getPart<IndexPageControllerBannerPart>()
 ```
 
-The generic type used for retrieval must be consistent with the one used for registration.
+Make sure to use the same generic type as used during registration.
 
 ---
 
-```Part``` has the following characteristics:
+`Part` has the following characteristics:
 
-* The ```init``` and ```dispose``` methods of ```Part``` are executed after the Controller.
+- The `init` and `dispose` methods of the `Part` are executed within the `init` and `dispose` methods of the Controller, respectively.
 
-* Each ```Part``` can obtain the Controller to which it belongs.
+- Each `Part` has access to the Controller it belongs to.
 
-* Each ```Part``` has its own state. Using the state in the ```Part``` is similar to using it in the Controller. For documentation on ```Part``` state, see here: [StatePart](#statepart).
+- Each `Part` has its own state, and it can access and manage its state similar to a Controller.
 
 ## State Management
 
 ### Example
 
-First, initialize the state in the ```init``` method of the Controller:
+First, initialize the state in the `init` method of the Controller:
 
 ```dart
 class IndexPageController extends MvcController<IndexPageModel> {
@@ -312,11 +351,11 @@ Update the state in the Controller:
 updateState<int>(updater: ((state) => state.value++));
 ```
 
-If the ```MvcStateScope``` has obtained the state before, it will be rebuilt when updating the state.
+If the `MvcStateScope` has accessed the state before, it will be rebuilt when the state is updated. 
 
 ### MvcStateScope
 
-The definition of ```MvcStateScope``` is as follows:
+`MvcStateScope` is defined as follows:
 
 ```dart
 class MvcStateScope<TControllerType extends MvcController> extends Widget {
@@ -330,13 +369,15 @@ class MvcStateScope<TControllerType extends MvcController> extends Widget {
 }
 ```
 
-**builder**: The builder that is rebuilt when the state is updated.
+- **builder**: The builder that is rebuilt when the state is updated.
 
-**stateProvider**: The state provider, usually a ```MvcController```. If it is null, the state provider is the nearest type to ```TControllerType``` in ```MvcStateScope```.
+- **stateProvider**: The state provider, typically a `MvcController`. If `stateProvider` is not specified, the nearest `MvcController` of type `TControllerType` will be used as the state provider. If no generic type `TControllerType` is specified, the nearest `MvcController` will be
 
-**child**: When the state is updated, if there are Widgets that do not need to be updated, pass them through this parameter. You can get it through the parameter in the ```builder``` method to save performance.
+ used.
 
-The parameter ```MvcWidgetStateProvider``` in the ```builder``` method can **obtain all the states provided by the state provider**, and once **the state obtained through it is updated, the Widget will be updated**. Even the state obtained through ```Builder``` can be updated, as shown below:
+- **child**: This parameter allows passing a child widget that doesn't need to be updated when the state changes. It can be accessed through the parameters of the `builder` function, which helps to optimize performance.
+
+The `builder` function receives a `MvcWidgetStateProvider` parameter that allows **accessing all the states provided by the state provider**. Once a state is accessed through it, the widget will be updated **whenever that state is updated**. Even if the state was accessed through a `Builder`, it can still receive updates. Here's an example:
 
 ```dart
 MvcStateScope<IndexPageController>(
@@ -352,21 +393,11 @@ MvcStateScope<IndexPageController>(
 
 ### MvcStateProvider
 
-The definition of the state provider ```MvcStateProvider``` is as follows:
-
-```dart
-abstract class MvcStateProvider {
-  T? getState<T>({Object? key});
-
-  MvcStateValue<T>? getStateValue<T>({Object? key});
-}
-```
-
-It is an abstract interface. Any class that implements this interface can provide a state for ```MvcStateScope```. In Mvc, ```MvcController``` implements this interface. State-related operations are all performed in ```MvcController```.
+`MvcStateProvider` is an abstract interface that any class implementing it can use to provide states to `MvcStateScope`. In Mvc, `MvcController` implements this interface. All state-related operations are performed within the `MvcController`.
 
 ### MvcStateValue
 
-In Mvc, the type of the state is ```MvcStateValue<T>```.
+In Mvc, the type of state is `MvcStateValue<T>`.
 
 ```dart
 class MvcStateValue<T> extends ChangeNotifier {
@@ -377,70 +408,45 @@ class MvcStateValue<T> extends ChangeNotifier {
 }
 ```
 
-It is a class similar to ```ValueNotifier```, but it does not send notifications every time it receives ```setValue```. It only sends them when the ```update()``` method is called. Here, you can understand that **the state is updated every time ```update()``` is called**.
+It is similar to `ValueNotifier`, but it doesn't send notifications every time `setValue` is called. Instead, it only sends notifications when the `update()` method is called. **The state is updated every time `update()` is called**.
 
-### Initialize State
+### Initializing State
 
 Method definition:
 
 ```dart
-MvcStateValue<T> initState<T>(T state, {Object? key, MvcStateAccessibility accessibility = MvcStateAccessibility.public})
+MvcStateValue<T> initState<T>(T state, {Object? key})
 ```
 
-Example:
+Example usage:
 
 ```dart
 initState<int>(0)
 ```
 
-```initState``` can be used at any time in the Controller to initialize a new state. The state will be saved in the Controller until it is deleted or the Controller is destroyed.
+You can use the `initState` method anytime in the Controller to initialize a new state. The state will be stored in the Controller until it is deleted or the Controller is destroyed.
 
-**key**: State identification. **In the same Controller, states rely on the hashCode of the generic type + ```key``` to distinguish uniqueness**.
+**key**: A unique identifier for the state within the same Controller. The uniqueness of a state is determined by the combination of the generic type and the `key` parameter's hashCode.
 
-**accessibility**: Access level of the state:
+### Accessing State
 
-```dart
-enum MvcStateAccessibility {
-  /// Global
-  global,
-
-  /// Public
-  public,
-
-  /// Private
-  private,
-
-  /// Internal
-  internal,
-}
-```
-
-* global: Any Controller can obtain this state.
-* public: The current Controller and its children can obtain this state. It defaults to public.
-* private: The current Controller and its ControllerPart can obtain this state.
-* internal: Only the creator of the state can obtain this state.
-
-Only one state in the same Controller instance can be initialized once. The same hashCode of the generic type and key means the same state.
-
-### Obtain State
-
-You can obtain the state in the Controller using the following method:
+You can access states in the Controller using the following method:
 
 ```dart
-T? getState<T>({Object? key, bool onlySelf = false});
+T? getState<T>({Object? key});
 ```
 
-Example:
+Example usage:
 
 ```dart
-var state = getState<int>()
+var state = getState<int>();
 ```
 
-When obtaining state, the key and state type used during initialization are used to look up the state. The lookup not only searches for the state initialized by the current controller but also sequentially searches for states with access levels of "public" or higher in its parent controllers. If the search still finds nothing at the top level, it will then search for all states with an access level of "global" in all current controllers. In simple terms, all accessible states can be obtained.
+When accessing states in an MvcController, it first checks the current Controller. If the state is not found in the current Controller, it checks the `stateValueForUndefined` method. The `stateValueForUndefined` method first checks the Part for the state. If the state is not found in the Part, it checks the parent Controller of the current Controller.
 
-When using `MvcStateScope` to obtain state, it is obtained through `MvcStateProvider`, which is implemented by `MvcController`. `MvcWidgetStateProvider` is a wrapper for `MvcStateProvider`.
+When using `MvcStateScope` to access states, it uses `MvcStateProvider` to retrieve the states. In Mvc, the `MvcController` acts as the `MvcStateProvider`, and `MvcWidgetStateProvider` is a wrapper around `MvcStateProvider`.
 
-If the state does not exist, `null` is returned. But if the state itself is null, you can use the `getStateValue` method to get the returned `MvcStateValue`. If `MvcStateValue` is null, it means that the state was not obtained; but if `MvcStateValue` is not null, its `value` attribute is the state value.
+If the state doesn't exist, it will return null. However, if the state itself is null, you can use the `getStateValue` method to retrieve the returned `MvcStateValue`. If the `MvcStateValue` is null, it means the state wasn't found. If the `MvcStateValue` is not null, its `value` property represents the state value.
 
 ### Updating State
 
@@ -451,14 +457,16 @@ MvcStateValue<T>? updateState<T>({void Function(MvcStateValue<T> state)? updater
 Example usage:
 
 ```dart
-updateState<int>(updater:(state)=>state.value++);
+updateState<int>(updater: (state) => state.value++);
 ```
 
-In this method, the `updater` can set the state to a new value. Even if you don't set it, it will trigger a state update.
+- **updater**: This method allows you to set a new value for the state. Even
 
-The `key` is the same as when obtaining state - it is the identifier of the state to be updated.
+ if you don't set a new value, it will trigger a state update.
 
-If called in the controller and the state to be updated is not found, `null` is returned. Only states created by itself can be updated.
+- **key**: Similar to accessing states, this parameter is used to identify the state to be updated.
+
+When called in the Controller, if the state to be updated is not found, it returns null. Only the states created by the Controller itself can be updated.
 
 ### Deleting State
 
@@ -466,55 +474,19 @@ If called in the controller and the state to be updated is not found, `null` is 
 void deleteState<T>({Object? key});
 ```
 
-This method can also be called in the controller, but only states created by itself can be deleted.
-
-### StatePart
-
-When using a key and type as the unique identifier of state and when there are too many states of the same type, it may be necessary to create many keys, leading to messy code. To alleviate this situation, an interface for state provision with Parts is provided:
-
-```dart
-abstract class MvcHasPartStateProvider extends MvcStateProvider {
-  T? getStatePart<T extends MvcStateProvider>();
-}
-```
-
-This interface returns another state provider based on the type.
-
-`MvcController` also implements this interface. In each `Part` state provider returned by `MvcController`, independent states with the same type and key are initialized. This means that the same type and key of state can be initialized in each `Part`. However, only states with access level "internal" can be initialized in `Part`, and states with "internal" access level can only be obtained through themselves. Therefore, when obtaining the state in `Part`, you need to get the `Part` first, and then get the state. When getting `Part` in `MvcController`, it searches from itself to its parent until it finds the specified type of `Part`. The method for obtaining state in `Part` is defined as follows:
-
-```dart
-getStatePart<TPartType>().getState<TStateType>(key:key)
-```
-
-Usage example:
-
-```dart
-indexPageController.getStatePart<IndexPageControllerBannerPart>().getState<int>(key:IndexPageControllerBannerPartKeys.bannerIndex)
-```
-
-It starts searching for the type `TPartType` from the current controller and then gets the state using `TPartType`. If the state is not found in `TPartType`, it will be passed to the `MvcController` to search.
-
-In `MvcStateScope`, it can be used as follows:
-
-```dart
-state.part<IndexPageControllerBannerPart>().get<int>(key:IndexPageControllerBannerPartKeys.bannerIndex)
-```
-
-This is only valid when the `MvcStateProvider` used by `MvcStateScope` implements `MvcHasPartStateProvider`; otherwise, `null` is returned. In the above code, `part` is a wrapper for `getStatePart`, and `get` is a wrapper for `getState`.
-
-The `Part` type implemented by `MvcController` is `MvcControllerPart`. To create and use `MvcControllerPart`, please read [MvcControllerPart](#mvccontrollerpart).
+This method is also called in the Controller. Only the states created by the Controller itself can be deleted.
 
 ### Model State
 
-In the controller, you can directly use the `model` property to obtain the model. The model is a state with null key and generic type `TModelType`. You can also obtain it using the method for obtaining state. The model state will be updated when the outside `Mvc` recreates.
+In the Controller, you can directly use the `model` property to access the Model. The Model is a state with a null key and the generic type `TModelType`. You can also access the Model state using the state access methods. The Model state will be updated when the `Mvc` it belongs to is externally rebuilt.
 
-To get the model state:
+To get the Model state:
 
 ```dart
 var model = getState<TModelType>();
 ```
 
-If there are UI components in a View that depend on updates from an external Model, you can update the UI by getting the state of the Model:
+If there are UI components in the View that depend on external Model updates, you can update the UI by accessing the Model state.
 
 ```dart
 MvcStateScope<IndexPageController>(
@@ -524,21 +496,15 @@ MvcStateScope<IndexPageController>(
 )
 ```
 
-If there are logic dependencies on external Model updates in a Controller, you can listen to the Model state:
-
-```dart
-getStateValue<TModelType>()?.addListener(() {});
-```
-
 ## Dependency Injection
 
 Dependency injection is implemented using [https://github.com/yiiim/dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection).
 
-It is recommended to read the [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) documentation before reading the following.
+It is recommended to read the [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) documentation before reading the following document.
 
 ### MvcDependencyProvider
 
-Use ```MvcDependencyProvider``` to inject dependencies into child elements:
+Use the `MvcDependencyProvider` to inject dependencies into child components.
 
 ```dart
 MvcDependencyProvider(
@@ -551,13 +517,13 @@ MvcDependencyProvider(
 );
 ```
 
-```addSingleton``` means injecting a singleton. When all child elements get a dependency of this type, they share the same instance.
+- `addSingleton`: Injects a singleton, which means all child components that request this type of dependency will receive the same instance.
 
-```addScopedSingleton``` means injecting a scoped singleton. In Mvc, each Mvc has its own scoped service. When different instances of the Controller retrieve this type of dependency, they obtain different instances, but the same instance within one instance of the Controller.
+- `addScopedSingleton`: Injects a scoped singleton. In Mvc, each Mvc has its own scoped services. With this type of dependency, different instances will be provided in different Controller instances, but within the same Controller instance, the same instance will be provided.
 
-```add``` injects a normal service. Each time it is retrieved, a new instance is created.
+- `add`: Injects a regular service. Each request for this dependency will create a new instance.
 
-You can also inject ```MvcController```. After injecting the ```MvcController```, you don't need to pass the ```create``` parameter when using ```Mvc```. The ```Mvc``` will create the Controller from the dependency injection.
+You can also inject `MvcController` and when using `Mvc`, there's no need to pass the `create` parameter. `Mvc` will create the Controller from the dependency injection.
 
 ```dart
 MvcDependencyProvider(
@@ -568,29 +534,27 @@ MvcDependencyProvider(
 );
 ```
 
-### Retrieving Dependencies
+### Accessing Dependencies
 
-Any service created using dependency injection can be included in ```DependencyInjectionService``` to retrieve other injected services. This can also be done in MvcController. The method for retrieving services is defined as follows:
+The `MvcController` within the `MvcDependencyProvider` can use the `DependencyInjectionService` mixin to access the injected services.
 
 ```dart
 T getService<T extends Object>();
 ```
 
-The generic type must match the type used when injecting the service.
+### Service Scope
 
-### Service Scopes
+Each `MvcController` creates a service scope using its parent `MvcController`'s scope during creation. If there's no parent, it uses the `MvcOwner`. By default, the service scope registers three types of singleton services: `MvcController`, `MvcContext`, and `MvcView`. `MvcController` refers to the Controller itself, `MvcContext` refers to the `Element` in which the Controller exists, and `MvcView` is created using the Controller. The service scope is released when the Controller is destroyed.
 
-Each MvcController generates a service scope **using the parent MvcController scope** when it is created. If there is no parent, ```MvcOwner``` is used. By default, the types of singleton services ```MvcController```, ```MvcContext```, and ```MvcView``` are registered in the service scope where the Controller resides. ```MvcController``` represents the Controller itself, ```MvcContext``` represents the Element where the Controller resides, and ```MvcView``` is created by the Controller. The service scope is released when the Controller is destroyed.
-
-### buildScopedService
+## initService
 
 ```dart
 @override
-void buildScopedService(ServiceCollection collection) {
+void initService(MvcServiceCollection collection) {
     collection.add<Object>((serviceProvider) => Object());
 }
 ```
 
-Overriding the ```buildScopedService``` method in the Controller can inject additional services into the service scope generated when the Controller is created. Since the service scope is based on the parent, these additional services can be retrieved by child elements.
+By overriding the `initService` method in the Controller, you can inject additional services into the service scope of the current Controller.
 
-For more information on dependency injection, please refer to the [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) documentation.
+For more usage examples of dependency injection, please refer to the [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) documentation.

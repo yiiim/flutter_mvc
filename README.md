@@ -109,7 +109,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   @override
-  MvcView view(model) {
+  MvcView view() {
     return IndexPage();
   }
 }

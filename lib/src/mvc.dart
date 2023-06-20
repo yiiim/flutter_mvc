@@ -9,7 +9,7 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService, Mv
   ServiceProvider? _serviceProvider;
   @override
   ServiceProvider get serviceProvider {
-    _serviceProvider ??= serviceCollection.buildServiceProvider();
+    _serviceProvider ??= serviceCollection.build();
     return _serviceProvider!;
   }
 

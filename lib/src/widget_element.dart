@@ -48,6 +48,7 @@ class MvcStatefulElement<TControllerType extends MvcController> extends Componen
     super._myFirstBuild();
     _state = widget.createState();
     _state!._widget = widget;
+    _state!._element = this;
     _serviceProvider = _controller!.buildScopedServiceProvider(
       builder: (collection) {
         _state!.initService(collection);

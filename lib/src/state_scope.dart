@@ -1,9 +1,13 @@
 part of './flutter_mvc.dart';
 
+abstract class MvcStateScopeContext extends MvcStateContext {
+  Widget? get child;
+}
+
 /// 状态范围
 class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWidget<TControllerType> {
   const MvcStateScope(this.builder, {this.stateProvider, this.child, Key? key}) : super(key: key);
-  final Widget Function(MvcStateContext state) builder;
+  final Widget Function(MvcStateScopeContext state) builder;
   final Widget? child;
 
   /// 该状态范围使用的状态来源
@@ -39,6 +43,24 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
     return widget.builder(session);
   }
 
+  @override
+  void deactivate() {
+    super.deactivate();
+    final dependencies = _dependencies ?? {};
+    for (var element in dependencies) {
+      element.removeListener(update);
+    }
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    final dependencies = _dependencies ?? {};
+    for (var element in dependencies) {
+      element.addListener(update);
+    }
+  }
+
   void _updateDependentStates(Set<MvcStateValue> dependentStates) {
     Set<MvcStateValue> addListenerDependentStates = {...dependentStates};
     for (var element in _dependencies ?? <MvcStateValue>{}) {
@@ -58,18 +80,25 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
 /// 状态提供会话
 ///
 /// 这会记录一次会话中获取过的所有状态
-class MvcStateProviderSession extends MvcStateContext {
+class MvcStateProviderSession extends MvcStateScopeContext {
   MvcStateProviderSession(this.context, this.provider, {this.child});
   final Set<MvcStateValue> _states = {};
 
-  @override
   final MvcStateProvider provider;
-
+  @override
+  final Widget? child;
   @override
   final BuildContext context;
 
+  /// 获取状态值
+  ///
+  /// [key] 状态key
   @override
-  final Widget? child;
+  MvcStateValue<T>? getValue<T>({Object? key}) {
+    var value = provider.getStateValue<T>(key: key);
+    if (value != null) _states.add(value);
+    return value;
+  }
 
   void start() => _states.clear();
   Set<MvcStateValue> done() => _states;

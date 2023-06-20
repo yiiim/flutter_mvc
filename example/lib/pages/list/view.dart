@@ -1,4 +1,3 @@
-import 'package:example/controller/shopping_cart.dart';
 import 'package:example/pages/list/controller.dart';
 import 'package:example/src/models/product.dart';
 import 'package:example/src/models/shopping_cart_product.dart';

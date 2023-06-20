@@ -25,3 +25,15 @@
 ## 1.0.1+5
 
 * optimization
+
+## 2.0.0-beta
+
+* upgrade to 2.0.0
+
+## 2.0.0
+
+* upgrade to 2.0.0
+
+## 2.1.0
+
+* fix bugs

@@ -1,6 +1,6 @@
 part of './flutter_mvc.dart';
 
-class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
+class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService, MvcStateProviderMixin {
   static final MvcOwner sharedOwner = MvcOwner();
   late final MvcServiceCollection _serviceCollection = MvcServiceCollection()
     ..addSingleton<MvcOwner>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true)
@@ -9,11 +9,10 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
   ServiceProvider? _serviceProvider;
   @override
   ServiceProvider get serviceProvider {
-    _serviceProvider ??= serviceCollection.buildServiceProvider();
+    _serviceProvider ??= serviceCollection.build();
     return _serviceProvider!;
   }
 
-  final Map<_MvcControllerStateKey, MvcStateValue> _globalState = HashMap<_MvcControllerStateKey, MvcStateValue>();
   T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => getAll(context: context, where: where).firstOrNull;
 
   Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) sync* {
@@ -34,10 +33,6 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService {
         element = element.easyTreeGetParent(EasyTreeNodeKey<Type>(T));
       }
     }
-  }
-
-  MvcStateValue<T>? getGlobalStateValue<T>({Object? key}) {
-    return _globalState[_MvcControllerStateKey(stateType: T, key: key)] as MvcStateValue<T>?;
   }
 }
 

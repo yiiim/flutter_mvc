@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerStateMixin, MvcControllerContextMixin, DependencyInjectionService implements MvcHasPartStateProvider {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcStateProviderMixin, MvcControllerContextMixin, DependencyInjectionService {
   MvcElement? _element;
 
   @override
@@ -10,62 +10,36 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
     return _element!;
   }
 
-  @override
-  late final MvcControllerState _state = MvcControllerState(this);
-
   /// 获取model
   ///
   /// model同样保存在状态中，如果视图被外部更新时，将获取到不同的model
-  /// 同样[MvcWidgetStateProvider]也可以使用[TModelType]获得model
+  /// 同样[MvcStateContext]也可以使用[TModelType]获得model
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
   @mustCallSuper
+  @protected
   void init() {
     getService<MvcControllerPartManager>().init();
   }
 
+  @mustCallSuper
+  @protected
+  void initPart(MvcControllerPartCollection collection) {}
+  @mustCallSuper
+  @protected
+  void initService(MvcServiceCollection collection) {}
+  @mustCallSuper
+  @protected
   void activate() {}
-  void _activateForElement(MvcElement element) {
-    if (element == _element) {
-      activate();
-    }
-  }
-
+  @mustCallSuper
+  @protected
   void deactivate() {}
-  void _deactivateForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (element == _element) {
-      deactivate();
-    }
-  }
 
-  void _initForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (_element == null) {
-      _element = element;
-      init();
-    } else {}
-  }
+  bool _debugTypesAreRight(model) => model is TModelType;
 
-  void _disposeForElement(MvcElement element) {
-    assert(element._controller == this);
-    if (element == _element) {
-      _element = null;
-      dispose();
-    }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _state.dispose();
-  }
-
-  @override
-  T? getStatePart<T extends MvcStateProvider>() {
-    return getService<MvcControllerPartManager>().getPartByType(T) ?? parent()?.getStatePart<T>();
-  }
+  /// 返回视图
+  MvcView view();
 
   /// 获取[MvcControllerPart]
   T? getPart<T extends MvcControllerPart>() => getService<MvcControllerPartManager>().getPart<T>();
@@ -73,14 +47,27 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   /// 更新，将会触发View重建
   void update() => notifyListeners();
 
-  /// 返回视图
-  MvcView view(TModelType model);
+  @override
+  MvcStateValue<T>? getStateValue<T>({Object? key}) {
+    return super.getStateValue<T>(key: key) ?? stateValueForUndefined<T>(key: key);
+  }
 
-  /// build part
-  void buildPart(MvcControllerPartCollection collection) {}
+  /// 从Part中获取状态
+  /// [T]状态类型
+  /// [TPartType]Part的类型，如果是[MvcControllerPart]，则查找全部的Part，如果传入具体的类型则从指定类型的Part中获取状态
+  MvcStateValue<T>? getPartStateValue<T, TPartType extends MvcControllerPart>({Object? key}) {
+    if (TPartType == MvcControllerPart) {
+      return getService<MvcControllerPartManager>().getStateValue<T>(key: key);
+    }
+    return getService<MvcControllerPartManager>().getPart<TPartType>()?.getStateValue<T>(key: key);
+  }
 
-  /// build当前Controler的服务
-  void buildScopedService(ServiceCollection collection) {}
+  /// 当前[getStateValue]没有获取到状态时，从该方法获取
+  ///
+  /// 默认实现中，首先从Part中获取状态，如果Part中没有，则从父级获取状态
+  MvcStateValue<T>? stateValueForUndefined<T>({Object? key}) {
+    return getPartStateValue<T, MvcControllerPart>(key: key) ?? parent()?.getStateValue<T>(key: key);
+  }
 }
 
 /// 代理Controller，Model为一个Widget，在View中将只会返回Model
@@ -88,5 +75,5 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
 /// 这在只有逻辑的Controller时使用，它仍然会在Element树中占据一个节点
 class MvcProxyController extends MvcController<Widget> {
   @override
-  MvcView view(Widget model) => MvcViewBuilder<MvcProxyController, Widget>((ctx) => model);
+  MvcView view() => MvcViewBuilder<MvcProxyController, Widget>((ctx) => model);
 }

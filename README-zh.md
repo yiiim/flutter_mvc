@@ -24,13 +24,12 @@ Flutter Mvc 是一个包含了UI与逻辑分离、状态管理、依赖注入的
   - [获取状态](#获取状态)
   - [更新状态](#更新状态)
   - [删除状态](#删除状态)
-  - [StatePart](#statepart)
   - [Model状态](#model状态)
 - [依赖注入](#依赖注入)
   - [MvcDependencyProvider](#mvcdependencyprovider)
   - [获取依赖](#获取依赖)
   - [服务范围](#服务范围)
-  - [buildScopedService](#buildscopedservice)
+  - [initService](#initservice)
 
 ## 快速开始
 
@@ -146,7 +145,7 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
 
 在```buildView```方法中可以通过参数```context```获取到它的Controller和Model，使用它们来构建UI。
 
-如果不需要麻烦的Model，可以使用```MvcModelessView<TControllerType extends MvcController>```，它只有一个Controller的泛型类型。
+如果不需要Model，可以使用```MvcModelessView<TControllerType extends MvcController>```，它只有一个Controller的泛型类型。
 
 ```dart
 class IndexPage extends MvcModelessView<IndexPageController> {
@@ -177,7 +176,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   @override
-  MvcView view(model) {
+  MvcView view() {
     return IndexPage();
   }
 }
@@ -213,11 +212,11 @@ MvcProxy(
 
 在```Mvc```被挂载时，会通过```create```参数创建Controller，Controller的生命周期为：
 
-* 在创建Controller之后，会对Controller执行一些必要的准备工作，之后立即执行Controller的```init```方法
-* 在```Mvc```更新时，Controller并没有生命周期方法，而是触发Controller中的Model状态更新
-* ```Mvc```在卸载时执行```dispose```方法。
+- 在创建Controller之后，会对Controller执行一些必要的准备工作，之后立即执行Controller的```init```方法
+- 在```Mvc```更新时，Controller并没有生命周期方法，而是触发Controller中的Model状态更新
+- ```Mvc```在卸载时执行```dispose```方法。
 
-不要将同一个Controller实例传递给多个Mvc，这样会导致Controller的生命周期方法仅会依赖首个挂载的```Mvc```触发。
+不要将同一个Controller实例传递给多个Mvc。
 
 #### 获取其他Controller
 
@@ -284,13 +283,13 @@ class IndexPageControllerBannerPart extends MvcControllerPart<IndexPageControlle
 }
 ```
 
-在Controller中添加```Part```,实现```buildPart```方法，在```buildPart```方法中添加：
+在Controller中添加```Part```,实现```initPart```方法，在```initPart```方法中添加：
 
 ```dart
 @override
-void buildPart(MvcControllerPartCollection collection) {
-  super.buildPart(collection);
-  collection.addPart<IndexPageControllerBannerPart>(() => IndexPageControllerBannerPart());
+void initPart(MvcControllerPartCollection collection) {
+  super.initPart(collection);
+  collection.addPart(() => IndexPageControllerBannerPart());
 }
 ```
 
@@ -299,7 +298,7 @@ void buildPart(MvcControllerPartCollection collection) {
 从Controller中获取```Part```：
 
 ```dart
-part<IndexPageControllerBannerPart>()
+getPart<IndexPageControllerBannerPart>()
 ```
 
 获取时使用的泛型类型必须与注册时使用的一致。
@@ -308,11 +307,11 @@ part<IndexPageControllerBannerPart>()
 
 ```Part```具有如下特性：
 
-* ```Part```的```init```和```dispose```方法在Controller之后执行。
+- ```Part```的```init```和```dispose```方法在Controller的```init```和```dispose```中执行。
 
-* 每个```Part```中都可以获取它所属的Controller
+- 每个```Part```中都可以获取它所属的Controller。
 
-* 每个```Part```中都有自己的状态，在```Part```中使用状态和Controller类似，有关```Part```状态相关的文档可以阅读此处：[StatePart](#statepart)。
+- 每个```Part```中都有自己的状态，在```Part```中使用状态和Controller类似。
 
 ## 状态管理
 
@@ -368,7 +367,7 @@ class MvcStateScope<TControllerType extends MvcController> extends Widget {
 
 **builder** 状态更新时重建的builder
 
-**stateProvider** 状态提供者，通常为```MvcController```，如果为空，则状态提供者为离```MvcStateScope```最近的类型为泛型```TControllerType```的```MvcController```
+**stateProvider** 状态提供者，通常为```MvcController```，如果为空，则状态提供者为离```MvcStateScope```最近的类型为泛型```TControllerType```的```MvcController```，如果没有制定泛型```TControllerType```就是最近的```MvcController```
 
 **child** 在状态更新时，如果有不需要更新的Widget，通过这个参数传递，可以通过```builder```方法中的参数获取，用于节省性能
 
@@ -392,8 +391,6 @@ MvcStateScope<IndexPageController>(
 
 ```dart
 abstract class MvcStateProvider {
-  T? getState<T>({Object? key});
-
   MvcStateValue<T>? getStateValue<T>({Object? key});
 }
 ```
@@ -420,7 +417,7 @@ class MvcStateValue<T> extends ChangeNotifier {
 方法定义
 
 ```dart
-MvcStateValue<T> initState<T>(T state, {Object? key, MvcStateAccessibility accessibility = MvcStateAccessibility.public})
+MvcStateValue<T> initState<T>(T state, {Object? key})
 ```
 
 使用示例
@@ -433,37 +430,12 @@ initState<int>(0)
 
 **key** 状态标识，**在同一个Controller中状态依靠泛型类型+```key```的hashCode来区分唯一性**
 
-**accessibility** 状态的访问级别：
-
-```dart
-enum MvcStateAccessibility {
-  /// 全局的
-  global,
-
-  /// 公开的
-  public,
-
-  /// 私有的
-  private,
-
-  /// 内部的
-  internal,
-}
-```
-
-* global，任何Controller都可以获取到该状态
-* public，当前Controller以及他的子级可以获取到该状态，默认为public
-* private，当前Controller以及的ControllerPart可以获取到该状态
-* internal，只有状态创建者才可以获取该状态
-
-在一个Controller实例中同一个状态只能初始化一次，泛型类型和key的hashCode相同即表示同一个状态。
-
 ### 获取状态
 
 可以在Controller中获取状态，方法为：
 
 ```dart
-T? getState<T>({Object? key, bool onlySelf = false});
+T? getState<T>({Object? key});
 ```
 
 使用示例
@@ -472,7 +444,7 @@ T? getState<T>({Object? key, bool onlySelf = false});
 var state = getState<int>()
 ```
 
-获取状态时，根据初始化状态时的Key和状态类型来查找状态。查找状态不仅会查找当前Controller初始化的状态，还会依次查找父级中访问级别为```public```以上的状态，如果查找到最顶级还没有找到，则会查找当前所有Controller中访问级别为```global```的状态。简单的说就是可以获取到当前全部可访问的状态。
+在MvcController中，获取状态时，**首先在当前Controller中获取状态。如果当前Controller没有获取到状态，则从```stateValueForUndefined```方法中获取， ```stateValueForUndefined```方法首先从Part中的获取状态，如果Part中没有获取到状态，则从当前Controller的父级获取。**
 
 在使用```MvcStateScope```获取状态时，是```MvcStateProvider```获取，在Mvc中即为```MvcController```，```MvcWidgetStateProvider```是```MvcStateProvider```的包装。
 
@@ -494,7 +466,7 @@ updateState<int>(updater:(state)=>state.value++);
 
 **key** 和获取状态一样，需要更新的状态的标识
 
-在Controller中调用，如果没有获取到要更新的状态则返回null，仅可更新自己创建的状态。
+在Controller中调用，如果没有获取到要更新的状态则返回null，**仅可更新自己创建的状态**。
 
 ### 删除状态
 
@@ -502,47 +474,11 @@ updateState<int>(updater:(state)=>state.value++);
 void deleteState<T>({Object? key});
 ```
 
-同样在Controller中调用，仅可删除自己创建的状态。
-
-### StatePart
-
-在使用Key和类型作为状态的唯一标识时，当相同类型的状态过多时，可能需要创建很多的Key，造成代码的混乱不堪，为了减轻这种状况，提供了一个具有Part的状态提供接口
-
-```dart
-abstract class MvcHasPartStateProvider extends MvcStateProvider {
-  T? getStatePart<T extends MvcStateProvider>();
-}
-```
-
-这个接口可以根据类型返回另一个状态提供者。
-
-```MvcController```同样实现了这个接口，在```MvcController```的实现中，返回的每个```Part```状态提供者中都使用了独立的状态，也就是说每个```Part```中都可以初始化同样类型同样Key的状态。但是在```Part```中只能初始化访问级别为```internal```的状态，```internal```的状态只能通过其自身获取，所以在获取```Part```中的状态时，需要先获取该```Part```然后再获取状态，在```MvcController```获取```Part```时，将会从自己开始往父级查找，直到找到指定类型的```Part```。获取```Part```中的状态的方法定义为：
-
-```dart
-getStatePart<TPartType>().getState<TStateType>(key:key)
-```
-
-使用方式：
-
-```dart
-indexPageController.getStatePart<IndexPageControllerBannerPart>().getState<int>(key:IndexPageControllerBannerPartKeys.bannerIndex)
-```
-
-它会从当前Controller开始往父级查找类型为```TPartType```，然后使用```TPartType```获取状态。如果```TPartType```中没有找到状态，则再交给```TPartType```所属的```MvcController```去获取
-
-在```MvcStateScope```中使用：
-
-```dart
-state.part<IndexPageControllerBannerPart>().get<int>(key:IndexPageControllerBannerPartKeys.bannerIndex)
-```
-
-在```MvcStateScope```中使用时，仅当```MvcStateScope```所使用的```MvcStateProvider```是```MvcHasPartStateProvider```时才有效，否则返回null。在上面代码```part```是对```getStatePart```的包装，```get```是对```getState```的包装。
-
-```MvcController```实现的```Part```类型为```MvcControllerPart```，有关```MvcControllerPart```的创建与使用可以阅读此处[MvcControllerPart](#mvccontrollerpart)
+同样在Controller中调用，**仅可删除自己创建的状态**。
 
 ### Model状态
 
-在Controller中可以直接使用model属性获取Model，Model是一个key为null类型为泛型```TModelType```的状态，也可以使用获取状态的方式获取，Model状态会在Controller所属的```Mvc```被外部重建时更新
+在Controller中可以直接使用model属性获取Model，Model是一个key为null类型为泛型```TModelType```的状态，也可以使用获取状态的方式获取，**Model状态会在Controller所属的```Mvc```被外部重建时更新**
 
 获取model状态：
 
@@ -558,12 +494,6 @@ MvcStateScope<IndexPageController>(
         return Text("${state.get<TModelType>()}");
     },
 )
-```
-
-如果在Controller中有依赖外部Model更新的逻辑，可以监听Model状态：
-
-```dart
-getStateValue<TModelType>()?.addListener(() {});
 ```
 
 ## 依赖注入
@@ -606,27 +536,25 @@ MvcDependencyProvider(
 
 ### 获取依赖
 
-任何由依赖注入创建的服务都可以混入```DependencyInjectionService```来获取其他注入的服务，在MvcController中也可以。获取服务的方法定义如下：
+```MvcDependencyProvider```子级的```MvcController```可以通过混入```DependencyInjectionService```来获取注入的服务。
 
 ```dart
 T getService<T extends Object>();
 ```
 
-泛型类型必须与注入服务时使用的泛型类型一致。
-
 ### 服务范围
 
 每一个MvcController都会在创建时**使用它父级MvcController范围**生成一个服务范围，如果没有父级则使用```MvcOwner```。在Controller所在的服务范围中，默认注册了```MvcController```、```MvcContext```、```MvcView```三个类型的单例服务，其中```MvcController```为Controller本身，```MvcContext```为Controller所在的```Element```，```MvcView```使用Controller创建。服务范围会在Controller销毁时释放
 
-## buildScopedService
+## initService
 
 ```dart
 @override
-void buildScopedService(ServiceCollection collection) {
+void initService(MvcServiceCollection collection) {
     collection.add<Object>((serviceProvider) => Object());
 }
 ```
 
-在Controller中重写```buildScopedService```方法可以在生成该Controller的服务范围时，向该范围注入额外的服务，由于创建服务范围时是基于父级创建的，所以这些额外的服务子级可以获取。
+在Controller中重写```initService```方法可以在当前Controller的服务范围中注入额外的服务。
 
 有关依赖注入的更多使用方式请阅读：[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)文档

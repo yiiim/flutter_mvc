@@ -46,7 +46,8 @@ class TestPorxyController extends MvcProxyController {
 class TestScopedBuilderPorxyController extends MvcProxyController {
   void Function(ServiceCollection collection)? onbuildScopedServiceBlock;
   @override
-  void buildScopedService(ServiceCollection collection) {
+  void initService(MvcServiceCollection collection) {
+    super.initService(collection);
     onbuildScopedServiceBlock?.call(collection);
   }
 }
@@ -112,7 +113,7 @@ void main() {
   );
 
   testWidgets(
-    "test MvcbuildScopedServiceer",
+    "test MvcbuildScopedService",
     (tester) async {
       var controller = TestPorxyController();
       var controller1 = TestPorxyController();

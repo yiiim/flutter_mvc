@@ -1,23 +1,36 @@
 part of './flutter_mvc.dart';
 
 class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> extends EasyTreeRelationElement with DependencyInjectionService implements MvcContext<TControllerType, TModelType> {
-  MvcElement(super.widget, this.create) : super(easyTreeOwner: MvcOwner.sharedOwner);
+  MvcElement(Mvc<TControllerType, TModelType> widget, this.create) : super(widget, easyTreeOwner: MvcOwner.sharedOwner);
 
   final TControllerType Function()? create;
   late final TControllerType _controller = () {
     var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
-    var controller = create?.call() ?? scopedBuilder.getService<MvcControllerProvider<TControllerType>>().create();
-    var provider = scopedBuilder.buildScopedServiceProvider(
+    var scopedService = (scopedBuilder as DependencyInjectionService);
+    var controller = create?.call() ?? scopedService.getService<MvcControllerProvider<TControllerType>>().create();
+    var provider = scopedService.buildScopedServiceProvider(
       builder: (collection) {
         assert(collection is MvcServiceCollection);
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
         collection.addSingleton<MvcContext>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
-        collection.addSingleton<MvcView>((serviceProvider) => controller.view(serviceProvider.get<MvcContext>().model));
+        collection.addSingleton<MvcView>(
+          (serviceProvider) {
+            return controller.view();
+          },
+        );
         collection.addSingleton<MvcControllerPartManager>((serviceProvider) => MvcControllerPartManager());
+        collection.addSingleton(
+          (serviceProvider) {
+            var manager = MvcWidgetManager();
+            scopedService.tryGetService<MvcWidgetManager>()?._registerChild(manager);
+            return manager;
+          },
+        );
+        collection.addSingleton<MvcStateProvider>((serviceProvider) => serviceProvider.get<MvcController>());
         if (TControllerType != MvcController) {
           collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
         }
-        controller.buildScopedService(collection);
+        controller.initService(collection as MvcServiceCollection);
       },
       scope: controller,
     );
@@ -28,7 +41,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void update(covariant Widget newWidget) {
     var oldWidget = widget;
     if ((oldWidget as Mvc<TControllerType, TModelType>?)?.model != (newWidget as Mvc<TControllerType, TModelType>?)?.model) {
-      _controller.updateState<TModelType>(updater: (state) => state.value = (newWidget as Mvc<TControllerType, TModelType>).model, key: this);
+      _controller.updateState<TModelType>(updater: (state) => state.value = (newWidget as Mvc<TControllerType, TModelType>).model);
     }
     super.update(newWidget);
   }
@@ -37,30 +50,31 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
     _controller.addListener(markNeedsBuild);
-    _controller.updateStateInitIfNeed<TModelType>((widget as Mvc<TControllerType, TModelType>).model, key: this);
-    if (_controller._element == null) {
-      _controller.initLinkedState<TModelType>(key: this, onlySelf: true);
-    }
-    _controller._initForElement(this);
+    _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model);
+    assert(_controller._element == null);
+    _controller._element = this;
+    _controller.init();
+    assert(_controller._debugTypesAreRight((widget as Mvc<TControllerType, TModelType>).model), "请为${_controller.runtimeType}提供正确的Model");
   }
 
   @override
   void activate() {
     super.activate();
-    _controller._activateForElement(this);
+    _controller.activate();
   }
 
   @override
   void deactivate() {
     super.deactivate();
-    _controller._deactivateForElement(this);
+    _controller.deactivate();
   }
 
   @override
   void unmount() {
     super.unmount();
     _controller.removeListener(markNeedsBuild);
-    _controller._disposeForElement(this);
+    _controller._element = null;
+    _controller.dispose();
   }
 
   @override

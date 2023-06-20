@@ -4,8 +4,9 @@ class _MvcDependencyProviderController extends MvcProxyController {
   _MvcDependencyProviderController(this.provider);
   final void Function(MvcServiceCollection collection)? provider;
   @override
-  void buildScopedService(ServiceCollection collection) {
-    provider?.call(collection as MvcServiceCollection);
+  void initService(MvcServiceCollection collection) {
+    super.initService(collection);
+    provider?.call(collection);
   }
 }
 

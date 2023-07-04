@@ -1,7 +1,7 @@
 part of './flutter_mvc.dart';
 
 /// Controller
-abstract class MvcController<TModelType> extends ChangeNotifier with MvcStateProviderMixin, MvcControllerContextMixin, DependencyInjectionService {
+abstract class MvcController<TModelType> extends ChangeNotifier with MvcControllerContextMixin, DependencyInjectionService, MvcControllerPartMixin, MvcStateProviderMixin, MvcControllerStateProvider {
   MvcElement? _element;
 
   @override
@@ -17,15 +17,13 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcStatePro
   TModelType get model => getState<TModelType>()!;
 
   /// 初始化
+  @override
   @mustCallSuper
   @protected
   void init() {
-    getService<MvcControllerPartManager>().init();
+    super.init();
   }
 
-  @mustCallSuper
-  @protected
-  void initPart(MvcControllerPartCollection collection) {}
   @mustCallSuper
   @protected
   void initService(MvcServiceCollection collection) {}
@@ -41,33 +39,8 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcStatePro
   /// 返回视图
   MvcView view();
 
-  /// 获取[MvcControllerPart]
-  T? getPart<T extends MvcControllerPart>() => getService<MvcControllerPartManager>().getPart<T>();
-
   /// 更新，将会触发View重建
   void update() => notifyListeners();
-
-  @override
-  MvcStateValue<T>? getStateValue<T>({Object? key}) {
-    return super.getStateValue<T>(key: key) ?? stateValueForUndefined<T>(key: key);
-  }
-
-  /// 从Part中获取状态
-  /// [T]状态类型
-  /// [TPartType]Part的类型，如果是[MvcControllerPart]，则查找全部的Part，如果传入具体的类型则从指定类型的Part中获取状态
-  MvcStateValue<T>? getPartStateValue<T, TPartType extends MvcControllerPart>({Object? key}) {
-    if (TPartType == MvcControllerPart) {
-      return getService<MvcControllerPartManager>().getStateValue<T>(key: key);
-    }
-    return getService<MvcControllerPartManager>().getPart<TPartType>()?.getStateValue<T>(key: key);
-  }
-
-  /// 当前[getStateValue]没有获取到状态时，从该方法获取
-  ///
-  /// 默认实现中，首先从Part中获取状态，如果Part中没有，则从父级获取状态
-  MvcStateValue<T>? stateValueForUndefined<T>({Object? key}) {
-    return getPartStateValue<T, MvcControllerPart>(key: key) ?? parent()?.getStateValue<T>(key: key);
-  }
 }
 
 /// 代理Controller，Model为一个Widget，在View中将只会返回Model

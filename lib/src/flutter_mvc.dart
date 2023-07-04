@@ -14,7 +14,7 @@ part 'controller_part.dart';
 part 'controller_part_manager.dart';
 part 'mvc_state.dart';
 part 'controller_context_mixin.dart';
-part 'controller_state_extension.dart';
+part 'controller_state.dart';
 part 'element.dart';
 part 'state.dart';
 part 'state_scope.dart';
@@ -27,6 +27,7 @@ part 'widget.dart';
 part 'widget_element.dart';
 part 'widget_manager.dart';
 part 'controller_provider.dart';
+part 'environment_state.dart';
 
 part './dependency_injection/provider.dart';
 part './dependency_injection/collection.dart';

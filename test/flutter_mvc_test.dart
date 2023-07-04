@@ -122,7 +122,7 @@ void main() {
   );
 
   testWidgets(
-    "test parent status",
+    "test environment status",
     (tester) async {
       var controller = TestModellessController(
         viewBuilder: (context) {
@@ -139,7 +139,7 @@ void main() {
           return Mvc(create: () => controller);
         },
       );
-      parentController.initState("1");
+      parentController.initEnvironmentState("1");
 
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleFinder = find.text("1");

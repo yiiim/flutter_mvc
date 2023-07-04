@@ -10,7 +10,7 @@ class _MvcControllerPartCollection extends ServiceCollection implements MvcContr
   }
 }
 
-class MvcControllerPartManager with DependencyInjectionService implements MvcStateProvider {
+class MvcControllerPartManager with DependencyInjectionService {
   late final List<Type> _partTypes = [];
   late final ServiceProvider _partProvider;
   void init() {

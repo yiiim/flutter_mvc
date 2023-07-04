@@ -26,6 +26,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
             return manager;
           },
         );
+        collection.addSingleton<MvcControllerEnvironmentState>((serviceProvider) => MvcControllerEnvironmentState(parent: scopedService.tryGetService<MvcControllerEnvironmentState>()));
         collection.addSingleton<MvcStateProvider>((serviceProvider) => serviceProvider.get<MvcController>());
         if (TControllerType != MvcController) {
           collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);

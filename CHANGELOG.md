@@ -41,3 +41,7 @@
 ## 2.1.0+1
 
 * fix bugs
+
+## 2.2.0+1
+
+* Environment State

@@ -25,6 +25,7 @@ Flutter Mvc is a Flutter framework that includes UI and logic separation, state 
   - [Updating State](#updating-state)
   - [Removing State](#deleting-state)
   - [Model State](#model-state)
+  - [Environment State](#environment-state)
 - [Dependency Injection](#dependency-injection)
   - [MvcDependencyProvider](#mvcdependencyprovider)
   - [Accessing Dependencies](#accessing-dependencies)
@@ -442,7 +443,7 @@ Example usage:
 var state = getState<int>();
 ```
 
-When accessing states in an MvcController, it first checks the current Controller. If the state is not found in the current Controller, it checks the `stateValueForUndefined` method. The `stateValueForUndefined` method first checks the Part for the state. If the state is not found in the Part, it checks the parent Controller of the current Controller.
+In MvcController, when getting the state, **First get the state in the current Controller. If the state is not obtained from the current Controller, it will be obtained from [Part](#mvccontrollerpart), if the state is not obtained in the Part, it will be obtained from [Environmental State](#environment-state).**
 
 When using `MvcStateScope` to access states, it uses `MvcStateProvider` to retrieve the states. In Mvc, the `MvcController` acts as the `MvcStateProvider`, and `MvcWidgetStateProvider` is a wrapper around `MvcStateProvider`.
 
@@ -495,6 +496,12 @@ MvcStateScope<IndexPageController>(
     },
 )
 ```
+
+### Environment State
+
+In addition to using the Controller to operate the state, you can also use the ```environment``` attribute of the Controller to operate the state. The state of the ```environment``` can be obtained by all children of the current Mvc.
+
+The ```environment``` operates in the same way as the Controller.
 
 ## Dependency Injection
 

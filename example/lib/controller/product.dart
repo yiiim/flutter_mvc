@@ -5,6 +5,7 @@ class ProductController extends MvcProxyController {
   @override
   void init() {
     super.init();
+    
     initState<List<ProductModel>>(
       [
         ProductModel("1", "Product 1"),

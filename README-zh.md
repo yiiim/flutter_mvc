@@ -25,6 +25,7 @@ Flutter Mvc 是一个包含了UI与逻辑分离、状态管理、依赖注入的
   - [更新状态](#更新状态)
   - [删除状态](#删除状态)
   - [Model状态](#model状态)
+  - [环境状态](#环境状态)
 - [依赖注入](#依赖注入)
   - [MvcDependencyProvider](#mvcdependencyprovider)
   - [获取依赖](#获取依赖)
@@ -293,6 +294,7 @@ void initPart(MvcControllerPartCollection collection) {
 }
 ```
 
+
 同一个Controller可以添加多个```Part```,但是同类型的仅可添加一个
 
 从Controller中获取```Part```：
@@ -444,7 +446,7 @@ T? getState<T>({Object? key});
 var state = getState<int>()
 ```
 
-在MvcController中，获取状态时，**首先在当前Controller中获取状态。如果当前Controller没有获取到状态，则从```stateValueForUndefined```方法中获取， ```stateValueForUndefined```方法首先从Part中的获取状态，如果Part中没有获取到状态，则从当前Controller的父级获取。**
+在MvcController中，获取状态时，**首先在当前Controller中获取状态。如果当前Controller没有获取到状态，则从[Part](#mvccontrollerpart)中获取，如果Part中没有获取到状态，则从[环境状态](#环境状态)中获取。**
 
 在使用```MvcStateScope```获取状态时，是```MvcStateProvider```获取，在Mvc中即为```MvcController```，```MvcWidgetStateProvider```是```MvcStateProvider```的包装。
 
@@ -494,6 +496,23 @@ MvcStateScope<IndexPageController>(
         return Text("${state.get<TModelType>()}");
     },
 )
+```
+
+### 环境状态
+
+除了使用Controller操作状态之外，还可以使用Controller的```environment```属性操作状态，```environment```的状态能够被当前Mvc的所有子级获取。
+
+```environment```操作状态的方式和Controller是一样的。
+
+```dart
+@override
+void init() {
+  environment.initState<int>(1);
+  ...
+  environment.updateState<int>(updater: (state) => state.value++);
+  ...
+  environment.deleteState<int>();
+}
 ```
 
 ## 依赖注入

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+
+
 class TestModel {
   TestModel(this.title);
   final String title;
@@ -103,7 +105,7 @@ void main() {
             (state) {
               return Builder(
                 builder: (context) {
-                  return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
+                  return Text(state.get<String>(key: "mykey") ?? "0", textDirection: TextDirection.ltr);
                 },
               );
             },
@@ -139,12 +141,12 @@ void main() {
           return Mvc(create: () => controller);
         },
       );
+      await tester.pumpWidget(Mvc(create: () => parentController));
       parentController.environment.initState("1");
-
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleFinder = find.text("1");
       expect(titleFinder, findsOneWidget);
-      parentController.updateState<String>(updater: (state) => state.value = "2");
+      parentController.environment.updateState<String>(updater: (state) => state.value = "2");
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleUpdatedFinder = find.text("2");
       expect(titleUpdatedFinder, findsOneWidget);

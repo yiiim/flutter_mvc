@@ -103,8 +103,8 @@ void main() {
           provider: (collection) {
             collection.addController<TestPorxyController>((p) => TestPorxyController());
           },
-          child: Mvc<TestPorxyController, Widget>(
-            model: const Text("test", textDirection: TextDirection.ltr),
+          child: const Mvc<TestPorxyController, Widget>(
+            model: Text("test", textDirection: TextDirection.ltr),
           ),
         ),
       );

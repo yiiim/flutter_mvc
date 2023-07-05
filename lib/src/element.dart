@@ -4,11 +4,15 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   MvcElement(Mvc<TControllerType, TModelType> widget, this.create) : super(widget, easyTreeOwner: MvcOwner.sharedOwner);
 
   final TControllerType Function()? create;
-  late final TControllerType _controller = () {
+
+  late final ServiceProvider _scopedServiceProvider;
+  late final TControllerType _controller;
+
+  void _initController() {
     var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
     var scopedService = (scopedBuilder as DependencyInjectionService);
     var controller = create?.call() ?? scopedService.getService<MvcControllerProvider<TControllerType>>().create();
-    var provider = scopedService.buildScopedServiceProvider(
+    _scopedServiceProvider = scopedService.buildScopedServiceProvider(
       builder: (collection) {
         assert(collection is MvcServiceCollection);
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
@@ -26,6 +30,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
             return manager;
           },
         );
+        collection.addSingleton<MvcControllerEnvironment>((serviceProvider) => MvcControllerEnvironment(parent: scopedService.tryGetService<MvcControllerEnvironment>()));
         collection.addSingleton<MvcStateProvider>((serviceProvider) => serviceProvider.get<MvcController>());
         if (TControllerType != MvcController) {
           collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
@@ -34,8 +39,8 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
       },
       scope: controller,
     );
-    return provider.get<TControllerType>();
-  }();
+    _controller = _scopedServiceProvider.get<TControllerType>();
+  }
 
   @override
   void update(covariant Widget newWidget) {
@@ -49,6 +54,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   @override
   void mountEasyTree(EasyTreeNode? parent) {
     super.mountEasyTree(parent);
+    _initController();
     _controller.addListener(markNeedsBuild);
     _controller.initState<TModelType>((widget as Mvc<TControllerType, TModelType>).model);
     assert(_controller._element == null);
@@ -74,7 +80,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
     super.unmount();
     _controller.removeListener(markNeedsBuild);
     _controller._element = null;
-    _controller.dispose();
+    _scopedServiceProvider.dispose();
   }
 
   @override

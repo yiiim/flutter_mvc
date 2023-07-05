@@ -1,9 +1,33 @@
 part of './flutter_mvc.dart';
 
+/// 状态提供者接口
+abstract class MvcControllerEnvironmentStateProvider implements MvcStateProvider {}
+
+/// Part状态提供者接口
+abstract class MvcControllerPartStateProvider implements MvcStateProvider {}
+
+/// Controller状态提供者
+mixin MvcControllerStateProvider on MvcStateProviderMixin, DependencyInjectionService {
+  /// 环境状态提供者, 在MvcController中默认为[MvcControllerEnvironment]
+  MvcControllerEnvironmentStateProvider get environmentStateProvider;
+
+  /// Part状态提供者, 在MvcController中默认为[MvcControllerPartManager]
+  MvcControllerPartStateProvider get partStateProvider;
+
+  /// 获取状态值
+  ///
+  /// [key]状态的key
+  /// 先获取自己的状态，如果不存在则获取Part中的状态，如果不存在则获取环境状态
+  @override
+  MvcStateValue<T>? getStateValue<T>({Object? key}) {
+    return super.getStateValue<T>(key: key) ?? partStateProvider.getStateValue<T>(key: key) ?? environmentStateProvider.getStateValue<T>(key: key);
+  }
+}
+
 /// 一些易用的拓展方法
-extension MvcControllerStateMixinExtension on MvcStateProviderMixin {
+extension MvcControllerStateMixinExtension on MvcControllerStateProvider {
   /// 如果状态不存在则初始化状态，
-  MvcStateValue<T> initIfNeedState<T>(T Function() stateCreator, {Object? key}) {
+  MvcStateValue<T> initStateIfNeed<T>(T Function() stateCreator, {Object? key}) {
     return getStateValue<T>(key: key) ?? initState(stateCreator(), key: key);
   }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+
+
 class TestModel {
   TestModel(this.title);
   final String title;
@@ -68,7 +70,7 @@ void main() {
   );
 
   testWidgets(
-    "test status",
+    "test state",
     (tester) async {
       var controller = TestModellessController(
         viewBuilder: (context) {
@@ -95,7 +97,34 @@ void main() {
   );
 
   testWidgets(
-    "test parent status",
+    "test key state",
+    (tester) async {
+      var controller = TestModellessController(
+        viewBuilder: (context) {
+          return MvcStateScope(
+            (state) {
+              return Builder(
+                builder: (context) {
+                  return Text(state.get<String>(key: "mykey") ?? "0", textDirection: TextDirection.ltr);
+                },
+              );
+            },
+          );
+        },
+      );
+      controller.initState("1", key: "mykey");
+      await tester.pumpWidget(Mvc(create: () => controller));
+      final titleFinder = find.text("1");
+      expect(titleFinder, findsOneWidget);
+      controller.updateState<String>(updater: (state) => state.value = "2", key: "mykey");
+      await tester.pumpWidget(Mvc(create: () => controller));
+      final titleUpdatedFinder = find.text("2");
+      expect(titleUpdatedFinder, findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "test environment status",
     (tester) async {
       var controller = TestModellessController(
         viewBuilder: (context) {
@@ -112,12 +141,12 @@ void main() {
           return Mvc(create: () => controller);
         },
       );
-      parentController.initState("1");
-
+      await tester.pumpWidget(Mvc(create: () => parentController));
+      parentController.environment.initState("1");
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleFinder = find.text("1");
       expect(titleFinder, findsOneWidget);
-      parentController.updateState<String>(updater: (state) => state.value = "2");
+      parentController.environment.updateState<String>(updater: (state) => state.value = "2");
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleUpdatedFinder = find.text("2");
       expect(titleUpdatedFinder, findsOneWidget);

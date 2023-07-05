@@ -1,5 +1,6 @@
 part of '../flutter_mvc.dart';
 
+/// 用来承载MvcController工厂的容器
 class _MvcControllerFactoryProvider<T extends MvcController> extends MvcControllerProvider<T> {
   _MvcControllerFactoryProvider(this.factory);
   final T Function() factory;

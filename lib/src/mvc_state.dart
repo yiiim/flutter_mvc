@@ -26,7 +26,7 @@ mixin MvcStateProviderMixin implements MvcStateProvider {
   /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
   MvcStateValue<T> initStateValue<T>(MvcStateValue<T> stateValue, {Object? key}) {
     _MvcStateKey stateKey = _MvcStateKey(stateType: T, key: key);
-    assert(_internalState.containsKey(stateKey) == false, "创建了重复的状态类型,你可以使用key区分状态");
+    assert(_internalState.containsKey(stateKey) == false, "State has been initialized");
     _internalState[stateKey] = stateValue;
     return stateValue;
   }
@@ -36,7 +36,7 @@ mixin MvcStateProviderMixin implements MvcStateProvider {
   /// [state]状态初始值
   /// [key]名称
   /// 状态依靠[key]和[T]确定为同一状态，初始化状态时，同一Controller内确保[key]+[T]唯一
-  MvcStateValue<T> initState<T>(T state, {Object? key}) => initStateValue(MvcStateValue<T>(state));
+  MvcStateValue<T> initState<T>(T state, {Object? key}) => initStateValue(MvcStateValue<T>(state), key: key);
 
   /// 更新状态，如果状态不存在则返回null
   ///

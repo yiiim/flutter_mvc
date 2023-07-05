@@ -2,19 +2,44 @@ part of './flutter_mvc.dart';
 
 class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService, MvcStateProviderMixin {
   static final MvcOwner sharedOwner = MvcOwner();
-  late final MvcServiceCollection _serviceCollection = MvcServiceCollection()
-    ..addSingleton<MvcOwner>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true)
-    ..add<ServiceCollection>((serviceProvider) => MvcServiceCollection());
-  MvcServiceCollection get serviceCollection => _serviceCollection;
   ServiceProvider? _serviceProvider;
   @override
   ServiceProvider get serviceProvider {
-    _serviceProvider ??= serviceCollection.build();
+    if (_serviceProvider == null) {
+      ServiceCollection collection = ServiceCollection();
+      _initMvcService(collection);
+      _serviceProvider = collection.build();
+    }
     return _serviceProvider!;
   }
 
+  void _initMvcService(ServiceCollection collection) {
+    collection.addSingleton<MvcOwner>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
+    collection.add<ServiceCollection>((serviceProvider) => MvcServiceCollection());
+  }
+
+  /// 使用已有的服务容器
+  ///
+  /// Mvc中将会获得一个新的作用域，该作用域的父作用域为[provider]的作用域
+  void useProvider(ServiceProvider provider) {
+    assert(_serviceProvider == null, 'Mvc has been initialized');
+    _serviceProvider = provider.buildScoped(
+      builder: (collection) {
+        _initMvcService(collection);
+      },
+    );
+  }
+
+  /// 获取当前所有Mvc中[T]类型的MvcController
+  ///
+  /// [context]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取离[context]最近的Mvc中的[T]类型的MvcController
+  /// [where]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取满足[where]条件的Mvc中的[T]类型的MvcController
   T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => getAll(context: context, where: where).firstOrNull;
 
+  /// 获取当前所有Mvc中[T]类型的MvcController
+  ///
+  /// [context]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取离[context]最近的Mvc中的[T]类型的MvcController
+  /// [where]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取满足[where]条件的Mvc中的[T]类型的MvcController
   Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) sync* {
     if (context == null) {
       var nodes = (easyTreeGetChildrenInAll(EasyTreeNodeKey<Type>(T))).where((element) => where?.call(element as T) ?? true);
@@ -37,12 +62,12 @@ class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService, Mv
 }
 
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends Widget {
-  // ignore: prefer_const_constructors_in_immutables
-  Mvc({this.create, TModelType? model, Key? key})
+  const Mvc({this.create, TModelType? model, Key? key})
       : model = model ?? model as TModelType,
         super(key: key);
   final TControllerType Function()? create;
   final TModelType model;
+
   static T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.get<T>(context: context, where: where);
   static Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.getAll<T>(context: context, where: where);
 

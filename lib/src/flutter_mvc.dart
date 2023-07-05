@@ -27,7 +27,7 @@ part 'widget.dart';
 part 'widget_element.dart';
 part 'widget_manager.dart';
 part 'controller_provider.dart';
-part 'environment_state.dart';
+part 'environment.dart';
 
 part './dependency_injection/provider.dart';
 part './dependency_injection/collection.dart';

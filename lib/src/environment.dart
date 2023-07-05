@@ -1,10 +1,10 @@
 part of './flutter_mvc.dart';
 
-class MvcControllerEnvironmentState with MvcStateProviderMixin {
-  MvcControllerEnvironmentState({MvcControllerEnvironmentState? parent}) {
+class MvcControllerEnvironment with MvcStateProviderMixin implements MvcControllerEnvironmentStateProvider {
+  MvcControllerEnvironment({MvcControllerEnvironment? parent}) {
     _parent = parent;
   }
-  MvcControllerEnvironmentState? _parent;
+  MvcControllerEnvironment? _parent;
 
   @override
   MvcStateValue<T>? getStateValue<T>({Object? key}) {

@@ -139,7 +139,7 @@ void main() {
           return Mvc(create: () => controller);
         },
       );
-      parentController.initEnvironmentState("1");
+      parentController.environment.initState("1");
 
       await tester.pumpWidget(Mvc(create: () => parentController));
       final titleFinder = find.text("1");

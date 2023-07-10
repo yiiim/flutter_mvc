@@ -10,10 +10,10 @@ class IndexPageModel {
 
 class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
   @override
-  Widget buildView(ctx) {
+  Widget buildView() {
     return Scaffold(
       appBar: AppBar(
-        title: Text(ctx.model.title),
+        title: Text(model.title),
       ),
       body: Center(
         child: Column(
@@ -31,12 +31,12 @@ class IndexPage extends MvcView<IndexPageController, IndexPageModel> {
                 );
               },
             ),
-            CupertinoButton(onPressed: ctx.controller.tapPush, child: const Text("start demo")),
+            CupertinoButton(onPressed: controller.tapPush, child: const Text("start demo")),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: ctx.controller.incrementCounter,
+        onPressed: controller.incrementCounter,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),

@@ -10,7 +10,7 @@ import 'common/navigator/controller.dart';
 
 class TestModellessController extends MvcController {
   TestModellessController({this.viewBuilder});
-  final Widget Function(MvcContext<TestModellessController, void> context)? viewBuilder;
+  final Widget Function(TestModellessController context)? viewBuilder;
   @override
   MvcView<MvcController, dynamic> view() {
     return MvcModelessViewBuilder<TestModellessController>(

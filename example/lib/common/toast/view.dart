@@ -5,19 +5,19 @@ import 'controller.dart';
 
 class ToastView extends MvcView<ToastController, ToastModel> {
   @override
-  Widget buildView(ctx) {
+  Widget buildView() {
     return Material(
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Positioned.fill(child: ctx.model.child),
+          Positioned.fill(child: model.child),
           FadeTransition(
-            opacity: ctx.controller.animationController,
+            opacity: controller.animationController,
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Theme.of(ctx.buildContext).primaryColor,
+                  color: Theme.of(context).primaryColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: MvcStateScope<ToastController>(

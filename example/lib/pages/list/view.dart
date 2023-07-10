@@ -7,7 +7,7 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 
 class ListPage extends MvcModelessView<ListPageController> {
   @override
-  Widget buildView(ctx) {
+  Widget buildView() {
     return Scaffold(
       appBar: AppBar(
         title: const Text("List"),
@@ -24,7 +24,7 @@ class ListPage extends MvcModelessView<ListPageController> {
                     ? const Text("已添加购物车", style: TextStyle(color: Colors.grey))
                     : CupertinoButton(
                         child: const Icon(Icons.add_shopping_cart_outlined),
-                        onPressed: () => ctx.controller.addShoppingCart(datas[index]),
+                        onPressed: () => controller.addShoppingCart(datas[index]),
                       ),
               );
             },
@@ -33,7 +33,7 @@ class ListPage extends MvcModelessView<ListPageController> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: ctx.controller.tapShoppingCart,
+        onPressed: controller.tapShoppingCart,
         child: MvcStateScope(
           (state) {
             return Column(

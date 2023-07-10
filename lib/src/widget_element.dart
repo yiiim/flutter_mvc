@@ -29,7 +29,7 @@ class MvcStatelessElement<TControllerType extends MvcController> extends Compone
   MvcStatelessElement(super.widget);
 
   @override
-  Widget build() => (widget as MvcStatelessWidget).build(_controller!.context);
+  Widget build() => (widget as MvcStatelessWidget).build(_controller!.mvcContext);
 }
 
 class MvcStatefulElement<TControllerType extends MvcController> extends ComponentElement with MvcWidgetElement<TControllerType> {

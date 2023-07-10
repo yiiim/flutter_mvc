@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-
-
 class TestModel {
   TestModel(this.title);
   final String title;
@@ -13,7 +11,7 @@ class TestController extends MvcController<TestModel> {
   TestController({
     this.viewBuilder,
   });
-  final Widget Function(MvcContext<TestController, TestModel> context)? viewBuilder;
+  final Widget Function(TestController context)? viewBuilder;
   @override
   MvcView view() {
     return MvcViewBuilder<TestController, TestModel>(
@@ -27,7 +25,7 @@ class TestController extends MvcController<TestModel> {
 
 class TestModellessController extends MvcController {
   TestModellessController({this.viewBuilder});
-  final Widget Function(MvcContext<TestModellessController, void> context)? viewBuilder;
+  final Widget Function(TestModellessController context)? viewBuilder;
   @override
   MvcView<MvcController, dynamic> view() {
     return MvcModelessViewBuilder<TestModellessController>(

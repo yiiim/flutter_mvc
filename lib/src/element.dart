@@ -140,7 +140,7 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
       ];
 
   @override
-  Widget buildChild() => getService<MvcView>()._buildView(this);
+  Widget buildChild() => getService<MvcView>().buildView();
 
   @override
   TControllerType get controller => _controller;

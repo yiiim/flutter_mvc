@@ -15,10 +15,12 @@ abstract class MvcController<TModelType> extends ChangeNotifier with MvcControll
   @override
   MvcControllerPartStateProvider get partStateProvider => partManager;
   @override
-  MvcContext get context {
+  MvcContext get mvcContext {
     assert(_element != null, "Controller has not been initialized");
     return _element!;
   }
+
+  BuildContext get context => mvcContext.buildContext;
 
   /// 获取model
   ///

@@ -17,7 +17,7 @@ class IndexPageController extends MvcController<IndexPageModel> {
   }
 
   void tapPush() {
-    Navigator.of(context.buildContext).push(
+    Navigator.of(mvcContext.buildContext).push(
       MaterialPageRoute(
         builder: (context) {
           return Mvc(create: () => ListPageController());

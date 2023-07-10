@@ -7,7 +7,7 @@ import 'controller.dart';
 
 class ShoppingCartPage extends MvcModelessView<ShoppingCartPageController> {
   @override
-  Widget buildView(ctx) {
+  Widget buildView() {
     return Scaffold(
       appBar: AppBar(
         title: const Text("购物车"),
@@ -21,7 +21,7 @@ class ShoppingCartPage extends MvcModelessView<ShoppingCartPageController> {
                 title: Text(datas[index].product.title),
                 trailing: CupertinoButton(
                   child: const Icon(Icons.delete),
-                  onPressed: () => ctx.controller.tapDelete(datas[index].product),
+                  onPressed: () => controller.tapDelete(datas[index].product),
                 ),
               );
             },

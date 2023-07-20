@@ -103,7 +103,7 @@ void main() {
             (state) {
               return Builder(
                 builder: (context) {
-                  return Text(state.get<String>(key: "mykey") ?? "0", textDirection: TextDirection.ltr);
+                  return Text(state.get<String>("mykey") ?? "0", textDirection: TextDirection.ltr);
                 },
               );
             },

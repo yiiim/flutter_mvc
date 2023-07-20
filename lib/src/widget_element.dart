@@ -52,7 +52,7 @@ class MvcStatefulElement<TControllerType extends MvcController> extends Componen
     _serviceProvider = _controller!.buildScopedServiceProvider(
       builder: (collection) {
         _state!.initService(collection);
-        collection.addSingleton<MvcWidgetState>((serviceProvider) => _state!);
+        collection.addSingleton<MvcWidgetState>((serviceProvider) => _state!, initializeWhenServiceProviderBuilt: true);
       },
     );
     assert(_state == _serviceProvider.get<MvcWidgetState>());

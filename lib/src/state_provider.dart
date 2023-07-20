@@ -23,12 +23,12 @@ extension MvcStateProviderExtension on MvcStateProvider {
   /// 获取状态
   ///
   /// [key] 状态key
-  T? getState<T>({Object? key}) => getStateValue<T>(key: key)?.value;
+  T? getState<T>([Object? key]) => getStateValue<T>(key: key)?.value;
 }
 
 extension MvcStateContextExtension on MvcStateContext {
   /// 获取状态
   ///
   /// [key] 状态key
-  T? get<T>({Object? key}) => getValue<T>(key: key)?.value;
+  T? get<T>([Object? key]) => getValue<T>(key: key)?.value;
 }

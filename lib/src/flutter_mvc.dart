@@ -28,6 +28,8 @@ part 'widget_element.dart';
 part 'widget_manager.dart';
 part 'controller_provider.dart';
 part 'environment.dart';
+part 'app.dart';
+part 'owner.dart';
 
 part './dependency_injection/provider.dart';
 part './dependency_injection/collection.dart';

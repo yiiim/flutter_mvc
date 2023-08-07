@@ -9,10 +9,9 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
   late final TControllerType _controller;
 
   void _initController() {
-    var scopedBuilder = parent() ?? easyTreeOwner as MvcOwner;
-    var scopedService = (scopedBuilder as DependencyInjectionService);
-    var controller = create?.call() ?? scopedService.getService<MvcControllerProvider<TControllerType>>().create();
-    _scopedServiceProvider = scopedService.buildScopedServiceProvider(
+    var scopedService = parent()?.serviceProvider ?? (easyTreeOwner as MvcOwner).serviceProvider;
+    var controller = create?.call() ?? scopedService.get<MvcControllerProvider<TControllerType>>().create();
+    _scopedServiceProvider = scopedService.buildScoped(
       builder: (collection) {
         assert(collection is MvcServiceCollection);
         collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
@@ -26,11 +25,11 @@ class MvcElement<TControllerType extends MvcController<TModelType>, TModelType> 
         collection.addSingleton(
           (serviceProvider) {
             var manager = MvcWidgetManager();
-            scopedService.tryGetService<MvcWidgetManager>()?._registerChild(manager);
+            scopedService.tryGet<MvcWidgetManager>()?._registerChild(manager);
             return manager;
           },
         );
-        collection.addSingleton<MvcControllerEnvironment>((serviceProvider) => MvcControllerEnvironment(parent: scopedService.tryGetService<MvcControllerEnvironment>()));
+        collection.addSingleton<MvcControllerEnvironment>((serviceProvider) => MvcControllerEnvironment(parent: scopedService.tryGet<MvcControllerEnvironment>()));
         collection.addSingleton<MvcStateProvider>((serviceProvider) => serviceProvider.get<MvcController>());
         if (TControllerType != MvcController) {
           collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);

@@ -16,19 +16,11 @@ class MvcStateScope<TControllerType extends MvcController> extends MvcStatefulWi
   final MvcStateProvider? stateProvider;
 
   @override
-  MvcWidgetState<MvcController, MvcStatefulWidget<MvcController>> createState() => _MvcStateScopeState();
+  MvcWidgetState<TControllerType, MvcStatefulWidget<TControllerType>> createState() => _MvcStateScopeState();
 }
 
 class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidgetState<TControllerType, MvcStateScope<TControllerType>> {
   Set<MvcStateValue>? _dependencies;
-
-  @override
-  void initService(ServiceCollection collection) {
-    super.initService(collection);
-    if (widget.stateProvider != null) {
-      collection.addSingleton((serviceProvider) => widget.stateProvider!);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +40,7 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
     super.deactivate();
     final dependencies = _dependencies ?? {};
     for (var element in dependencies) {
-      element.removeListener(update);
+      element.removeListener(_update);
     }
   }
 
@@ -57,7 +49,7 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
     super.activate();
     final dependencies = _dependencies ?? {};
     for (var element in dependencies) {
-      element.addListener(update);
+      element.addListener(_update);
     }
   }
 
@@ -67,13 +59,17 @@ class _MvcStateScopeState<TControllerType extends MvcController> extends MvcWidg
       if (addListenerDependentStates.contains(element)) {
         addListenerDependentStates.remove(element);
       } else {
-        element.removeListener(update);
+        element.removeListener(_update);
       }
     }
     for (var element in addListenerDependentStates) {
-      element.addListener(update);
+      element.addListener(_update);
     }
     _dependencies = dependentStates;
+  }
+
+  void _update() {
+    setState(() {});
   }
 }
 

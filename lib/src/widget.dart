@@ -1,65 +1,50 @@
 part of './flutter_mvc.dart';
 
-abstract class MvcWidget<TControllerType extends MvcController> extends Widget {
-  const MvcWidget({super.key});
-
-  @override
-  MvcWidgetElement<TControllerType> createElement();
+mixin MvcWidget<TControllerType extends MvcController> on Widget {
+  String? get id;
+  List<String>? get classes;
 }
 
-abstract class MvcStatelessWidget<TControllerType extends MvcController> extends MvcWidget {
-  const MvcStatelessWidget({super.key});
-  @override
-  MvcWidgetElement<TControllerType> createElement() => MvcStatelessElement<TControllerType>(this);
-  Widget build(MvcContext context);
-}
-
-class MvcBuilder<TControllerType extends MvcController> extends MvcStatelessWidget<TControllerType> {
-  const MvcBuilder(this.builder, {super.key});
-  final Widget Function(MvcContext context) builder;
+abstract class MvcStatelessWidget<TControllerType extends MvcController> extends StatelessWidget with MvcWidget {
+  const MvcStatelessWidget({this.id, this.classes, super.key});
 
   @override
-  Widget build(MvcContext context) => builder(context);
-}
-
-abstract class MvcStatefulWidget<TControllerType extends MvcController> extends MvcWidget {
-  const MvcStatefulWidget({super.key});
+  final String? id;
+  @override
+  final List<String>? classes;
 
   @override
-  MvcWidgetElement createElement() => MvcStatefulElement<TControllerType>(this);
-  MvcWidgetState createState();
+  StatelessElement createElement() => MvcStatelessElement<TControllerType>(this);
 }
 
-abstract class MvcWidgetState<TControllerType extends MvcController, T extends MvcStatefulWidget<TControllerType>> with DependencyInjectionService {
-  MvcStatefulElement<TControllerType>? _element;
-  TControllerType get controller => _element!._controller!;
+abstract class MvcStatefulWidget<TControllerType extends MvcController> extends StatefulWidget with MvcWidget {
+  const MvcStatefulWidget({this.id, this.classes, super.key});
 
-  T get widget => _widget!;
-  T? _widget;
+  @override
+  final String? id;
+  @override
+  final List<String>? classes;
 
-  bool get mounted => _element != null;
-  @protected
+  @override
+  StatefulElement createElement() => MvcStatefulElement<TControllerType>(this);
+
+  @override
+  MvcWidgetState<TControllerType, MvcStatefulWidget<TControllerType>> createState();
+}
+
+abstract class MvcWidgetState<TControllerType extends MvcController, T extends MvcStatefulWidget<TControllerType>> extends State<T> with DependencyInjectionService {
+  TControllerType get controller => (context as MvcStatefulElement<TControllerType>)._controller!;
+
+  @override
   @mustCallSuper
-  void initService(ServiceCollection collection) {}
-  @protected
-  @mustCallSuper
-  void initState() {}
-  @mustCallSuper
-  @protected
-  void didUpdateWidget(covariant T oldWidget) {}
-  @protected
-  @mustCallSuper
-  void reassemble() {}
-  @protected
-  @mustCallSuper
-  void deactivate() {}
-  @protected
-  @mustCallSuper
-  void activate() {}
-  void update() {
-    assert(_element != null, "please check mounted is true");
-    _element!.markNeedsBuild();
+  void initState() {
+    super.initState();
+    controller.buildScopedServiceProvider(
+      builder: (collection) {
+        collection.addSingleton<MvcWidgetState>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
+        collection.addSingleton<MvcWidgetState<TControllerType, T>>((serviceProvider) => this);
+        collection.addSingleton((serviceProvider) => MvcWidgetManager());
+      },
+    );
   }
-
-  Widget build(BuildContext context);
 }

@@ -27,13 +27,13 @@
     },
     {
       "name": "collection",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/collection-1.17.1",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/collection-1.17.2",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
     {
       "name": "dart_dependency_injection",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/dart_dependency_injection-1.0.1+10",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/dart_dependency_injection-1.0.1+11",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -62,12 +62,6 @@
       "languageVersion": "3.0"
     },
     {
-      "name": "js",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/js-0.6.7",
-      "packageUri": "lib/",
-      "languageVersion": "2.19"
-    },
-    {
       "name": "lints",
       "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/lints-2.1.1",
       "packageUri": "lib/",
@@ -75,15 +69,15 @@
     },
     {
       "name": "matcher",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/matcher-0.12.15",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/matcher-0.12.16",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
     {
       "name": "material_color_utilities",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/material_color_utilities-0.2.0",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/material_color_utilities-0.5.0",
       "packageUri": "lib/",
-      "languageVersion": "2.13"
+      "languageVersion": "2.17"
     },
     {
       "name": "meta",
@@ -105,9 +99,9 @@
     },
     {
       "name": "source_span",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/source_span-1.9.1",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/source_span-1.10.0",
       "packageUri": "lib/",
-      "languageVersion": "2.14"
+      "languageVersion": "2.18"
     },
     {
       "name": "stack_trace",
@@ -135,7 +129,7 @@
     },
     {
       "name": "test_api",
-      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/test_api-0.5.1",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/test_api-0.6.0",
       "packageUri": "lib/",
       "languageVersion": "2.18"
     },
@@ -146,13 +140,19 @@
       "languageVersion": "2.14"
     },
     {
+      "name": "web",
+      "rootUri": "file:///Users/ybz/.pub-cache/hosted/pub.dev/web-0.1.4-beta",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
       "name": "flutter_mvc",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "3.0"
     }
   ],
-  "generated": "2023-08-19T06:49:06.518373Z",
+  "generated": "2023-08-19T13:08:52.766166Z",
   "generator": "pub",
-  "generatorVersion": "3.0.6"
+  "generatorVersion": "3.1.0"
 }

@@ -51,7 +51,7 @@ mixin MvcSingleTickerProviderStateMixin<T> on MvcController<T> implements Ticker
     super.dispose();
   }
 
-  ValueNotifier<bool>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   void activate() {
@@ -67,7 +67,7 @@ mixin MvcSingleTickerProviderStateMixin<T> on MvcController<T> implements Ticker
   }
 
   void _updateTickerModeNotifier() {
-    final ValueNotifier<bool> newNotifier = TickerMode.getNotifier(context);
+    final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier == _tickerModeNotifier) {
       return;
     }
@@ -99,7 +99,7 @@ mixin MvcTickerProviderStateMixin<T> on MvcController<T> implements TickerProvid
     _tickers!.remove(ticker);
   }
 
-  ValueNotifier<bool>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   void activate() {
@@ -118,7 +118,7 @@ mixin MvcTickerProviderStateMixin<T> on MvcController<T> implements TickerProvid
   }
 
   void _updateTickerModeNotifier() {
-    final ValueNotifier<bool> newNotifier = TickerMode.getNotifier(context);
+    final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier == _tickerModeNotifier) {
       return;
     }

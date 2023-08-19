@@ -1,3 +1,51 @@
+## 3.0.0-beta.1
+
+* upgrade to 3.0.0-beta
+
+## 2.2.0+1
+
+* Environment State
+
+## 2.1.0+1
+
+* fix bugs
+
+## 2.1.0
+
+* fix bugs
+
+## 2.0.0
+
+* upgrade to 2.0.0
+
+## 2.0.0-beta
+
+* upgrade to 2.0.0
+
+## 1.0.1+5
+
+* optimization
+
+## 1.0.1+4
+
+* publish with github action
+
+## 1.0.1+2
+
+* change dependency
+
+## 1.0.1+1
+
+* fix bugs. add test.
+
+## 1.0.0+1
+
+* dependency injection
+
+## 0.0.1+1
+
+* fix pub issue.
+
 ## 0.0.1
 
 * TODO: Describe initial release.

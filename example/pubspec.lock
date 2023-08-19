@@ -34,7 +34,7 @@ packages:
     source: hosted
     version: "1.1.1"
   collection:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: collection
       sha256: "4a07be6cb69c84d677a6c3096fcf960cc3285a8330b4603e0d463d15d9bd934c"
@@ -57,14 +57,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1+10"
-  easy_tree:
-    dependency: transitive
-    description:
-      name: easy_tree
-      sha256: "2af6fe6f842bc8578a9a72bd250c20e2bfab2f6d7a4142412958a9bb4685ff45"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.1+2"
   fake_async:
     dependency: transitive
     description:
@@ -92,7 +84,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "2.2.0+1"
+    version: "3.0.0-beta.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -208,5 +200,5 @@ packages:
     source: hosted
     version: "2.1.4"
 sdks:
-  dart: ">=3.0.0 <4.0.0"
-  flutter: ">=2.5.0"
+  dart: ">=3.0.6 <4.0.0"
+  flutter: ">=1.17.0"

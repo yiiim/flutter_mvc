@@ -1,70 +1,69 @@
-import 'package:example/common/toast/controller.dart';
-import 'package:example/controller/product.dart';
-import 'package:example/controller/shopping_cart.dart';
-import 'package:example/pages/index/controller.dart';
-import 'package:example/pages/index/view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
-
-import 'common/navigator/controller.dart';
-
-class TestModellessController extends MvcController {
-  TestModellessController({this.viewBuilder});
-  final Widget Function(TestModellessController context)? viewBuilder;
-  @override
-  MvcView<MvcController, dynamic> view() {
-    return MvcModelessViewBuilder<TestModellessController>(
-      (context) {
-        if (viewBuilder != null) return viewBuilder!(context);
-        return Text(model.title, textDirection: TextDirection.ltr);
-      },
-    );
-  }
-
-  @override
-  void initPart(MvcControllerPartCollection collection) {
-    super.initPart(collection);
-  }
-}
 
 void main() {
   runApp(const MyApp());
 }
 
+class TestMvcController extends MvcController {
+  int count = 0;
+  @override
+  MvcView view() => TestMvcView();
+
+  void tapAdd() {
+    count++;
+    $("#test").update();
+  }
+}
+
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MvcDependencyProvider(
-      provider: (collection) {
-        collection.addController<IndexPageController>((serviceProvider) => IndexPageController());
-      },
-      child: MaterialApp(
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: MvcProxy(
-          proxyCreate: () => NavigatorController(),
-          child: Mvc(
-            create: () => IndexPageController(),
-            model: IndexPageModel(title: "Mvc Demo"),
-          ),
-        ),
-        builder: (context, child) {
-          return Mvc(
-            create: () => ToastController(),
-            model: ToastModel(
-              MvcMultiProxy(
-                proxyCreate: [
-                  () => ProductController(),
-                  () => ShoppingCartController(),
-                ],
-                child: child!,
-              ),
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: Mvc(create: () => TestMvcController()),
+    );
+  }
+}
+
+class TestMvcView extends MvcView<TestMvcController, dynamic> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text("Test"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'You have pushed the button this many times:',
             ),
-          );
-        },
+            MvcBuilder<TestMvcController>(
+              classes: const ["test"],
+              id: "test",
+              builder: (context) {
+                return Text(
+                  '${context.controller.count}',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: controller.tapAdd,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
       ),
     );
   }

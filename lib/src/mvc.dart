@@ -1,105 +1,159 @@
-part of './flutter_mvc.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_mvc/flutter_mvc.dart';
 
-class MvcOwner extends EasyTreeRelationOwner with DependencyInjectionService, MvcStateProviderMixin {
-  static final MvcOwner sharedOwner = MvcOwner();
-  ServiceProvider? _serviceProvider;
-  @override
-  ServiceProvider get serviceProvider {
-    if (_serviceProvider == null) {
-      ServiceCollection collection = ServiceCollection();
-      _initMvcService(collection);
-      _serviceProvider = collection.build();
-    }
-    return _serviceProvider!;
-  }
+abstract class MvcController<TModelType> with DependencyInjectionService {
+  late MvcControllerState _state;
+  TModelType get model => _state.widget.model;
+  BuildContext get context => _state.context;
 
-  void _initMvcService(ServiceCollection collection) {
-    collection.addSingleton<MvcOwner>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
-    collection.add<ServiceCollection>((serviceProvider) => MvcServiceCollection());
-  }
+  MvcView view();
 
-  /// 使用已有的服务容器
-  ///
-  /// Mvc中将会获得一个新的作用域，该作用域的父作用域为[provider]的作用域
-  void useProvider(ServiceProvider provider) {
-    assert(_serviceProvider == null, 'Mvc has been initialized');
-    _serviceProvider = provider.buildScoped(
-      builder: (collection) {
-        _initMvcService(collection);
-      },
-    );
-  }
+  @protected
+  void init() {}
+  @protected
+  void didUpdateModel(TModelType oldModel) {}
+  @mustCallSuper
+  @protected
+  void activate() {}
+  @mustCallSuper
+  @protected
+  void deactivate() {}
+  @mustCallSuper
+  @protected
+  void initService(ServiceCollection collection) {}
 
-  /// 获取当前所有Mvc中[T]类型的MvcController
-  ///
-  /// [context]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取离[context]最近的Mvc中的[T]类型的MvcController
-  /// [where]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取满足[where]条件的Mvc中的[T]类型的MvcController
-  T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => getAll(context: context, where: where).firstOrNull;
-
-  /// 获取当前所有Mvc中[T]类型的MvcController
-  ///
-  /// [context]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取离[context]最近的Mvc中的[T]类型的MvcController
-  /// [where]为null时，将会获取所有Mvc中的[T]类型的MvcController，否则获取满足[where]条件的Mvc中的[T]类型的MvcController
-  Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) sync* {
-    if (context == null) {
-      var nodes = (easyTreeGetChildrenInAll(EasyTreeNodeKey<Type>(T))).where((element) => where?.call(element as T) ?? true);
-      for (var item in nodes) {
-        if (item is MvcElement && item._controller is T) {
-          yield (item._controller as T);
-        }
-      }
-    } else {
-      EasyTreeNode? element = EasyTreeElement.getEasyTreeElementFromContext(context, easyTreeOwner: this);
-      while (element != null && element is MvcElement) {
-        if (element._controller is T && (where?.call(element._controller as T) ?? true)) {
-          yield element._controller as T;
-        }
-
-        element = element.easyTreeGetParent(EasyTreeNodeKey<Type>(T));
-      }
-    }
+  void update() => _state._update();
+  List<MvcWidgetUpdater> $(String q) {
+    return (context as MvcWidgetElement).manager.query(MvcWidgetQueryPredicate.make(q));
   }
 }
 
-class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends Widget {
+class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends MvcStatefulWidget {
   const Mvc({this.create, TModelType? model, Key? key})
       : model = model ?? model as TModelType,
         super(key: key);
   final TControllerType Function()? create;
   final TModelType model;
 
-  static T? get<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.get<T>(context: context, where: where);
-  static Iterable<T> getAll<T extends MvcController>({BuildContext? context, bool Function(T controller)? where}) => MvcOwner.sharedOwner.getAll<T>(context: context, where: where);
-
   @override
-  Element createElement() => MvcElement<TControllerType, TModelType>(this, create);
+  MvcWidgetState createState() => MvcControllerState<TControllerType, TModelType>();
 }
 
-typedef ModellessMvc<TControllerType extends MvcController> = Mvc<TControllerType, dynamic>;
-
-/// 控制器代理
-///
-/// 控制器代理表示控制器没有View，使用child作为view
-/// 这在使用只有逻辑的控制器时很有用
-class MvcProxy<TProxyControllerType extends MvcProxyController> extends StatelessWidget {
-  const MvcProxy({Key? key, required this.proxyCreate, required this.child}) : super(key: key);
-  final Widget child;
-  final TProxyControllerType Function() proxyCreate;
+class MvcControllerState<TControllerType extends MvcController<TModelType>, TModelType> extends MvcWidgetState {
   @override
-  Widget build(BuildContext context) => Mvc(create: proxyCreate, model: child);
-}
+  Mvc<TControllerType, TModelType> get widget => super.widget as Mvc<TControllerType, TModelType>;
 
-/// 多个控制器代理
-class MvcMultiProxy extends StatelessWidget {
-  const MvcMultiProxy({Key? key, required this.proxyCreate, required this.child}) : super(key: key);
-  final Widget child;
-  final List<MvcProxyController Function()> proxyCreate;
+  void _update() {
+    setState(() {});
+  }
+
+  @mustCallSuper
+  @override
+  void didUpdateWidget(covariant MvcStatefulWidget<MvcController> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    controller.didUpdateModel(widget.model);
+  }
+
+  @mustCallSuper
+  @override
+  void initState() {
+    super.initState();
+    controller.init();
+  }
+
+  @mustCallSuper
+  @override
+  void activate() {
+    super.activate();
+    controller.activate();
+  }
+
+  @mustCallSuper
+  @override
+  void deactivate() {
+    super.deactivate();
+    controller.deactivate();
+  }
+
   @override
   Widget build(BuildContext context) {
-    var widget = child;
-    for (var element in proxyCreate) {
-      widget = Mvc(create: element, model: widget);
+    return getService<MvcView>().buildView();
+  }
+
+  @mustCallSuper
+  @override
+  void providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
+    super.providerService(collection, parentServiceProvider);
+    TControllerType controller = widget.create?.call() ?? parentServiceProvider.get<_MvcControllerProvider<TControllerType>>().create();
+    controller._state = this;
+    collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
+    collection.addSingleton<MvcView>(
+      (serviceProvider) {
+        return controller.view();
+      },
+    );
+    if (TControllerType != MvcController) {
+      collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
     }
-    return widget;
+    controller.initService(collection);
+  }
+}
+
+abstract class MvcView<TControllerType extends MvcController<TModelType>, TModelType> with DependencyInjectionService {
+  late final TControllerType controller = getService<MvcController>() as TControllerType;
+  TModelType get model => controller.model;
+  BuildContext get context => controller.context;
+
+  Widget buildView();
+}
+
+class MvcViewBuilder<TControllerType extends MvcController<TModelType>, TModelType> extends MvcView<TControllerType, TModelType> {
+  MvcViewBuilder(this.builder);
+  final Widget Function(TControllerType controller) builder;
+  @override
+  Widget buildView() => builder(controller);
+}
+
+/// Mvc依赖提供者，可以使用[MvcDependencyProvider]为子级提供依赖
+class MvcDependencyProvider extends MvcStatefulWidget {
+  const MvcDependencyProvider({required this.child, required this.provider, super.key});
+  final void Function(ServiceCollection collection)? provider;
+  final Widget child;
+
+  @override
+  MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => MvcDependencyProviderState();
+}
+
+class MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, MvcController> {
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        return widget.child;
+      },
+    );
+  }
+
+  @override
+  void providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
+    super.providerService(collection, parentServiceProvider);
+    widget.provider?.call(collection);
+  }
+}
+
+abstract class _MvcControllerProvider<T extends MvcController> {
+  T create();
+}
+
+class _MvcControllerFactoryProvider<T extends MvcController> extends _MvcControllerProvider<T> {
+  _MvcControllerFactoryProvider(this.factory);
+  final T Function() factory;
+  @override
+  T create() => factory();
+}
+
+extension MvcControllerServiceCollection on ServiceCollection {
+  void addController<T extends MvcController>(T Function(ServiceProvider provider) create) {
+    add<_MvcControllerProvider<T>>((serviceProvider) => _MvcControllerFactoryProvider<T>(() => create(serviceProvider)));
   }
 }

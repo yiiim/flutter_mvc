@@ -1,19 +1,19 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
-  runApp(const MyApp());
-}
-
-class TestMvcController extends MvcController {
-  int count = 0;
-  @override
-  MvcView view() => TestMvcView();
-
-  void tapAdd() {
-    count++;
-    $("#test").update();
-  }
+  runApp(
+    MvcDependencyProvider(
+      provider: (collection) {
+        // inject service, you can inject any object, then you can get it in controller and view with getService<T> method
+        collection.addSingleton<TestService>((_) => TestService());
+      },
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -32,6 +32,61 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// The dependency injection service
+class TestService extends MvcServiceState {
+  String title = "Test Title";
+
+  void updateTitle(String title) {
+    this.title = title;
+
+    // call MvcServiceState's update method, update MvcServiceStateScope
+    update();
+  }
+}
+
+/// The Controller
+class TestMvcController extends MvcController {
+  int count = 0;
+  int timerCount = 0;
+  late Timer timer;
+
+  @override
+  void init() {
+    super.init();
+    timer = Timer.periodic(const Duration(seconds: 1), timerCallback);
+  }
+
+  @override
+  MvcView view() => TestMvcView();
+
+  @override
+  void dispose() {
+    super.dispose();
+    timer.cancel();
+  }
+
+  /// timer callback
+  void timerCallback(Timer timer) {
+    timerCount++;
+    // update the widget with classes "timerCount"
+    $(".timerCount").update();
+  }
+
+  /// click the FloatingActionButton
+  void tapAdd() {
+    count++;
+    // update the widget with id "count"
+    $("#count").update();
+  }
+
+  /// click the AppBar action button
+  void changeTestServiceTitle() {
+    // call the service method
+    getService<TestService>().updateTitle("TestMvcController Changed Title");
+  }
+}
+
+/// The View
 class TestMvcView extends MvcView<TestMvcController, dynamic> {
   @override
   Widget buildView() {
@@ -39,20 +94,36 @@ class TestMvcView extends MvcView<TestMvcController, dynamic> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Test"),
+        actions: [
+          CupertinoButton(
+            onPressed: controller.changeTestServiceTitle,
+            child: const Text("update title"),
+          ),
+        ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            MvcServiceStateScope<TestService>(
+              builder: (context, service) {
+                return Text(service.title);
+              },
             ),
             MvcBuilder<TestMvcController>(
-              classes: const ["test"],
-              id: "test",
+              classes: const ["timerCount"],
               builder: (context) {
                 return Text(
-                  '${context.controller.count}',
+                  '${controller.timerCount}',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                );
+              },
+            ),
+            MvcBuilder<TestMvcController>(
+              id: "count",
+              builder: (context) {
+                return Text(
+                  '${controller.count}',
                   style: Theme.of(context).textTheme.headlineMedium,
                 );
               },

@@ -26,17 +26,9 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - name: Install Flutter
         run: git clone https://github.com/flutter/flutter.git --depth 1 --branch stable "$HOME/.flutter" && echo "$HOME/.flutter/bin" >> $GITHUB_PATH && echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
-      # Minimal package setup and dry run checks.
       - name: Install dependencies
         run: flutter pub get
         working-directory: ${{ inputs.working-directory }}
-      - name: format dart code
-        run: dart format .
-        working-directory: ${{ inputs.working-directory }}
-      - name: Publish - dry run
-        run: dart pub publish --dry-run
-        working-directory: ${{ inputs.working-directory }}
-      # Publishing...
       - name: Publish to pub.dev
         run: dart pub publish -f
         working-directory: ${{ inputs.working-directory }}

@@ -1,3 +1,7 @@
+## 3.0.1+1
+
+* update example and readme
+
 ## 3.0.1
 
 * updateService

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -104,43 +105,77 @@ class TestMvcView extends MvcView<TestMvcController, TestModel> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(model.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            MvcServiceScope<TestService>(
-              builder: (context, service) {
-                return Text(service.title);
-              },
+      body: Column(
+        children: [
+          MvcHeader(
+            builder: (context) {
+              return Container(
+                height: 44,
+                color: Color(
+                  Random().nextInt(0xffffffff),
+                ),
+              );
+            },
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  MvcServiceScope<TestService>(
+                    builder: (context, service) {
+                      return Text(service.title);
+                    },
+                  ),
+                  MvcBuilder<TestMvcController>(
+                    classes: const ["timerCount"],
+                    builder: (context) {
+                      return Text(
+                        '${controller.timerCount}',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      );
+                    },
+                  ),
+                  MvcBuilder<TestMvcController>(
+                    id: "count",
+                    builder: (context) {
+                      return Text(
+                        '${controller.count}',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      );
+                    },
+                  ),
+                  CupertinoButton(
+                    onPressed: controller.changeTestServiceTitle,
+                    child: const Text("update title by controller"),
+                  ),
+                  CupertinoButton(
+                    onPressed: () => getService<TestService>().changeTitle(),
+                    child: const Text("update title by self service"),
+                  ),
+                  CupertinoButton(
+                    onPressed: () => controller.updateWidget<MvcHeader>(),
+                    child: const Text("update header"),
+                  ),
+                  CupertinoButton(
+                    onPressed: () => controller.updateWidget<MvcFooter>(),
+                    child: const Text("update footer"),
+                  ),
+                ],
+              ),
             ),
-            MvcBuilder<TestMvcController>(
-              classes: const ["timerCount"],
-              builder: (context) {
-                return Text(
-                  '${controller.timerCount}',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                );
-              },
-            ),
-            MvcBuilder<TestMvcController>(
-              id: "count",
-              builder: (context) {
-                return Text(
-                  '${controller.count}',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                );
-              },
-            ),
-            CupertinoButton(
-              onPressed: controller.changeTestServiceTitle,
-              child: const Text("update title by controller"),
-            ),
-            CupertinoButton(
-              onPressed: () => getService<TestService>().changeTitle(),
-              child: const Text("update title by self service"),
-            ),
-          ],
-        ),
+          ),
+          MvcFooter(
+            builder: (context) {
+              return Container(
+                height: 44,
+                color: Color(
+                  Random().nextInt(0xffffffff),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: controller.tapAdd,

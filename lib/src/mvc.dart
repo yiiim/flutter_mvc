@@ -123,6 +123,18 @@ class MvcViewBuilder<TControllerType extends MvcController<TModelType>, TModelTy
   Widget buildView() => builder(controller);
 }
 
+class MvcHeader extends MvcBuilder {
+  const MvcHeader({required super.builder, super.id, super.classes, super.key});
+}
+
+class MvcBody extends MvcBuilder {
+  const MvcBody({required super.builder, super.id, super.classes, super.key});
+}
+
+class MvcFooter extends MvcBuilder {
+  const MvcFooter({required super.builder, super.id, super.classes, super.key});
+}
+
 class MvcDependencyProvider extends MvcStatefulWidget {
   const MvcDependencyProvider({required this.child, required this.provider, super.key});
   final void Function(ServiceCollection collection)? provider;

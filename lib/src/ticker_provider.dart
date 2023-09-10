@@ -1,4 +1,7 @@
-part of './flutter_mvc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter_mvc/flutter_mvc.dart';
 
 /// copy from [TickerProviderStateMixin]
 mixin MvcSingleTickerProviderStateMixin<T> on MvcController<T> implements TickerProvider {
@@ -48,7 +51,7 @@ mixin MvcSingleTickerProviderStateMixin<T> on MvcController<T> implements Ticker
     super.dispose();
   }
 
-  ValueNotifier<bool>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   void activate() {
@@ -64,7 +67,7 @@ mixin MvcSingleTickerProviderStateMixin<T> on MvcController<T> implements Ticker
   }
 
   void _updateTickerModeNotifier() {
-    final ValueNotifier<bool> newNotifier = TickerMode.getNotifier(mvcContext.buildContext);
+    final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier == _tickerModeNotifier) {
       return;
     }
@@ -96,7 +99,7 @@ mixin MvcTickerProviderStateMixin<T> on MvcController<T> implements TickerProvid
     _tickers!.remove(ticker);
   }
 
-  ValueNotifier<bool>? _tickerModeNotifier;
+  ValueListenable<bool>? _tickerModeNotifier;
 
   @override
   void activate() {
@@ -115,7 +118,7 @@ mixin MvcTickerProviderStateMixin<T> on MvcController<T> implements TickerProvid
   }
 
   void _updateTickerModeNotifier() {
-    final ValueNotifier<bool> newNotifier = TickerMode.getNotifier(mvcContext.buildContext);
+    final ValueListenable<bool> newNotifier = TickerMode.getNotifier(context);
     if (newNotifier == _tickerModeNotifier) {
       return;
     }

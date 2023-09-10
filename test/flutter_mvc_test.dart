@@ -1,240 +1,317 @@
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class TestMvcWidget extends MvcStatelessWidget<TestController> {
+  const TestMvcWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text((context as MvcContext<TestController>).controller.controllerValue, textDirection: TextDirection.ltr);
+  }
+}
+
+class TestService with DependencyInjectionService, MvcService {
+  TestService();
+  String stateValue = "";
+}
+
 class TestModel {
-  TestModel(this.title);
-  final String title;
+  const TestModel(this.modelValue, {this.child});
+  final String modelValue;
+  final Widget? child;
+}
+
+class TestView extends MvcView<TestController, TestModel> {
+  @override
+  Widget buildView() {
+    return Column(
+      children: [
+        Text(model.modelValue, textDirection: TextDirection.ltr),
+        MvcBuilder(
+          id: "id",
+          classes: const ["cls"],
+          builder: (context) {
+            return Text(controller.controllerValue, textDirection: TextDirection.ltr);
+          },
+        ),
+        if (model.child != null) model.child!,
+      ],
+    );
+  }
 }
 
 class TestController extends MvcController<TestModel> {
-  TestController({
-    this.viewBuilder,
-  });
-  final Widget Function(TestController context)? viewBuilder;
+  String controllerValue = "";
+  bool isDisposed = false;
   @override
-  MvcView view() {
-    return MvcViewBuilder<TestController, TestModel>(
-      (context) {
-        if (viewBuilder != null) return viewBuilder!(context);
-        return Text(context.model.title, textDirection: TextDirection.ltr);
-      },
-    );
-  }
-}
+  MvcView view() => TestView();
 
-class TestModellessController extends MvcController {
-  TestModellessController({this.viewBuilder});
-  final Widget Function(TestModellessController context)? viewBuilder;
-  @override
-  MvcView<MvcController, dynamic> view() {
-    return MvcModelessViewBuilder<TestModellessController>(
-      (context) {
-        if (viewBuilder != null) return viewBuilder!(context);
-        return Text(model.title, textDirection: TextDirection.ltr);
-      },
-    );
-  }
-
-  @override
-  void initPart(MvcControllerPartCollection collection) {
-    super.initPart(collection);
-    collection.addPart(() => TestModellessControllerPart());
-  }
-}
-
-class TestModellessControllerPart extends MvcControllerPart<TestModellessController> {}
-
-class TestPorxyController extends MvcProxyController {
-  void Function()? didDispose;
   @override
   void dispose() {
+    isDisposed = true;
     super.dispose();
-    didDispose?.call();
   }
 }
 
 void main() {
   testWidgets(
-    "test model update",
-    (tester) async {
-      await tester.pumpWidget(Mvc(create: () => TestController(), model: TestModel("1")));
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
-      await tester.pumpWidget(Mvc(create: () => TestController(), model: TestModel("2")));
-      final titleUpdatedFinder = find.text("2");
-      expect(titleUpdatedFinder, findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test state",
-    (tester) async {
-      var controller = TestModellessController(
-        viewBuilder: (context) {
-          return MvcStateScope(
-            (state) {
-              return Builder(
-                builder: (context) {
-                  return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
-                },
-              );
-            },
-          );
-        },
-      );
-      controller.initState("1");
-      await tester.pumpWidget(Mvc(create: () => controller));
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
-      controller.updateState<String>(updater: (state) => state.value = "2");
-      await tester.pumpWidget(Mvc(create: () => controller));
-      final titleUpdatedFinder = find.text("2");
-      expect(titleUpdatedFinder, findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test key state",
-    (tester) async {
-      var controller = TestModellessController(
-        viewBuilder: (context) {
-          return MvcStateScope(
-            (state) {
-              return Builder(
-                builder: (context) {
-                  return Text(state.get<String>("mykey") ?? "0", textDirection: TextDirection.ltr);
-                },
-              );
-            },
-          );
-        },
-      );
-      controller.initState("1", key: "mykey");
-      await tester.pumpWidget(Mvc(create: () => controller));
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
-      controller.updateState<String>(updater: (state) => state.value = "2", key: "mykey");
-      await tester.pumpWidget(Mvc(create: () => controller));
-      final titleUpdatedFinder = find.text("2");
-      expect(titleUpdatedFinder, findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test environment status",
-    (tester) async {
-      var controller = TestModellessController(
-        viewBuilder: (context) {
-          return MvcStateScope(
-            (state) {
-              return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
-            },
-          );
-        },
-      );
-
-      var parentController = TestModellessController(
-        viewBuilder: (context) {
-          return Mvc(create: () => controller);
-        },
-      );
-      await tester.pumpWidget(Mvc(create: () => parentController));
-      parentController.environment.initState("1");
-      await tester.pumpWidget(Mvc(create: () => parentController));
-      final titleFinder = find.text("1");
-      expect(titleFinder, findsOneWidget);
-      parentController.environment.updateState<String>(updater: (state) => state.value = "2");
-      await tester.pumpWidget(Mvc(create: () => parentController));
-      final titleUpdatedFinder = find.text("2");
-      expect(titleUpdatedFinder, findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test part status",
-    (tester) async {
-      var controller = TestModellessController(
-        viewBuilder: (context) {
-          return MvcStateScope(
-            (state) {
-              return Text(state.get<String>() ?? "0", textDirection: TextDirection.ltr);
-            },
-          );
-        },
-      );
-      await tester.pumpWidget(Mvc(create: () => controller));
-      var controllerPart = controller.getPart<TestModellessControllerPart>()!;
-      expect(controllerPart.controller == controller, isTrue);
-
-      final partNoneStateFinder = find.text("0");
-      expect(partNoneStateFinder, findsOneWidget);
-
-      controllerPart.initState("1");
-      controller.update();
-      await tester.pumpWidget(Mvc(create: () => controller));
-
-      final partInitStateFinder = find.text("1");
-      expect(partInitStateFinder, findsOneWidget);
-      controllerPart.updateState<String>(updater: (state) => state.value = "2");
-      await tester.pumpWidget(Mvc(create: () => controller));
-      final titleUpdatedFinder = find.text("2");
-      expect(titleUpdatedFinder, findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test find controller",
-    (tester) async {
-      late TestController controller1;
-      late TestController controller2;
-      late TestPorxyController parent;
+    'test model update',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
       await tester.pumpWidget(
-        MvcProxy(
-          proxyCreate: () {
-            parent = TestPorxyController();
-            return parent;
-          },
-          child: Column(
-            children: [
-              Mvc(
-                create: () {
-                  controller1 = TestController();
-                  return controller1;
-                },
-                model: TestModel("1"),
-              ),
-              Mvc(
-                create: () {
-                  controller2 = TestController();
-                  return controller2;
-                },
-                model: TestModel("2"),
-              ),
-            ],
+        Mvc(
+          create: () => controller,
+          model: const TestModel("modelValue"),
+        ),
+      );
+
+      expect(find.text('modelValue'), findsOneWidget);
+      expect(find.text('controllerValue'), findsOneWidget);
+
+      controller.$(".cls").update();
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: const TestModel("modelValue2"),
+        ),
+      );
+
+      expect(find.text('modelValue2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'test id and classes update',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: const TestModel(
+            "modelValue",
           ),
         ),
       );
-      expect(controller1.parent<TestPorxyController>() == parent, isTrue);
-      expect(controller2.parent<TestPorxyController>() == parent, isTrue);
-      expect(controller1.nextSibling<TestController>() == controller2, isTrue);
-      expect(controller2.previousSibling<TestController>() == controller1, isTrue);
-      expect(parent.child<TestController>() == controller1 || parent.child<TestController>() == controller2, isTrue);
+
+      expect(find.text('controllerValue'), findsOneWidget);
+
+      controller.controllerValue = "controllerValue2";
+      controller.$(".cls").update();
+      await tester.pump();
+
+      expect(find.text('controllerValue2'), findsOneWidget);
+
+      controller.controllerValue = "controllerValue3";
+      controller.$("#id").update();
+      await tester.pump();
+
+      expect(find.text('controllerValue3'), findsOneWidget);
+
+      controller.controllerValue = "controllerValue4";
+      controller.update();
+      await tester.pump();
+
+      expect(find.text('controllerValue4'), findsOneWidget);
     },
   );
 
   testWidgets(
-    "test dispose",
+    'test update widget',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: const TestModel(
+            "modelValue",
+            child: TestMvcWidget(),
+          ),
+        ),
+      );
+
+      expect(find.text('controllerValue'), findsNWidgets(2));
+
+      controller.controllerValue = "controllerValue2";
+      controller.updateWidget<TestMvcWidget>();
+      await tester.pump();
+
+      expect(find.text('controllerValue2'), findsNWidgets(1));
+    },
+  );
+  testWidgets(
+    'test update service',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      var service = TestService();
+      service.stateValue = "serviceValue";
+
+      await tester.pumpWidget(
+        MvcDependencyProvider(
+          provider: (collection) => collection.add<TestService>((_) => service),
+          child: Mvc(
+            create: () => controller,
+            model: TestModel(
+              "modelValue",
+              child: MvcServiceScope<TestService>(
+                builder: (context, service) {
+                  return Text(service.stateValue, textDirection: TextDirection.ltr);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('serviceValue'), findsOneWidget);
+      service.stateValue = "serviceValue2";
+
+      controller.updateService<TestService>();
+      await tester.pump();
+
+      expect(find.text('serviceValue2'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    'test child mvc',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+
+      var childController = TestController();
+      childController.controllerValue = "childControllerValue";
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: TestModel(
+            "modelValue",
+            child: Mvc<TestController, TestModel>(
+              create: () => childController,
+              model: const TestModel("childModelValue"),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('modelValue'), findsOneWidget);
+      expect(find.text('childModelValue'), findsOneWidget);
+      expect(find.text('controllerValue'), findsOneWidget);
+      expect(find.text('childControllerValue'), findsOneWidget);
+
+      controller.controllerValue = "controllerValue2";
+      childController.controllerValue = "childControllerValue2";
+      controller.$(".cls").update();
+      await tester.pump();
+
+      expect(find.text('controllerValue2'), findsOneWidget);
+      expect(find.text('childControllerValue'), findsOneWidget);
+      expect(find.text('childControllerValue2'), findsNothing);
+
+      childController.$(".cls").update();
+      await tester.pump();
+      expect(find.text('childControllerValue2'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    "test dependency provider",
     (tester) async {
-      bool isDispose = false;
-      TestPorxyController controller = TestPorxyController();
-      controller.didDispose = () {
-        isDispose = true;
-      };
-      await tester.pumpWidget(MvcProxy(proxyCreate: () => controller, child: const Placeholder()));
-      expect(isDispose, isFalse);
-      await tester.pumpWidget(const Placeholder());
-      expect(isDispose, isTrue);
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+      await tester.pumpWidget(
+        MvcDependencyProvider(
+          provider: (collection) => collection.add<TestService>((_) => TestService()..stateValue = "objectValue"),
+          child: Mvc(
+            create: () => controller,
+            model: TestModel(
+              "modelValue",
+              child: Builder(
+                builder: (context) {
+                  return Text(controller.getService<TestService>().stateValue, textDirection: TextDirection.ltr);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('objectValue'), findsOneWidget);
+    },
+  );
+  testWidgets(
+    "test controller provider",
+    (tester) async {
+      await tester.pumpWidget(
+        MvcDependencyProvider(
+          provider: (collection) {
+            collection.addController((provider) => TestController()..controllerValue = "controllerValue");
+          },
+          child: const Mvc<TestController, TestModel>(
+            model: TestModel("modelValue"),
+          ),
+        ),
+      );
+
+      expect(find.text('controllerValue'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "test service update",
+    (tester) async {
+      var serviceState = TestService();
+      serviceState.stateValue = "serviceStateValue";
+      await tester.pumpWidget(
+        MvcDependencyProvider(
+          provider: (collection) {
+            collection.add((provider) => serviceState);
+          },
+          child: MvcServiceScope<TestService>(
+            builder: (context, state) {
+              return Text(state.stateValue, textDirection: TextDirection.ltr);
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('serviceStateValue'), findsOneWidget);
+
+      serviceState.stateValue = "serviceStateValue2";
+      serviceState.update();
+      await tester.pump();
+
+      expect(find.text('serviceStateValue2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "test controller dispose",
+    (tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: const TestModel("modelValue"),
+        ),
+      );
+
+      expect(controller.isDisposed, isFalse);
+
+      await tester.pumpWidget(const SizedBox());
+
+      expect(controller.isDisposed, isTrue);
     },
   );
 }

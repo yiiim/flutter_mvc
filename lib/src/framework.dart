@@ -62,6 +62,9 @@ class MvcStatefulElement<TControllerType extends MvcController> extends Stateful
   MvcStatefulElement(MvcStatefulWidget widget) : super(widget);
 
   @override
+  bool get blockParentFind => (state as MvcWidgetState?)?.blockParentFind ?? super.blockParentFind;
+
+  @override
   void _providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
     super._providerService(collection, parentServiceProvider);
     (state as MvcWidgetState).providerService(collection, parentServiceProvider);
@@ -74,7 +77,7 @@ mixin _DisposeHelper<T extends StatefulWidget> on State<T> {
 
 abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TControllerType extends MvcController> extends State<T> with _DisposeHelper, DependencyInjectionService {
   TControllerType get controller => getService();
-
+  bool get blockParentFind => false;
   @override
   @mustCallSuper
   void initState() {
@@ -113,12 +116,13 @@ class InheritedServiceProvider extends InheritedWidget {
 }
 
 mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
-  late final MvcWidgetManager manager = MvcWidgetManager(this);
+  late final MvcWidgetManager manager = MvcWidgetManager(this, blocker: blockParentFind);
   ServiceProvider? _serviceProvider;
   ServiceProvider get serviceProvider {
     return _serviceProvider!;
   }
 
+  bool get blockParentFind => false;
   @override
   MvcWidget get widget => super.widget as MvcWidget;
 

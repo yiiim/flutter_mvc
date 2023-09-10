@@ -9,13 +9,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class TestObject {
-  const TestObject(this.objectValue);
-  final String objectValue;
+class TestMvcWidget extends MvcStatelessWidget<TestController> {
+  const TestMvcWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text((context as MvcContext<TestController>).controller.controllerValue, textDirection: TextDirection.ltr);
+  }
 }
 
-class TestServiceState extends MvcServiceState {
-  TestServiceState();
+class TestService with DependencyInjectionService, MvcService {
+  TestService();
   String stateValue = "";
 }
 
@@ -86,7 +90,7 @@ void main() {
   );
 
   testWidgets(
-    'test controller update',
+    'test id and classes update',
     (WidgetTester tester) async {
       var controller = TestController();
       controller.controllerValue = "controllerValue";
@@ -123,6 +127,64 @@ void main() {
   );
 
   testWidgets(
+    'test update widget',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      controller.controllerValue = "controllerValue";
+
+      await tester.pumpWidget(
+        Mvc(
+          create: () => controller,
+          model: const TestModel(
+            "modelValue",
+            child: TestMvcWidget(),
+          ),
+        ),
+      );
+
+      expect(find.text('controllerValue'), findsNWidgets(2));
+
+      controller.controllerValue = "controllerValue2";
+      controller.updateWidget<TestMvcWidget>();
+      await tester.pump();
+
+      expect(find.text('controllerValue2'), findsNWidgets(1));
+    },
+  );
+  testWidgets(
+    'test update service',
+    (WidgetTester tester) async {
+      var controller = TestController();
+      var service = TestService();
+      service.stateValue = "serviceValue";
+
+      await tester.pumpWidget(
+        MvcDependencyProvider(
+          provider: (collection) => collection.add<TestService>((_) => service),
+          child: Mvc(
+            create: () => controller,
+            model: TestModel(
+              "modelValue",
+              child: MvcServiceScope<TestService>(
+                builder: (context, service) {
+                  return Text(service.stateValue, textDirection: TextDirection.ltr);
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('serviceValue'), findsOneWidget);
+      service.stateValue = "serviceValue2";
+
+      controller.updateService<TestService>();
+      await tester.pump();
+
+      expect(find.text('serviceValue2'), findsOneWidget);
+    },
+  );
+  testWidgets(
     'test child mvc',
     (WidgetTester tester) async {
       var controller = TestController();
@@ -154,15 +216,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('controllerValue2'), findsOneWidget);
-      expect(find.text('childControllerValue2'), findsOneWidget);
+      expect(find.text('childControllerValue'), findsOneWidget);
+      expect(find.text('childControllerValue2'), findsNothing);
 
-      controller.controllerValue = "controllerValue3";
-      childController.controllerValue = "childControllerValue3";
       childController.$(".cls").update();
       await tester.pump();
-
-      expect(find.text('controllerValue2'), findsOneWidget);
-      expect(find.text('childControllerValue3'), findsOneWidget);
+      expect(find.text('childControllerValue2'), findsOneWidget);
     },
   );
   testWidgets(
@@ -172,14 +231,14 @@ void main() {
       controller.controllerValue = "controllerValue";
       await tester.pumpWidget(
         MvcDependencyProvider(
-          provider: (collection) => collection.add<TestObject>((_) => const TestObject("objectValue")),
+          provider: (collection) => collection.add<TestService>((_) => TestService()..stateValue = "objectValue"),
           child: Mvc(
             create: () => controller,
             model: TestModel(
               "modelValue",
               child: Builder(
                 builder: (context) {
-                  return Text(controller.getService<TestObject>().objectValue, textDirection: TextDirection.ltr);
+                  return Text(controller.getService<TestService>().stateValue, textDirection: TextDirection.ltr);
                 },
               ),
             ),
@@ -209,16 +268,16 @@ void main() {
   );
 
   testWidgets(
-    "test service state",
+    "test service update",
     (tester) async {
-      var serviceState = TestServiceState();
+      var serviceState = TestService();
       serviceState.stateValue = "serviceStateValue";
       await tester.pumpWidget(
         MvcDependencyProvider(
           provider: (collection) {
             collection.add((provider) => serviceState);
           },
-          child: MvcServiceStateScope<TestServiceState>(
+          child: MvcServiceScope<TestService>(
             builder: (context, state) {
               return Text(state.stateValue, textDirection: TextDirection.ltr);
             },

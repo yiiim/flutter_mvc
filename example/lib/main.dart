@@ -27,25 +27,32 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: Mvc(create: () => TestMvcController()),
+      home: Mvc(
+        create: () => TestMvcController(),
+        model: const TestModel("Flutter Mvc Demo"),
+      ),
     );
   }
 }
 
 /// The dependency injection service
-class TestService extends MvcServiceState {
-  String title = "Test Title";
+class TestService with DependencyInjectionService, MvcService {
+  String title = "Default Title";
 
-  void updateTitle(String title) {
-    this.title = title;
-
-    // call MvcServiceState's update method, update MvcServiceStateScope
+  void changeTitle() {
+    title = "Service Changed Title";
     update();
   }
 }
 
+/// The Model
+class TestModel {
+  const TestModel(this.title);
+  final String title;
+}
+
 /// The Controller
-class TestMvcController extends MvcController {
+class TestMvcController extends MvcController<TestModel> {
   int count = 0;
   int timerCount = 0;
   late Timer timer;
@@ -79,33 +86,29 @@ class TestMvcController extends MvcController {
     $("#count").update();
   }
 
-  /// click the AppBar action button
+  /// click the "update title by controller"
   void changeTestServiceTitle() {
-    // call the service method
-    getService<TestService>().updateTitle("TestMvcController Changed Title");
+    // get TestService and set title
+    getService<TestService>().title = "Controller Changed Title";
+    // update The TestService, will be update all MvcServiceScope<TestService>
+    updateService<TestService>();
   }
 }
 
 /// The View
-class TestMvcView extends MvcView<TestMvcController, dynamic> {
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
   @override
   Widget buildView() {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text("Test"),
-        actions: [
-          CupertinoButton(
-            onPressed: controller.changeTestServiceTitle,
-            child: const Text("update title"),
-          ),
-        ],
+        title: Text(model.title),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            MvcServiceStateScope<TestService>(
+            MvcServiceScope<TestService>(
               builder: (context, service) {
                 return Text(service.title);
               },
@@ -127,6 +130,14 @@ class TestMvcView extends MvcView<TestMvcController, dynamic> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 );
               },
+            ),
+            CupertinoButton(
+              onPressed: controller.changeTestServiceTitle,
+              child: const Text("update title by controller"),
+            ),
+            CupertinoButton(
+              onPressed: () => getService<TestService>().changeTitle(),
+              child: const Text("update title by self service"),
             ),
           ],
         ),

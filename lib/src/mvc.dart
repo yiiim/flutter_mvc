@@ -23,8 +23,14 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   void initService(ServiceCollection collection) {}
 
   void update() => _state._update();
-  List<MvcWidgetUpdater> $(String q) {
-    return (context as MvcWidgetElement).manager.query(MvcWidgetQueryPredicate.make(q));
+  void updateWidget<T extends MvcWidget>() => _find(MvcWidgetQueryPredicate.makeWithWidgetType(T)).update();
+  void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
+  Iterable<MvcWidgetUpdater> $(String q) {
+    return _find(MvcWidgetQueryPredicate.makeWithQuery(q));
+  }
+
+  Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
+    return (context as MvcWidgetElement).manager.query(predicate);
   }
 }
 
@@ -46,6 +52,9 @@ class MvcControllerState<TControllerType extends MvcController<TModelType>, TMod
   void _update() {
     setState(() {});
   }
+
+  @override
+  bool get blockParentFind => true;
 
   @mustCallSuper
   @override
@@ -114,7 +123,6 @@ class MvcViewBuilder<TControllerType extends MvcController<TModelType>, TModelTy
   Widget buildView() => builder(controller);
 }
 
-/// Mvc依赖提供者，可以使用[MvcDependencyProvider]为子级提供依赖
 class MvcDependencyProvider extends MvcStatefulWidget {
   const MvcDependencyProvider({required this.child, required this.provider, super.key});
   final void Function(ServiceCollection collection)? provider;

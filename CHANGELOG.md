@@ -1,3 +1,7 @@
+## 3.0.1
+
+* updateService
+
 ## 3.0.0+1
 
 * upgrade to 3.0.0

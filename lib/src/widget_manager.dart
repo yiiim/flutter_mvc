@@ -12,12 +12,27 @@ extension MvcWidgetUpdaterListExtension on List<MvcWidgetUpdater> {
   }
 }
 
+extension MvcWidgetUpdaterIterableExtension on Iterable<MvcWidgetUpdater> {
+  void update() {
+    for (var updater in this) {
+      updater.update();
+    }
+  }
+}
+
 class MvcWidgetQueryPredicate {
-  MvcWidgetQueryPredicate({this.id, this.classes, this.type, this.typeString});
-  factory MvcWidgetQueryPredicate.make(String query, {Type? type}) {
+  MvcWidgetQueryPredicate({this.id, this.classes, this.type, this.typeString, this.serviceType});
+  factory MvcWidgetQueryPredicate.makeWithServiceType(Type? serviceType) {
+    return MvcWidgetQueryPredicate(serviceType: serviceType);
+  }
+  factory MvcWidgetQueryPredicate.makeWithWidgetType(Type? type) {
+    return MvcWidgetQueryPredicate(type: type);
+  }
+  factory MvcWidgetQueryPredicate.makeWithQuery(String query) {
     String? id;
     String? classes;
     String? typeString;
+
     switch (query[0]) {
       case '#':
         id = query.substring(1);
@@ -29,19 +44,21 @@ class MvcWidgetQueryPredicate {
         typeString = query;
         break;
     }
-    return MvcWidgetQueryPredicate(id: id, classes: classes, typeString: typeString, type: type);
+    return MvcWidgetQueryPredicate(id: id, classes: classes, typeString: typeString);
   }
   final String? id;
   final String? classes;
   final String? typeString;
   final Type? type;
+  final Type? serviceType;
 }
 
 class MvcWidgetManager implements MvcWidgetUpdater {
-  MvcWidgetManager(this.element);
-  MvcWidgetElement element;
-  MvcWidgetManager? _parent;
+  MvcWidgetManager(this.element, {this.blocker = false});
+  final MvcWidgetElement element;
+  final bool blocker;
   late final List<MvcWidgetManager> _children = [];
+  MvcWidgetManager? _parent;
 
   void mount({MvcWidgetManager? parent}) {
     _parent = parent;
@@ -61,33 +78,38 @@ class MvcWidgetManager implements MvcWidgetUpdater {
     _parent?._children.remove(this);
   }
 
-  List<MvcWidgetManager> _query(MvcWidgetQueryPredicate predicate) {
-    List<MvcWidgetManager> result = [];
-    for (var item in _children) {
-      result.addAll(item._query(predicate));
-      if (predicate.id != null) {
-        if (item.element.widget.id == predicate.id) {
-          result.add(item);
-          continue;
-        }
-      }
-      if (predicate.classes != null) {
-        if (item.element.widget.classes?.contains(predicate.classes) == true) {
-          result.add(item);
-          continue;
-        }
-      }
-      if (predicate.type != null) {
-        if (item.element.widget.runtimeType == predicate.type) {
-          result.add(item);
-          continue;
-        }
+  bool isMatch(MvcWidgetQueryPredicate predicate) {
+    if (predicate.id != null) {
+      if (element.widget.id == predicate.id) {
+        return true;
       }
     }
-    return result;
+    if (predicate.classes != null) {
+      if (element.widget.classes?.contains(predicate.classes) == true) {
+        return true;
+      }
+    }
+    if (predicate.type != null) {
+      if (element.widget.runtimeType == predicate.type) {
+        return true;
+      }
+    }
+    if (predicate.typeString != null) {
+      if (element.widget.runtimeType.toString() == predicate.typeString) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  List<MvcWidgetUpdater> query(MvcWidgetQueryPredicate predicate) => _query(predicate);
+  Iterable<MvcWidgetUpdater> query(MvcWidgetQueryPredicate predicate) sync* {
+    for (var item in _children) {
+      if (item.isMatch(predicate)) {
+        yield item;
+      }
+      if (!item.blocker) yield* item.query(predicate);
+    }
+  }
 
   @override
   void update() {

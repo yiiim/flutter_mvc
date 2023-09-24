@@ -10,6 +10,16 @@ mixin MvcService on DependencyInjectionService {
     }
   }
 
+  void updateWidget<T extends MvcWidget>() => _find(MvcWidgetQueryPredicate.makeWithWidgetType(T)).update();
+  void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
+  Iterable<MvcWidgetUpdater> $(String q) {
+    return _find(MvcWidgetQueryPredicate.makeWithQuery(q));
+  }
+
+  Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
+    return getService<MvcWidgetManager>().query(predicate);
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -61,13 +71,14 @@ class MvcServiceScope<TServiceType extends Object> extends MvcStatefulWidget {
 
   @override
   MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => _MvcStateScopeState<TServiceType>();
-} 
+}
 
 class _MvcStateScopeElement<TServiceType extends Object> extends MvcStatefulElement {
   _MvcStateScopeElement(super.widget);
 
+  late final MvcWidgetManager _manager = _MvcStateScopeManager<TServiceType>(this);
   @override
-  MvcWidgetManager get manager => _MvcStateScopeManager<TServiceType>(this);
+  MvcWidgetManager get manager => _manager;
 }
 
 class _MvcStateScopeManager<TServiceType extends Object> extends MvcWidgetManager {

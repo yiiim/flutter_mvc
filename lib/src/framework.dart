@@ -147,6 +147,14 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
         collection.add<MvcController>((serviceProvider) => _MvcRootController());
       }
       parentServiceProvider = collection.build();
+    } else if (parentServiceProvider.tryGet<MvcController>() == null) {
+      parentServiceProvider = parentServiceProvider.buildScoped(
+        builder: (collection) {
+          if (TControllerType == MvcController) {
+            collection.add<MvcController>((serviceProvider) => _MvcRootController());
+          }
+        },
+      );
     }
     _controller = parentServiceProvider.tryGet<TControllerType>();
 

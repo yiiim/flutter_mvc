@@ -106,6 +106,7 @@ class MvcWidgetManager implements MvcWidgetUpdater {
     for (var item in _children) {
       if (item.isMatch(predicate)) {
         yield item;
+        if (predicate.id != null) return;
       }
       if (!item.blocker) yield* item.query(predicate);
     }

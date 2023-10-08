@@ -144,14 +144,14 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
     if (parentServiceProvider == null) {
       ServiceCollection collection = ServiceCollection();
       if (TControllerType == MvcController) {
-        collection.add<MvcController>((serviceProvider) => _MvcRootController());
+        collection.addSingleton<MvcController>((serviceProvider) => _MvcRootController());
       }
       parentServiceProvider = collection.build();
     } else if (parentServiceProvider.tryGet<MvcController>() == null) {
       parentServiceProvider = parentServiceProvider.buildScoped(
         builder: (collection) {
           if (TControllerType == MvcController) {
-            collection.add<MvcController>((serviceProvider) => _MvcRootController());
+            collection.addSingleton<MvcController>((serviceProvider) => _MvcRootController());
           }
         },
       );
@@ -211,7 +211,7 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
 
 class _MvcRootController extends MvcController {
   @override
-  MvcView<MvcController, dynamic> view() {
+  MvcView view() {
     throw UnimplementedError();
   }
 }

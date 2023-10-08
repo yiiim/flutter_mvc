@@ -34,6 +34,12 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   }
 }
 
+class MvcProxyController extends MvcController<Widget> {
+  MvcProxyController();
+  @override
+  MvcView view() => MvcViewBuilder((controller) => model);
+}
+
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends MvcStatefulWidget {
   const Mvc({this.create, TModelType? model, Key? key})
       : model = model ?? model as TModelType,
@@ -43,6 +49,17 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
 
   @override
   MvcWidgetState createState() => MvcControllerState<TControllerType, TModelType>();
+}
+
+class MvcProxy<TControllerType extends MvcController<Widget>> extends StatelessWidget {
+  const MvcProxy({this.create, required this.child, super.key});
+  final TControllerType Function()? create;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Mvc(create: create, model: child);
+  }
 }
 
 class MvcControllerState<TControllerType extends MvcController<TModelType>, TModelType> extends MvcWidgetState {
@@ -108,15 +125,14 @@ class MvcControllerState<TControllerType extends MvcController<TModelType>, TMod
   }
 }
 
-abstract class MvcView<TControllerType extends MvcController<TModelType>, TModelType> with DependencyInjectionService {
+abstract class MvcView<TControllerType extends MvcController> with DependencyInjectionService {
   late final TControllerType controller = getService<MvcController>() as TControllerType;
-  TModelType get model => controller.model;
   BuildContext get context => controller.context;
 
   Widget buildView();
 }
 
-class MvcViewBuilder<TControllerType extends MvcController<TModelType>, TModelType> extends MvcView<TControllerType, TModelType> {
+class MvcViewBuilder<TControllerType extends MvcController> extends MvcView<TControllerType> {
   MvcViewBuilder(this.builder);
   final Widget Function(TControllerType controller) builder;
   @override

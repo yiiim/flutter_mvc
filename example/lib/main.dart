@@ -97,13 +97,13 @@ class TestMvcController extends MvcController<TestModel> {
 }
 
 /// The View
-class TestMvcView extends MvcView<TestMvcController, TestModel> {
+class TestMvcView extends MvcView<TestMvcController> {
   @override
   Widget buildView() {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(model.title),
+        title: Text(controller.model.title),
       ),
       body: Column(
         children: [

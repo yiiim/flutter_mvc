@@ -29,12 +29,12 @@ class TestModel {
   final Widget? child;
 }
 
-class TestView extends MvcView<TestController, TestModel> {
+class TestView extends MvcView<TestController> {
   @override
   Widget buildView() {
     return Column(
       children: [
-        Text(model.modelValue, textDirection: TextDirection.ltr),
+        Text(controller.model.modelValue, textDirection: TextDirection.ltr),
         MvcBuilder(
           id: "id",
           classes: const ["cls"],
@@ -42,7 +42,7 @@ class TestView extends MvcView<TestController, TestModel> {
             return Text(controller.controllerValue, textDirection: TextDirection.ltr);
           },
         ),
-        if (model.child != null) model.child!,
+        if (controller.model.child != null) controller.model.child!,
       ],
     );
   }

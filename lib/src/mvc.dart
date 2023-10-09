@@ -183,7 +183,7 @@ class MvcRootcDependencyServiceProvider extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) {
-    assert(context.getInheritedWidgetOfExactType<InheritedServiceProvider>() == null, "MvcRootcDependencyServiceProvider can only be used in the root mvc widget");
+    assert(context.getElementForInheritedWidgetOfExactType<InheritedServiceProvider>() == null, "MvcRootcDependencyServiceProvider can only be used in the root mvc widget");
     return InheritedServiceProvider(
       serviceProvider: serviceProvider,
       child: child,

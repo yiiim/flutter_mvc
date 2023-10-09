@@ -79,6 +79,9 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TCon
   TControllerType get controller => getService();
   bool get blockParentFind => false;
   @override
+  MvcContext<TControllerType> get context => super.context as MvcContext<TControllerType>;
+
+  @override
   @mustCallSuper
   void initState() {
     super.initState();
@@ -110,13 +113,14 @@ class InheritedServiceProvider extends InheritedWidget {
   }
 
   static ServiceProvider? of(BuildContext context) {
-    final InheritedServiceProvider? inheritedServiceProvider = context.getInheritedWidgetOfExactType<InheritedServiceProvider>();
+    final InheritedServiceProvider? inheritedServiceProvider = context.getElementForInheritedWidgetOfExactType<InheritedServiceProvider>()?.widget as InheritedServiceProvider?;
     return inheritedServiceProvider?.serviceProvider;
   }
 }
 
 mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
   late final MvcWidgetManager manager = MvcWidgetManager(this, blocker: blockParentFind);
+  late final Set<MvcService> _dependencieServices = {};
   ServiceProvider? _serviceProvider;
   ServiceProvider get serviceProvider {
     return _serviceProvider!;
@@ -134,6 +138,22 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
   }
 
   void _providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {}
+
+  T dependOnService<T extends MvcService>() {
+    var service = controller.getService<T>();
+    _dependencieServices.add(service);
+    service._updateDependencies(this);
+    return service;
+  }
+
+  T? tryDependOnService<T extends MvcService>() {
+    var service = controller.tryGetService<T>();
+    if (service != null) {
+      _dependencieServices.add(service);
+      service._updateDependencies(this);
+    }
+    return service;
+  }
 
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -184,6 +204,7 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
     if (newParent != null) {
       newParentManager = InheritedServiceProvider.of(newParent!)?.tryGet<MvcWidgetManager>();
     }
+    _dependencieServices.clear();
     manager.activate(newParent: newParentManager);
   }
 
@@ -191,12 +212,16 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
   void deactivate() {
     super.deactivate();
     manager.deactivate();
+    for (var element in _dependencieServices) {
+      element._dependents.remove(this);
+    }
   }
 
   @override
   void unmount() {
     super.unmount();
     manager.unmount();
+    _dependencieServices.clear();
     _serviceProvider?.dispose();
   }
 
@@ -213,5 +238,126 @@ class _MvcRootController extends MvcController {
   @override
   MvcView view() {
     throw UnimplementedError();
+  }
+}
+
+/// with the service get power for update [MvcServiceScope]
+mixin MvcService on DependencyInjectionService {
+  late final Set<MvcWidgetElement> _dependents = <MvcWidgetElement>{};
+
+  void update() {
+    for (var element in _dependents) {
+      element.markNeedsBuild();
+    }
+  }
+
+  void _updateDependencies(MvcWidgetElement element) {
+    _dependents.add(element);
+  }
+
+  void updateWidget<T extends MvcWidget>() => _find(MvcWidgetQueryPredicate.makeWithWidgetType(T)).update();
+  void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
+  Iterable<MvcWidgetUpdater> $(String q) sync* {
+    for (var element in _dependents) {
+      yield* element.manager.query(MvcWidgetQueryPredicate.makeWithQuery(q));
+    }
+  }
+
+  Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
+    return getService<MvcWidgetManager>().query(predicate);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _dependents.clear();
+  }
+}
+
+/// You can update this Widget using the following methods：
+/// ## update at controlle
+/// ```dart
+/// // in the MvcView
+/// MvcServiceScope<TestService>(
+///    builder: (context, service) {
+///       return Text(service.title);
+///    },
+/// )
+///
+/// // in the MvcController, will be update all MvcServiceScope<TestService>
+/// updateService<TestService>();
+/// ```
+/// ---
+/// ## update at the service
+///
+/// ```dart
+/// // anywhere
+/// MvcServiceScope<TestService>(
+///    builder: (context, service) {
+///       return Text(service.title);
+///    },
+/// )
+///
+/// // in the TestService
+/// class TestService with DependencyInjectionService, MvcService {
+///   String title = "Test Title";
+///   void changeTitle(String newTitle) {
+///     title = newTitle;
+///     // will be update all MvcServiceScope<TestService>
+///     update();
+///   }
+/// }
+/// ```
+class MvcServiceScope<TServiceType extends Object> extends MvcStatelessWidget {
+  const MvcServiceScope({required this.builder, super.id, super.classes, super.key});
+  final Widget Function(MvcContext context, TServiceType) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    var element = context as _MvcStateScopeElement<TServiceType>;
+    return builder(element, element._service);
+  }
+
+  @override
+  StatelessElement createElement() {
+    return _MvcStateScopeElement<TServiceType>(this);
+  }
+}
+
+class _MvcStateScopeElement<TServiceType extends Object> extends MvcStatelessElement {
+  _MvcStateScopeElement(super.widget);
+  late final TServiceType _service = controller.getService();
+  late final MvcWidgetManager _manager = _MvcStateScopeManager<TServiceType>(this);
+  @override
+  MvcWidgetManager get manager => _manager;
+
+  @override
+  void activate() {
+    super.activate();
+    if (_service is MvcService) {
+      (_service as MvcService)._dependents.add(this);
+    }
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    if (_service is MvcService) {
+      (_service as MvcService)._dependents.remove(this);
+    }
+  }
+}
+
+class _MvcStateScopeManager<TServiceType extends Object> extends MvcWidgetManager {
+  _MvcStateScopeManager(super.element);
+
+  @override
+  bool isMatch(MvcWidgetQueryPredicate predicate) {
+    if (predicate.serviceType != null) {
+      if (predicate.serviceType == TServiceType) {
+        return true;
+      }
+    }
+    return super.isMatch(predicate);
   }
 }

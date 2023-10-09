@@ -4,7 +4,7 @@ version: 3.0.1+2
 homepage: https://github.com/yiiim/flutter_mvc
 
 environment:
-  sdk: '>=3.0.6 <4.0.0'
+  sdk: '>=2.19.6 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:

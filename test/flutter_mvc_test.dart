@@ -68,9 +68,11 @@ void main() {
       var controller = TestController();
       controller.controllerValue = "controllerValue";
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: const TestModel("modelValue"),
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: const TestModel("modelValue"),
+          ),
         ),
       );
 
@@ -79,9 +81,11 @@ void main() {
 
       controller.$(".cls").update();
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: const TestModel("modelValue2"),
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: const TestModel("modelValue2"),
+          ),
         ),
       );
 
@@ -96,10 +100,12 @@ void main() {
       controller.controllerValue = "controllerValue";
 
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: const TestModel(
-            "modelValue",
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: const TestModel(
+              "modelValue",
+            ),
           ),
         ),
       );
@@ -133,11 +139,13 @@ void main() {
       controller.controllerValue = "controllerValue";
 
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: const TestModel(
-            "modelValue",
-            child: TestMvcWidget(),
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: const TestModel(
+              "modelValue",
+              child: TestMvcWidget(),
+            ),
           ),
         ),
       );
@@ -159,16 +167,18 @@ void main() {
       service.stateValue = "serviceValue";
 
       await tester.pumpWidget(
-        MvcDependencyProvider(
-          provider: (collection) => collection.add<TestService>((_) => service),
-          child: Mvc(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              child: MvcServiceScope<TestService>(
-                builder: (context, service) {
-                  return Text(service.stateValue, textDirection: TextDirection.ltr);
-                },
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) => collection.add<TestService>((_) => service),
+            child: Mvc(
+              create: () => controller,
+              model: TestModel(
+                "modelValue",
+                child: MvcServiceScope<TestService>(
+                  builder: (context, service) {
+                    return Text(service.stateValue, textDirection: TextDirection.ltr);
+                  },
+                ),
               ),
             ),
           ),
@@ -193,13 +203,15 @@ void main() {
       var childController = TestController();
       childController.controllerValue = "childControllerValue";
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: TestModel(
-            "modelValue",
-            child: Mvc<TestController, TestModel>(
-              create: () => childController,
-              model: const TestModel("childModelValue"),
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: TestModel(
+              "modelValue",
+              child: Mvc<TestController, TestModel>(
+                create: () => childController,
+                model: const TestModel("childModelValue"),
+              ),
             ),
           ),
         ),
@@ -230,16 +242,18 @@ void main() {
       var controller = TestController();
       controller.controllerValue = "controllerValue";
       await tester.pumpWidget(
-        MvcDependencyProvider(
-          provider: (collection) => collection.add<TestService>((_) => TestService()..stateValue = "objectValue"),
-          child: Mvc(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              child: Builder(
-                builder: (context) {
-                  return Text(controller.getService<TestService>().stateValue, textDirection: TextDirection.ltr);
-                },
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) => collection.add<TestService>((_) => TestService()..stateValue = "objectValue"),
+            child: Mvc(
+              create: () => controller,
+              model: TestModel(
+                "modelValue",
+                child: Builder(
+                  builder: (context) {
+                    return Text(controller.getService<TestService>().stateValue, textDirection: TextDirection.ltr);
+                  },
+                ),
               ),
             ),
           ),
@@ -253,12 +267,14 @@ void main() {
     "test controller provider",
     (tester) async {
       await tester.pumpWidget(
-        MvcDependencyProvider(
-          provider: (collection) {
-            collection.addController((provider) => TestController()..controllerValue = "controllerValue");
-          },
-          child: const Mvc<TestController, TestModel>(
-            model: TestModel("modelValue"),
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) {
+              collection.addController((provider) => TestController()..controllerValue = "controllerValue");
+            },
+            child: const Mvc<TestController, TestModel>(
+              model: TestModel("modelValue"),
+            ),
           ),
         ),
       );
@@ -273,14 +289,16 @@ void main() {
       var serviceState = TestService();
       serviceState.stateValue = "serviceStateValue";
       await tester.pumpWidget(
-        MvcDependencyProvider(
-          provider: (collection) {
-            collection.add((provider) => serviceState);
-          },
-          child: MvcServiceScope<TestService>(
-            builder: (context, state) {
-              return Text(state.stateValue, textDirection: TextDirection.ltr);
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) {
+              collection.add((provider) => serviceState);
             },
+            child: MvcServiceScope<TestService>(
+              builder: (context, state) {
+                return Text(state.stateValue, textDirection: TextDirection.ltr);
+              },
+            ),
           ),
         ),
       );
@@ -301,9 +319,11 @@ void main() {
       var controller = TestController();
       controller.controllerValue = "controllerValue";
       await tester.pumpWidget(
-        Mvc(
-          create: () => controller,
-          model: const TestModel("modelValue"),
+        MvcApp(
+          child: Mvc(
+            create: () => controller,
+            model: const TestModel("modelValue"),
+          ),
         ),
       );
 
@@ -312,6 +332,25 @@ void main() {
       await tester.pumpWidget(const SizedBox());
 
       expect(controller.isDisposed, isTrue);
+    },
+  );
+
+  testWidgets(
+    "test mvcowner",
+    (tester) async {
+      ServiceCollection collection = ServiceCollection();
+      collection.add<TestService>((_) => TestService());
+      collection.addController((_) => TestController());
+      var provider = collection.build();
+      await tester.pumpWidget(
+        MvcApp(
+          owner: MvcOwner(serviceProvider: provider),
+          child: const Mvc<TestController, TestModel>(
+            model: TestModel("modelValue"),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

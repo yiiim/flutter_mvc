@@ -30,7 +30,7 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   }
 
   Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
-    return (context as MvcWidgetElement).manager.query(predicate);
+    return getService<MvcWidgetManager>().query(predicate);
   }
 }
 
@@ -108,9 +108,9 @@ class MvcControllerState<TControllerType extends MvcController<TModelType>, TMod
 
   @mustCallSuper
   @override
-  void providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
-    super.providerService(collection, parentServiceProvider);
-    TControllerType controller = widget.create?.call() ?? parentServiceProvider.get<_MvcControllerProvider<TControllerType>>().create();
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
+    super.initServices(collection, parent);
+    TControllerType controller = widget.create?.call() ?? parent.get<_MvcControllerProvider<TControllerType>>().create();
     controller._state = this;
     collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
     collection.addSingleton<MvcView>(
@@ -119,14 +119,14 @@ class MvcControllerState<TControllerType extends MvcController<TModelType>, TMod
       },
     );
     if (TControllerType != MvcController) {
-      collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
+      collection.addSingleton<TControllerType>((_) => controller);
     }
     controller.initService(collection);
   }
 }
 
 abstract class MvcView<TControllerType extends MvcController> with DependencyInjectionService {
-  late final TControllerType controller = getService<MvcController>() as TControllerType;
+  late final TControllerType controller = getService<TControllerType>();
   BuildContext get context => controller.context;
 
   Widget buildView();
@@ -137,18 +137,6 @@ class MvcViewBuilder<TControllerType extends MvcController> extends MvcView<TCon
   final Widget Function(TControllerType controller) builder;
   @override
   Widget buildView() => builder(controller);
-}
-
-class MvcHeader extends MvcBuilder {
-  const MvcHeader({required super.builder, super.id, super.classes, super.key});
-}
-
-class MvcBody extends MvcBuilder {
-  const MvcBody({required super.builder, super.id, super.classes, super.key});
-}
-
-class MvcFooter extends MvcBuilder {
-  const MvcFooter({required super.builder, super.id, super.classes, super.key});
 }
 
 class MvcDependencyProvider extends MvcStatefulWidget {
@@ -171,23 +159,9 @@ class MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, M
   }
 
   @override
-  void providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
-    super.providerService(collection, parentServiceProvider);
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
+    super.initServices(collection, parent);
     widget.provider?.call(collection);
-  }
-}
-
-class MvcRootcDependencyServiceProvider extends StatelessWidget {
-  const MvcRootcDependencyServiceProvider({required this.serviceProvider, required this.child, super.key});
-  final ServiceProvider serviceProvider;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) {
-    assert(context.getElementForInheritedWidgetOfExactType<InheritedServiceProvider>() == null, "MvcRootcDependencyServiceProvider can only be used in the root mvc widget");
-    return InheritedServiceProvider(
-      serviceProvider: serviceProvider,
-      child: child,
-    );
   }
 }
 
@@ -204,6 +178,6 @@ class _MvcControllerFactoryProvider<T extends MvcController> extends _MvcControl
 
 extension MvcControllerServiceCollection on ServiceCollection {
   void addController<T extends MvcController>(T Function(ServiceProvider provider) create) {
-    add<_MvcControllerProvider<T>>((serviceProvider) => _MvcControllerFactoryProvider<T>(() => create(serviceProvider)));
+    addSingleton<_MvcControllerProvider<T>>((serviceProvider) => _MvcControllerFactoryProvider<T>(() => create(serviceProvider)));
   }
 }

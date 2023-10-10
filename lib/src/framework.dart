@@ -7,11 +7,6 @@ mixin MvcWidget<TControllerType extends MvcController> on Widget {
   List<String>? get classes;
 }
 
-/// mvc framework context
-abstract class MvcContext<TControllerType extends MvcController> extends BuildContext {
-  TControllerType get controller;
-}
-
 /// mvc framework stateless widget
 ///
 /// [build] method context can cast to [MvcContext]
@@ -25,21 +20,6 @@ abstract class MvcStatelessWidget<TControllerType extends MvcController> extends
 
   @override
   StatelessElement createElement() => MvcStatelessElement<TControllerType>(this);
-}
-
-/// mvc framework stateless element
-class MvcStatelessElement<TControllerType extends MvcController> extends StatelessElement with MvcWidgetElement<TControllerType> {
-  MvcStatelessElement(MvcStatelessWidget widget) : super(widget);
-}
-
-/// mvc builder
-class MvcBuilder<TControllerType extends MvcController> extends MvcStatelessWidget<TControllerType> {
-  const MvcBuilder({super.key, super.classes, super.id, required this.builder});
-  final Widget Function(MvcContext<TControllerType> context) builder;
-  @override
-  Widget build(BuildContext context) {
-    return builder(context as MvcContext<TControllerType>);
-  }
 }
 
 /// mvc framework stateful widget
@@ -58,6 +38,130 @@ abstract class MvcStatefulWidget<TControllerType extends MvcController> extends 
   MvcWidgetState<MvcStatefulWidget<TControllerType>, TControllerType> createState();
 }
 
+/// mvc framework context
+abstract class MvcContext<TControllerType extends MvcController> extends BuildContext {
+  TControllerType get controller;
+  T dependOnService<T extends Object>();
+  T? tryDependOnService<T extends Object>();
+}
+
+mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
+  late final MvcWidgetManager _widgetManager = MvcWidgetManager(this, blocker: blockParentFind);
+  late final Map<Type, Object> _dependencieServices = {};
+
+  ServiceProvider? _serviceProvider;
+  ServiceProvider get serviceProvider {
+    assert(_serviceProvider != null, 'Use the serviceProvider must after the widget has been mounted.');
+    return _serviceProvider!;
+  }
+
+  bool get blockParentFind => false;
+  @override
+  MvcWidget get widget => super.widget as MvcWidget;
+
+  TControllerType? _controller;
+  @override
+  TControllerType get controller {
+    assert(_controller != null, '$TControllerType not found in current context');
+    return _controller!;
+  }
+
+  @mustCallSuper
+  void initServices(ServiceCollection collection, ServiceProvider parent) {}
+
+  @override
+  T dependOnService<T extends Object>() {
+    var service = serviceProvider.get<T>();
+    _dependencieServices[T] = service;
+    if (service is MvcService) {
+      service._updateDependencies(this);
+    }
+    return service;
+  }
+
+  @override
+  T? tryDependOnService<T extends Object>() {
+    var service = serviceProvider.tryGet<T>();
+    if (service != null) {
+      _dependencieServices[T] = service;
+      if (service is MvcService) {
+        service._updateDependencies(this);
+      }
+    }
+    return service;
+  }
+
+  @override
+  void mount(Element? parent, Object? newSlot) {
+    ServiceProvider? parentServiceProvider;
+    if (parent != null) {
+      parentServiceProvider = InheritedServiceProvider.of(parent) ?? MvcOwner.of(parent)?.services;
+    }
+    assert(parentServiceProvider != null, 'MvcWidget must be mounted under a MvcApp');
+
+    _controller = parentServiceProvider!.tryGet<TControllerType>();
+    _serviceProvider = parentServiceProvider.buildScoped(
+      builder: (collection) {
+        collection.addSingleton<MvcWidgetManager>((_) => _widgetManager);
+        initServices(collection, parentServiceProvider!);
+      },
+    );
+    _widgetManager.mount(parent: parentServiceProvider.tryGet<MvcWidgetManager>());
+
+    super.mount(parent, newSlot);
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    Element? newParent;
+    visitAncestorElements(
+      (element) {
+        newParent = element;
+        return false;
+      },
+    );
+    MvcWidgetManager? newParentManager;
+    if (newParent != null) {
+      newParentManager = InheritedServiceProvider.of(newParent!)?.tryGet<MvcWidgetManager>();
+    }
+    _dependencieServices.clear();
+    _widgetManager.activate(newParent: newParentManager);
+  }
+
+  @override
+  void deactivate() {
+    super.deactivate();
+    _widgetManager.deactivate();
+    for (var element in _dependencieServices.values) {
+      if (element is MvcService) {
+        element._dependents.remove(this);
+      }
+    }
+  }
+
+  @override
+  void unmount() {
+    super.unmount();
+    _dependencieServices.clear();
+    _serviceProvider?.dispose();
+  }
+
+  @override
+  Widget build() {
+    return InheritedServiceProvider(
+      serviceProvider: serviceProvider,
+      child: super.build(),
+    );
+  }
+}
+
+/// mvc framework stateless element
+class MvcStatelessElement<TControllerType extends MvcController> extends StatelessElement with MvcWidgetElement<TControllerType> {
+  MvcStatelessElement(MvcStatelessWidget widget) : super(widget);
+}
+
+/// mvc framework stateful element
 class MvcStatefulElement<TControllerType extends MvcController> extends StatefulElement with MvcWidgetElement<TControllerType> {
   MvcStatefulElement(MvcStatefulWidget widget) : super(widget);
 
@@ -65,9 +169,9 @@ class MvcStatefulElement<TControllerType extends MvcController> extends Stateful
   bool get blockParentFind => (state as MvcWidgetState?)?.blockParentFind ?? super.blockParentFind;
 
   @override
-  void _providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
-    super._providerService(collection, parentServiceProvider);
-    (state as MvcWidgetState).providerService(collection, parentServiceProvider);
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
+    super.initServices(collection, parent);
+    (state as MvcWidgetState?)?.initServices(collection, parent);
   }
 }
 
@@ -88,7 +192,7 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TCon
   }
 
   @mustCallSuper
-  void providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
     collection.addSingleton<MvcWidgetState>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
     if (MvcWidgetState<T, TControllerType> != MvcWidgetState) {
       collection.addSingleton<MvcWidgetState<T, TControllerType>>((serviceProvider) => this);
@@ -118,126 +222,12 @@ class InheritedServiceProvider extends InheritedWidget {
   }
 }
 
-mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
-  late final MvcWidgetManager manager = MvcWidgetManager(this, blocker: blockParentFind);
-  late final Set<MvcService> _dependencieServices = {};
-  ServiceProvider? _serviceProvider;
-  ServiceProvider get serviceProvider {
-    return _serviceProvider!;
-  }
-
-  bool get blockParentFind => false;
-  @override
-  MvcWidget get widget => super.widget as MvcWidget;
-
-  TControllerType? _controller;
-  @override
-  TControllerType get controller {
-    assert(_controller != null);
-    return _controller!;
-  }
-
-  void _providerService(ServiceCollection collection, ServiceProvider parentServiceProvider) {}
-
-  T dependOnService<T extends MvcService>() {
-    var service = controller.getService<T>();
-    _dependencieServices.add(service);
-    service._updateDependencies(this);
-    return service;
-  }
-
-  T? tryDependOnService<T extends MvcService>() {
-    var service = controller.tryGetService<T>();
-    if (service != null) {
-      _dependencieServices.add(service);
-      service._updateDependencies(this);
-    }
-    return service;
-  }
-
-  @override
-  void mount(Element? parent, Object? newSlot) {
-    ServiceProvider? parentServiceProvider;
-    if (parent != null) {
-      parentServiceProvider = InheritedServiceProvider.of(parent);
-    }
-    if (parentServiceProvider == null) {
-      ServiceCollection collection = ServiceCollection();
-      if (TControllerType == MvcController) {
-        collection.addSingleton<MvcController>((serviceProvider) => _MvcRootController());
-      }
-      parentServiceProvider = collection.build();
-    } else if (parentServiceProvider.tryGet<MvcController>() == null) {
-      parentServiceProvider = parentServiceProvider.buildScoped(
-        builder: (collection) {
-          if (TControllerType == MvcController) {
-            collection.addSingleton<MvcController>((serviceProvider) => _MvcRootController());
-          }
-        },
-      );
-    }
-    _controller = parentServiceProvider.tryGet<TControllerType>();
-
-    _serviceProvider = parentServiceProvider.buildScoped(
-      builder: (collection) {
-        collection.addSingleton<MvcWidgetManager>((_) => manager);
-        _providerService(collection, parentServiceProvider!);
-      },
-    );
-    manager.mount(parent: parentServiceProvider.tryGet<MvcWidgetManager>());
-
-    assert(_controller != null, '$TControllerType not found in this context');
-    super.mount(parent, newSlot);
-  }
-
-  @override
-  void activate() {
-    super.activate();
-    Element? newParent;
-    visitAncestorElements(
-      (element) {
-        newParent = element;
-        return false;
-      },
-    );
-    MvcWidgetManager? newParentManager;
-    if (newParent != null) {
-      newParentManager = InheritedServiceProvider.of(newParent!)?.tryGet<MvcWidgetManager>();
-    }
-    _dependencieServices.clear();
-    manager.activate(newParent: newParentManager);
-  }
-
-  @override
-  void deactivate() {
-    super.deactivate();
-    manager.deactivate();
-    for (var element in _dependencieServices) {
-      element._dependents.remove(this);
-    }
-  }
-
-  @override
-  void unmount() {
-    super.unmount();
-    manager.unmount();
-    _dependencieServices.clear();
-    _serviceProvider?.dispose();
-  }
-
-  @override
-  Widget build() {
-    return InheritedServiceProvider(
-      serviceProvider: serviceProvider,
-      child: super.build(),
-    );
-  }
-}
-
-class _MvcRootController extends MvcController {
-  @override
-  MvcView view() {
-    throw UnimplementedError();
+class MvcOwner extends MvcProxyController {
+  MvcOwner({ServiceProvider? serviceProvider}) : services = serviceProvider ?? ServiceCollection().build();
+  ServiceProvider services;
+  static MvcOwner? of(BuildContext context) {
+    final InheritedMvcOwner? inheritedServiceProvider = context.getElementForInheritedWidgetOfExactType<InheritedMvcOwner>()?.widget as InheritedMvcOwner?;
+    return inheritedServiceProvider?.owner;
   }
 }
 
@@ -259,7 +249,7 @@ mixin MvcService on DependencyInjectionService {
   void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
   Iterable<MvcWidgetUpdater> $(String q) sync* {
     for (var element in _dependents) {
-      yield* element.manager.query(MvcWidgetQueryPredicate.makeWithQuery(q));
+      yield* element._widgetManager.query(MvcWidgetQueryPredicate.makeWithQuery(q));
     }
   }
 
@@ -308,56 +298,129 @@ mixin MvcService on DependencyInjectionService {
 ///   }
 /// }
 /// ```
-class MvcServiceScope<TServiceType extends Object> extends MvcStatelessWidget {
+class MvcServiceScope<TServiceType extends Object> extends MvcStatefulWidget {
   const MvcServiceScope({required this.builder, super.id, super.classes, super.key});
   final Widget Function(MvcContext context, TServiceType) builder;
 
   @override
+  MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => _MvcServiceScopeState<TServiceType>();
+}
+
+class _MvcServiceScopeState<TServiceType extends Object> extends MvcWidgetState<MvcServiceScope<TServiceType>, MvcController> {
+  late final TServiceType _service = getService<TServiceType>();
+  @override
   Widget build(BuildContext context) {
-    var element = context as _MvcStateScopeElement<TServiceType>;
-    return builder(element, element._service);
-  }
-
-  @override
-  StatelessElement createElement() {
-    return _MvcStateScopeElement<TServiceType>(this);
+    this.context.dependOnService<TServiceType>();
+    return widget.builder(this.context, _service);
   }
 }
 
-class _MvcStateScopeElement<TServiceType extends Object> extends MvcStatelessElement {
-  _MvcStateScopeElement(super.widget);
-  late final TServiceType _service = controller.getService();
-  late final MvcWidgetManager _manager = _MvcStateScopeManager<TServiceType>(this);
-  @override
-  MvcWidgetManager get manager => _manager;
+class MvcWidgetManager implements MvcWidgetUpdater {
+  MvcWidgetManager(this._element, {this.blocker = false});
+  MvcWidgetManager? _parent;
+  final MvcWidgetElement? _element;
+  final bool blocker;
+  late final List<MvcWidgetManager> _children = [];
 
-  @override
-  void activate() {
-    super.activate();
-    if (_service is MvcService) {
-      (_service as MvcService)._dependents.add(this);
-    }
+  void mount({MvcWidgetManager? parent}) {
+    _parent = parent;
+    _parent?._children.add(this);
   }
 
-  @override
+  void activate({MvcWidgetManager? newParent}) {
+    _parent = newParent;
+    _parent?._children.add(this);
+  }
+
   void deactivate() {
-    super.deactivate();
-    if (_service is MvcService) {
-      (_service as MvcService)._dependents.remove(this);
-    }
+    _parent?._children.remove(this);
   }
-}
 
-class _MvcStateScopeManager<TServiceType extends Object> extends MvcWidgetManager {
-  _MvcStateScopeManager(super.element);
-
-  @override
   bool isMatch(MvcWidgetQueryPredicate predicate) {
-    if (predicate.serviceType != null) {
-      if (predicate.serviceType == TServiceType) {
+    if (predicate.id != null) {
+      if (_element?.widget.id == predicate.id) {
         return true;
       }
     }
-    return super.isMatch(predicate);
+    if (predicate.classes != null) {
+      if (_element?.widget.classes?.contains(predicate.classes) == true) {
+        return true;
+      }
+    }
+    if (predicate.type != null) {
+      if (_element?.widget.runtimeType == predicate.type) {
+        return true;
+      }
+    }
+    if (predicate.typeString != null) {
+      if (_element?.widget.runtimeType.toString() == predicate.typeString) {
+        return true;
+      }
+    }
+    if (predicate.serviceType != null) {
+      if (_element?._dependencieServices.containsKey(predicate.serviceType) == true) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Iterable<MvcWidgetUpdater> query(MvcWidgetQueryPredicate predicate) sync* {
+    for (var item in _children) {
+      if (item.isMatch(predicate)) {
+        yield item;
+        if (predicate.id != null) return;
+      }
+      if (!item.blocker) yield* item.query(predicate);
+    }
+  }
+
+  @override
+  void update() {
+    _element?.markNeedsBuild();
+  }
+}
+
+class MvcApp extends StatefulWidget {
+  const MvcApp({required this.child, this.owner, super.key});
+  final MvcOwner? owner;
+  final Widget child;
+
+  @override
+  State<MvcApp> createState() => _MvcAppState();
+}
+
+class InheritedMvcOwner extends InheritedWidget {
+  const InheritedMvcOwner({required this.owner, super.key, required super.child});
+  final MvcOwner owner;
+  @override
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
+}
+
+class _MvcAppState extends State<MvcApp> {
+  late final ServiceProvider serviceProvider;
+  late final MvcOwner owner;
+  @override
+  void initState() {
+    super.initState();
+    owner = widget.owner ?? MvcOwner();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    assert(() {
+      if (context.getElementForInheritedWidgetOfExactType<InheritedServiceProvider>() != null) {
+        throw Exception("MvcApp can only be used in the root mvc widget");
+      }
+      return true;
+    }());
+
+    return InheritedMvcOwner(
+      owner: owner,
+      child: Mvc<MvcOwner, Widget>(
+        create: () => owner,
+        model: widget.child,
+      ),
+    );
   }
 }

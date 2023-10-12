@@ -2,6 +2,66 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 /// mvc framework widget
+///
+/// don't use this class directly, use [MvcStatelessWidget] or [MvcStatefulWidget] instead.
+///
+/// can be update by [MvcController.$] if extends [MvcStatelessWidget] or [MvcStatefulWidget].
+///
+/// example:
+/// ```dart
+/// class MyWidget extends MvcStatelessWidget {
+///   const MyWidget({required this.title, super.key, super.id, super.classes});
+///   final String title;
+///   @override
+///   Widget build(BuildContext context) {
+///     return Text(title);
+///   }
+/// }
+/// // in the controller
+/// class MyController extends MvcController {
+///   String title = "MyWidget Title";
+///   void updateMyWidget() {
+///     title = "MyWidget Title Updated";
+///     $<MyWidget>().update();
+///   }
+/// }
+/// // in the view
+/// class MyView extends MvcView {
+///   @override
+///   MvcViewBuilder build(BuildContext context) {
+///     return MyWidget(title: controller.title);
+///   }
+/// }
+/// ```
+///
+/// also can be update by [MvcController.$] if [MvcWidget.id] or [MvcWidget.classes] be set.
+///
+/// example:
+/// ```dart
+/// class MyWidget extends MvcStatelessWidget {
+///   const MyWidget({required this.title, super.key, super.id, super.classes});
+///   final String title;
+///   @override
+///   Widget build(BuildContext context) {
+///     return Text(title);
+///   }
+/// }
+/// // in the controller
+/// class MyController extends MvcController {
+///   String title = "MyWidget Title";
+///   void updateMyWidget() {
+///     title = "MyWidget Title Updated";
+///     $("#my-widget").update(); // or $(".my-widget").update();
+///   }
+/// }
+/// // in the view
+/// class MyView extends MvcView {
+///   @override
+///   MvcViewBuilder build(BuildContext context) {
+///     return MyWidget(title: controller.title, id: "my-widget", classes: ["my-widget"]);
+///   }
+/// }
+/// ```
 mixin MvcWidget<TControllerType extends MvcController> on Widget {
   String? get id;
   List<String>? get classes;
@@ -9,7 +69,9 @@ mixin MvcWidget<TControllerType extends MvcController> on Widget {
 
 /// mvc framework stateless widget
 ///
-/// [build] method context can cast to [MvcContext]
+/// [build] method context can cast to [MvcContext<TControllerType>]
+///
+/// about how to update this widget, see [MvcWidget]
 abstract class MvcStatelessWidget<TControllerType extends MvcController> extends StatelessWidget with MvcWidget {
   const MvcStatelessWidget({this.id, this.classes, super.key});
 
@@ -23,6 +85,8 @@ abstract class MvcStatelessWidget<TControllerType extends MvcController> extends
 }
 
 /// mvc framework stateful widget
+///
+/// about how to update this widget, see [MvcWidget]
 abstract class MvcStatefulWidget<TControllerType extends MvcController> extends StatefulWidget with MvcWidget {
   const MvcStatefulWidget({this.id, this.classes, super.key});
 
@@ -39,36 +103,57 @@ abstract class MvcStatefulWidget<TControllerType extends MvcController> extends 
 }
 
 /// mvc framework context
+///
+/// this is the [MvcWidget]'s context, can be get in [MvcStatelessWidget.build] method or [MvcWidgetState.context].
 abstract class MvcContext<TControllerType extends MvcController> extends BuildContext {
+  /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
   TControllerType get controller;
+
+  /// depend on a service, if the service is not exist, will throw an exception.
+  ///
+  /// if the service is [MvcService],this context will be update when the service call [MvcService.update].
+  ///
+  /// alse will be update when the nearest [Mvc] call [MvcController.updateService<T>].
+  ///
+  /// see [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) about how to inject service.
   T dependOnService<T extends Object>();
+
+  /// try depend on a service, if the service is not exist, will return null. same as [dependOnService] but not throw an exception when the service is not exist.
   T? tryDependOnService<T extends Object>();
 }
 
+/// The common element of the [MvcWidget]
 mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
-  late final MvcWidgetManager _widgetManager = MvcWidgetManager(this, blocker: blockParentFind);
+  late final MvcWidgetManager _widgetManager = MvcWidgetManager(this, blocker: isUpdaterQueryerBreaker);
   late final Map<Type, Object> _dependencieServices = {};
 
   ServiceProvider? _serviceProvider;
+
+  /// every [MvcWidget] will to create a [ServiceProvider] as a new scope
   ServiceProvider get serviceProvider {
     assert(_serviceProvider != null, 'Use the serviceProvider must after the widget has been mounted.');
     return _serviceProvider!;
   }
 
-  bool get blockParentFind => false;
+  /// Whether to allow queries from superiors to continue looking for children
+  bool get isUpdaterQueryerBreaker => false;
   @override
   MvcWidget get widget => super.widget as MvcWidget;
 
   TControllerType? _controller;
+
+  /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
   @override
   TControllerType get controller {
     assert(_controller != null, '$TControllerType not found in current context');
     return _controller!;
   }
 
+  /// you can be inject some services here when [ServiceProvider] is created
   @mustCallSuper
   void initServices(ServiceCollection collection, ServiceProvider parent) {}
 
+  /// see the [MvcContext.dependOnService]
   @override
   T dependOnService<T extends Object>() {
     var service = serviceProvider.get<T>();
@@ -79,6 +164,7 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
     return service;
   }
 
+  /// see the [MvcContext.tryDependOnService]
   @override
   T? tryDependOnService<T extends Object>() {
     var service = serviceProvider.tryGet<T>();
@@ -166,7 +252,7 @@ class MvcStatefulElement<TControllerType extends MvcController> extends Stateful
   MvcStatefulElement(MvcStatefulWidget widget) : super(widget);
 
   @override
-  bool get blockParentFind => (state as MvcWidgetState?)?.blockParentFind ?? super.blockParentFind;
+  bool get isUpdaterQueryerBreaker => (state as MvcWidgetState?)?.isUpdaterQueryerBreaker ?? super.isUpdaterQueryerBreaker;
 
   @override
   void initServices(ServiceCollection collection, ServiceProvider parent) {
@@ -180,8 +266,11 @@ mixin _DisposeHelper<T extends StatefulWidget> on State<T> {
 }
 
 abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TControllerType extends MvcController> extends State<T> with _DisposeHelper, DependencyInjectionService {
+  /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
   TControllerType get controller => getService();
-  bool get blockParentFind => false;
+
+  /// Whether to allow queries from superiors to continue looking for children
+  bool get isUpdaterQueryerBreaker => false;
   @override
   MvcContext<TControllerType> get context => super.context as MvcContext<TControllerType>;
 
@@ -191,6 +280,7 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TCon
     super.initState();
   }
 
+  /// you can be inject some services here when [ServiceProvider] is created
   @mustCallSuper
   void initServices(ServiceCollection collection, ServiceProvider parent) {
     collection.addSingleton<MvcWidgetState>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
@@ -226,15 +316,16 @@ class MvcOwner extends MvcProxyController {
   MvcOwner({ServiceProvider? serviceProvider}) : services = serviceProvider ?? ServiceCollection().build();
   ServiceProvider services;
   static MvcOwner? of(BuildContext context) {
-    final InheritedMvcOwner? inheritedServiceProvider = context.getElementForInheritedWidgetOfExactType<InheritedMvcOwner>()?.widget as InheritedMvcOwner?;
+    final _InheritedMvcOwner? inheritedServiceProvider = context.getElementForInheritedWidgetOfExactType<_InheritedMvcOwner>()?.widget as _InheritedMvcOwner?;
     return inheritedServiceProvider?.owner;
   }
 }
 
-/// with the service get power for update [MvcServiceScope]
+/// with the service get power to update [MvcServiceScope]
 mixin MvcService on DependencyInjectionService {
   late final Set<MvcWidgetElement> _dependents = <MvcWidgetElement>{};
 
+  /// update all [MvcWidget] that depend on this service
   void update() {
     for (var element in _dependents) {
       element.markNeedsBuild();
@@ -245,15 +336,20 @@ mixin MvcService on DependencyInjectionService {
     _dependents.add(element);
   }
 
-  void updateWidget<T extends MvcWidget>() => _find(MvcWidgetQueryPredicate.makeWithWidgetType(T)).update();
-  void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
-  Iterable<MvcWidgetUpdater> $(String q) sync* {
+  /// Update the child [MvcWidget] that depend on this service
+  void updateWidget<T extends MvcWidget>() => _find(MvcUpdaterQueryPredicate.makeWithWidgetType(T)).update();
+
+  /// Update the child [MvcWidget] that depend on [T] that depend on this service
+  void updateService<T extends Object>() => _find(MvcUpdaterQueryPredicate.makeWithServiceType(T)).update();
+
+  /// find and update the child [MvcWidget] that depend on this service
+  Iterable<MvcWidgetUpdater> $<T extends MvcWidget>([String? q]) sync* {
     for (var element in _dependents) {
-      yield* element._widgetManager.query(MvcWidgetQueryPredicate.makeWithQuery(q));
+      yield* element._widgetManager.query(MvcUpdaterQueryPredicate.makeWithQuery(q ?? T.toString()));
     }
   }
 
-  Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
+  Iterable<MvcWidgetUpdater> _find(MvcUpdaterQueryPredicate predicate) {
     return getService<MvcWidgetManager>().query(predicate);
   }
 
@@ -315,6 +411,7 @@ class _MvcServiceScopeState<TServiceType extends Object> extends MvcWidgetState<
   }
 }
 
+/// it's can to found [MvcWidget]
 class MvcWidgetManager implements MvcWidgetUpdater {
   MvcWidgetManager(this._element, {this.blocker = false});
   MvcWidgetManager? _parent;
@@ -336,7 +433,7 @@ class MvcWidgetManager implements MvcWidgetUpdater {
     _parent?._children.remove(this);
   }
 
-  bool isMatch(MvcWidgetQueryPredicate predicate) {
+  bool isMatch(MvcUpdaterQueryPredicate predicate) {
     if (predicate.id != null) {
       if (_element?.widget.id == predicate.id) {
         return true;
@@ -365,7 +462,7 @@ class MvcWidgetManager implements MvcWidgetUpdater {
     return false;
   }
 
-  Iterable<MvcWidgetUpdater> query(MvcWidgetQueryPredicate predicate) sync* {
+  Iterable<MvcWidgetUpdater> query(MvcUpdaterQueryPredicate predicate) sync* {
     for (var item in _children) {
       if (item.isMatch(predicate)) {
         yield item;
@@ -381,6 +478,7 @@ class MvcWidgetManager implements MvcWidgetUpdater {
   }
 }
 
+/// just as root element for [MvcWidget], provider root [ServiceProvider]
 class MvcApp extends StatefulWidget {
   const MvcApp({required this.child, this.owner, super.key});
   final MvcOwner? owner;
@@ -390,8 +488,8 @@ class MvcApp extends StatefulWidget {
   State<MvcApp> createState() => _MvcAppState();
 }
 
-class InheritedMvcOwner extends InheritedWidget {
-  const InheritedMvcOwner({required this.owner, super.key, required super.child});
+class _InheritedMvcOwner extends InheritedWidget {
+  const _InheritedMvcOwner({required this.owner, required super.child});
   final MvcOwner owner;
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
@@ -415,7 +513,7 @@ class _MvcAppState extends State<MvcApp> {
       return true;
     }());
 
-    return InheritedMvcOwner(
+    return _InheritedMvcOwner(
       owner: owner,
       child: Mvc<MvcOwner, Widget>(
         create: () => owner,

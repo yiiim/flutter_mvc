@@ -18,15 +18,15 @@ extension MvcWidgetUpdaterIterableExtension on Iterable<MvcWidgetUpdater> {
   }
 }
 
-class MvcWidgetQueryPredicate {
-  MvcWidgetQueryPredicate({this.id, this.classes, this.type, this.typeString, this.serviceType});
-  factory MvcWidgetQueryPredicate.makeWithServiceType(Type? serviceType) {
-    return MvcWidgetQueryPredicate(serviceType: serviceType);
+class MvcUpdaterQueryPredicate {
+  MvcUpdaterQueryPredicate({this.id, this.classes, this.type, this.typeString, this.serviceType});
+  factory MvcUpdaterQueryPredicate.makeWithServiceType(Type? serviceType) {
+    return MvcUpdaterQueryPredicate(serviceType: serviceType);
   }
-  factory MvcWidgetQueryPredicate.makeWithWidgetType(Type? type) {
-    return MvcWidgetQueryPredicate(type: type);
+  factory MvcUpdaterQueryPredicate.makeWithWidgetType(Type? type) {
+    return MvcUpdaterQueryPredicate(type: type);
   }
-  factory MvcWidgetQueryPredicate.makeWithQuery(String query) {
+  factory MvcUpdaterQueryPredicate.makeWithQuery(String query) {
     String? id;
     String? classes;
     String? typeString;
@@ -42,7 +42,7 @@ class MvcWidgetQueryPredicate {
         typeString = query;
         break;
     }
-    return MvcWidgetQueryPredicate(id: id, classes: classes, typeString: typeString);
+    return MvcUpdaterQueryPredicate(id: id, classes: classes, typeString: typeString);
   }
   final String? id;
   final String? classes;

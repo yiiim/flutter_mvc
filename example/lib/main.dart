@@ -7,12 +7,14 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
   runApp(
-    MvcDependencyProvider(
-      provider: (collection) {
-        // inject service, you can inject any object, then you can get it in controller and view with getService<T> method
-        collection.addSingleton<TestService>((_) => TestService());
-      },
-      child: const MyApp(),
+    MvcApp(
+      child: MvcDependencyProvider(
+        provider: (collection) {
+          // inject service, you can inject any object, then you can get it in controller and view with getService<T> method
+          collection.addSingleton<TestService>((_) => TestService());
+        },
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -154,11 +156,11 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update title by self service"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.updateWidget<MvcHeader>(),
+                    onPressed: () => controller.$<MvcHeader>(),
                     child: const Text("update header"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.updateWidget<MvcFooter>(),
+                    onPressed: () => controller.$<MvcFooter>(),
                     child: const Text("update footer"),
                   ),
                 ],

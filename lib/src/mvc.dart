@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
+/// extend this class to create a mvc controller, and override [view] method to return a [MvcView]
 abstract class MvcController<TModelType> with DependencyInjectionService {
-  late MvcControllerState _state;
+  late _MvcControllerState _state;
   TModelType get model => _state.widget.model;
   BuildContext get context => _state.context;
 
@@ -23,17 +24,21 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   void initService(ServiceCollection collection) {}
 
   void update() => _state._update();
-  void updateWidget<T extends MvcWidget>() => _find(MvcWidgetQueryPredicate.makeWithWidgetType(T)).update();
-  void updateService<T extends Object>() => _find(MvcWidgetQueryPredicate.makeWithServiceType(T)).update();
-  Iterable<MvcWidgetUpdater> $(String q) {
-    return _find(MvcWidgetQueryPredicate.makeWithQuery(q));
+  void updateService<T extends Object>({void Function(T service)? updater}) {
+    updater?.call(getService<T>());
+    _find(MvcUpdaterQueryPredicate.makeWithServiceType(T)).update();
   }
 
-  Iterable<MvcWidgetUpdater> _find(MvcWidgetQueryPredicate predicate) {
+  Iterable<MvcWidgetUpdater> $<T extends MvcWidget>([String? q]) {
+    return _find(MvcUpdaterQueryPredicate.makeWithQuery(q ?? T.toString()));
+  }
+
+  Iterable<MvcWidgetUpdater> _find(MvcUpdaterQueryPredicate predicate) {
     return getService<MvcWidgetManager>().query(predicate);
   }
 }
 
+/// TODO: it's can't update when call [update] method
 class MvcProxyController extends MvcController<Widget> {
   MvcProxyController();
   @override
@@ -48,21 +53,14 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
   final TModelType model;
 
   @override
-  MvcWidgetState createState() => MvcControllerState<TControllerType, TModelType>();
+  MvcWidgetState createState() => _MvcControllerState<TControllerType, TModelType>();
 }
 
-class MvcProxy<TControllerType extends MvcController<Widget>> extends StatelessWidget {
-  const MvcProxy({this.create, required this.child, super.key});
-  final TControllerType Function()? create;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Mvc(create: create, model: child);
-  }
+class MvcProxy<TControllerType extends MvcController<Widget>> extends Mvc<TControllerType, Widget> {
+  const MvcProxy({super.create, required Widget child, super.key}) : super(model: child);
 }
 
-class MvcControllerState<TControllerType extends MvcController<TModelType>, TModelType> extends MvcWidgetState {
+class _MvcControllerState<TControllerType extends MvcController<TModelType>, TModelType> extends MvcWidgetState {
   @override
   Mvc<TControllerType, TModelType> get widget => super.widget as Mvc<TControllerType, TModelType>;
 
@@ -71,13 +69,13 @@ class MvcControllerState<TControllerType extends MvcController<TModelType>, TMod
   }
 
   @override
-  bool get blockParentFind => true;
+  bool get isUpdaterQueryerBreaker => true;
 
   @mustCallSuper
   @override
   void didUpdateWidget(covariant MvcStatefulWidget<MvcController> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    controller.didUpdateModel(widget.model);
+    controller.didUpdateModel((oldWidget as Mvc<TControllerType, TModelType>).model);
   }
 
   @mustCallSuper
@@ -145,10 +143,10 @@ class MvcDependencyProvider extends MvcStatefulWidget {
   final Widget child;
 
   @override
-  MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => MvcDependencyProviderState();
+  MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => _MvcDependencyProviderState();
 }
 
-class MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, MvcController> {
+class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, MvcController> {
   @override
   Widget build(BuildContext context) {
     return Builder(

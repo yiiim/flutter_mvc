@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
+import 'package:flutter_mvc/src/context.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class TestMvcWidget<TControllerType extends MvcController> extends MvcStatelessWidget<TControllerType> {
@@ -33,19 +34,6 @@ class TestView extends MvcView<TestController> {
   @override
   Widget buildView() {
     return controller.model.child;
-    // return Column(
-    //   children: [
-    //     Text(controller.model.modelValue, textDirection: TextDirection.ltr),
-    //     MvcBuilder(
-    //       id: "id",
-    //       classes: const ["cls"],
-    //       builder: (context) {
-    //         return Text(controller.controllerValue, textDirection: TextDirection.ltr);
-    //       },
-    //     ),
-    //     if (controller.model.child != null) !,
-    //   ],
-    // );
   }
 }
 
@@ -218,7 +206,7 @@ void main() {
       );
 
       expect(find.text('serviceValue'), findsOneWidget);
-      controller.updateService<TestService>(updater: (service) => service.stateValue = "serviceValue2");
+      controller.updateService<TestService>(fn: (service) => service.stateValue = "serviceValue2");
       await tester.pump();
       expect(find.text('serviceValue2'), findsOneWidget);
 
@@ -228,6 +216,57 @@ void main() {
       expect(find.text('serviceValue3'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'test mvc service',
+    (tester) async {
+      var service = TestService();
+      service.stateValue = '1';
+      await tester.pumpWidget(
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) => collection.addSingleton<TestService>((_) => service),
+            child: MvcServiceScope<TestService>(
+              builder: (context, service) {
+                return Text(service.stateValue, textDirection: TextDirection.ltr);
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('1'), findsOneWidget);
+      service.update(() => service.stateValue = '2');
+      await tester.pump();
+      expect(find.text('2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'test depend on service',
+    (tester) async {
+      var service = TestService();
+      service.stateValue = '1';
+      await tester.pumpWidget(
+        MvcApp(
+          child: MvcDependencyProvider(
+            provider: (collection) => collection.addSingleton<TestService>((_) => service),
+            child: MvcBuilder(
+              builder: (context) {
+                return Text(context.dependOnService<TestService>().stateValue, textDirection: TextDirection.ltr);
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('1'), findsOneWidget);
+      service.update(() => service.stateValue = '2');
+      await tester.pump();
+      expect(find.text('2'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'test child mvc',
     (WidgetTester tester) async {

@@ -3,7 +3,8 @@ abstract class MvcWidgetUpdater {
 }
 
 extension MvcWidgetUpdaterListExtension on List<MvcWidgetUpdater> {
-  void update() {
+  void update([void Function()? fn]) {
+    fn?.call();
     for (var updater in this) {
       updater.update();
     }
@@ -11,9 +12,10 @@ extension MvcWidgetUpdaterListExtension on List<MvcWidgetUpdater> {
 }
 
 extension MvcWidgetUpdaterIterableExtension on Iterable<MvcWidgetUpdater> {
-  void update() {
-    for (var updater in this) {
-      updater.update();
+  void update([void Function()? fn]) {
+    fn?.call();
+    for (var item in this) {
+      item.update();
     }
   }
 }

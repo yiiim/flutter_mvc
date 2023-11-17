@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'context.dart';
 import 'framework.dart';
 import 'mvc.dart';
 
@@ -17,12 +18,10 @@ import 'mvc.dart';
 /// class TestController extends MvcController {
 ///   String title = "title";
 ///   void updateTitleWithId() {
-///     title = "new title";
-///     $("#title").update();  // update with id
+///     $("#title").update(() => title = "new title");  // update with id
 ///   }
 ///   void updateTitleWithClasses() {
-///     title = "new title";
-///     $(".title").update();  // update with classes
+///     $(".title").update(() => title = "new title");  // update with classes
 ///   }
 /// }
 /// ```

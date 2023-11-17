@@ -23,9 +23,9 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   @protected
   void initService(ServiceCollection collection) {}
 
-  void update() => _state._update();
-  void updateService<T extends Object>({void Function(T service)? updater}) {
-    updater?.call(getService<T>());
+  void update<T extends MvcWidget>() => _state._update();
+  void updateService<T extends Object>({void Function(T service)? fn}) {
+    fn?.call(getService<T>());
     _find(MvcUpdaterQueryPredicate.makeWithServiceType(T)).update();
   }
 

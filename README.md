@@ -1,10 +1,9 @@
 # Flutter Mvc
 
-Flutter framework based on dependency injection, which can be used for state management.
+Flutter framework based on dependency injection, Which can be used for state management.
 
-# Getting Started
+## Getting Started
 
-  
 ```dart
 import 'dart:async';
 import 'dart:math';
@@ -14,13 +13,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
+  ServiceCollection collection = ServiceCollection();
+  collection.addSingleton<TestService>((_) => TestService());
   runApp(
-    MvcDependencyProvider(
-      provider: (collection) {
-        // inject service, you can inject any object, then you can get it in controller and view with getService<T> method
-        collection.addSingleton<TestService>((_) => TestService());
-      },
-      child: const MyApp(),
+    MvcApp(
+      owner: MvcOwner(serviceProvider: collection.build()),
+      child: MvcDependencyProvider(
+        provider: (collection) {
+          collection.addSingleton<TestService>((_) => TestService());
+        },
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -83,9 +86,8 @@ class TestMvcController extends MvcController<TestModel> {
 
   /// timer callback
   void timerCallback(Timer timer) {
-    timerCount++;
     // update the widget with classes "timerCount"
-    $(".timerCount").update();
+    $(".timerCount").update(() => timerCount++);
   }
 
   /// click the FloatingActionButton
@@ -105,13 +107,13 @@ class TestMvcController extends MvcController<TestModel> {
 }
 
 /// The View
-class TestMvcView extends MvcView<TestMvcController, TestModel> {
+class TestMvcView extends MvcView<TestMvcController> {
   @override
   Widget buildView() {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(model.title),
+        title: Text(controller.model.title),
       ),
       body: Column(
         children: [
@@ -162,11 +164,11 @@ class TestMvcView extends MvcView<TestMvcController, TestModel> {
                     child: const Text("update title by self service"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.updateWidget<MvcHeader>(),
+                    onPressed: () => controller.$<MvcHeader>().update(),
                     child: const Text("update header"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.updateWidget<MvcFooter>(),
+                    onPressed: () => controller.$<MvcFooter>().update(),
                     child: const Text("update footer"),
                   ),
                 ],
@@ -194,4 +196,258 @@ class TestMvcView extends MvcView<TestMvcController, TestModel> {
   }
 }
 
+```
+
+## Use Mvc
+
+Create Controller
+
+```dart
+class TestMvcController extends MvcController<TestModel> {
+  @override
+  void init() {
+    super.init();
+  }
+}
+```
+
+Create Model
+
+```dart
+class TestModel {
+  const TestModel(this.title);
+  final String title;
+}
+```
+
+Create View
+
+```dart
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
+  @override
+  Widget buildView() {
+    return Text(model.title);
+  }
+}
+```
+
+Use Mvc in Flutter
+
+```dart
+Mvc(
+  create: () => TestMvcController(),
+  model: const TestModel("Flutter Mvc Demo"),
+)
+```
+
+The only thing you need to pay attention to is that `Mvc` must have an `MvcApp` as its parent.
+
+## Dependency Injection
+
+Dependency injection is provided by [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection).
+
+### Get the objects you've injected
+
+There are many ways to get the objects you've injected.
+
+Use `getService` in `MvcController`, `MvcWidgetState`, `MvcView` to get them.
+
+```dart
+// In MvcController
+class TestMvcController extends MvcController<TestModel> {
+  @override
+  void init() {
+    super.init();
+    final testService = getService<TestService>();
+  }
+}
+
+// In MvcWidgetState
+class TestMvcStatefulWidget extends MvcStatefulWidget {
+  MvcWidgetState createState() => TestMvcStatefulState();
+}
+class TestMvcStatefulState extends MvcWidgetState {
+  @override
+  void init() {
+    super.init();
+    final testService = getService<TestService>();
+  }
+}
+
+// In MvcView
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
+  @override
+  Widget buildView() {
+    final testService = getService<TestService>();
+    return Text(testService.title);
+  }
+}
+```
+
+Use the `MvcServiceScope` widget to get them.
+
+```dart
+Widget build(BuildContext context) {
+  return MvcServiceScope<TestService>(
+    builder: (context, service) {
+      return Text(service.title);
+    },
+  );
+}
+```
+
+Use `BuildContext` to get them.
+
+```dart
+Widget build(BuildContext context) {
+  final testService = context.getService<TestService>();
+  return Text(testService.title);
+}
+```
+
+### Inject objects
+
+Create initial dependency injection objects in `MvcApp`.
+
+```dart
+var collection = ServiceCollection();
+collection.addSingleton<TestService>((_) => TestService());
+var serviceProvider = collection.build();
+MvcApp(
+  owner: MvcOwner(serviceProvider: serviceProvider),
+  child: MyApp(),
+)
+```
+
+Use `MvcDependencyProvider` to inject to children.
+
+```dart
+MvcDependencyProvider(
+    provider: (collection) {
+      collection.addSingleton<TestService>((_) => TestService());
+    },
+    child: const MyApp(),
+)
+```
+
+Use `MvcController` to inject to children.
+
+```dart
+class TestMvcController extends MvcController<TestModel> {
+  @override
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
+    super.initServices(collection, parent);
+    collection.addSingleton<TestService>((_) => TestService());
+  }
+}
+```
+
+Use `MvcStatefulWidget` to inject to children.
+
+```dart
+class TestMvcStatefulWidget extends MvcStatefulWidget {
+  MvcWidgetState createState() => TestMvcStatefulState();
+}
+class TestMvcStatefulState extends MvcWidgetState {
+  @override
+  void initServices(ServiceCollection collection, ServiceProvider parent) {
+    super.initServices(collection, parent);
+    collection.addSingleton<TestService>((_) => TestService());
+  }
+}
+```
+
+In Mvc, children can get all objects injected by their parents. If a child injects the same object, the child's object will override the parent's object.
+
+## State Management
+
+### Update Widget using id, classes, WidgetType
+
+```dart
+class MyWidget extends MvcStatelessWidget {
+  const MyWidget({super.key, super.id, super.classes});
+  @override
+  Widget build(BuildContext context) {
+    return Text('${context.getService<TestMvcController>().count}');
+  }
+}
+class TestMvcController extends MvcController<TestModel> {
+  int count = 0;
+  @override
+  MvcView view() => TestMvcView();
+  void tapAdd() {
+    $("#count").update(() => count++); // update the widget with id "count"
+    $(".count").update(() => count++); // update the widget with classes "count"
+    $<MyWidget>().update(() => count++); // update the widget with WidgetType MyWidget
+  }
+}
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
+  @override
+  Widget buildView() {
+    return Column(
+      children: [
+        MyWidget<TestMvcController>(
+          id: "count",
+          classes: const ["count"],
+        ),
+      ],
+    );
+  }
+}
+```
+
+### Make Widget depend on injected objects
+
+#### Use `MvcServiceScope` Widget
+
+```dart
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
+  @override
+  Widget buildView() {
+    return MvcServiceScope<TestService>(
+      builder: (context, service) {
+        return Text('${service.count}');
+      },
+    );
+  }
+}
+```
+
+#### Use `MvcContext` to depend on objects
+
+```dart
+class TestMvcView extends MvcView<TestMvcController, TestModel> {
+  @override
+  Widget buildView() {
+    final testService = context.getService<TestService>();
+    return MvcBuilder(
+      builder: (context) {
+        return Text('${context.dependOnService<TestService>().count}');
+      }
+    );
+  }
+}
+```
+
+#### Update Widget that depends on objects
+
+Use mixin: `MvcService` to update within the object
+
+```dart
+class TestService with DependencyInjectionService, MvcService {
+  int count = 0;
+  void changeTitle() {
+    update(()=>count++);
+  }
+}
+```
+
+Update in MvcController
+
+```dart
+class TestMvcController extends MvcController<TestModel> {
+  void changeTitle() {
+    updateService<TestService>((service) => service.count++);
+  }
+}
 ```

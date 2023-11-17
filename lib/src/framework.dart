@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
-/// mvc framework widget
+import 'context.dart';
+
+/// Mvc framework widget
 ///
-/// don't use this class directly, use [MvcStatelessWidget] or [MvcStatefulWidget] instead.
+/// Don't use this class directly, use [MvcStatelessWidget] or [MvcStatefulWidget] instead.
 ///
-/// can be update by [MvcController.$] if extends [MvcStatelessWidget] or [MvcStatefulWidget].
+/// Can be update by [MvcController.$] if extends [MvcStatelessWidget] or [MvcStatefulWidget].
 ///
-/// example:
+/// Example:
 /// ```dart
 /// class MyWidget extends MvcStatelessWidget {
 ///   const MyWidget({required this.title, super.key, super.id, super.classes});
@@ -17,15 +19,13 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 ///     return Text(title);
 ///   }
 /// }
-/// // in the controller
+/// // In the controller
 /// class MyController extends MvcController {
-///   String title = "MyWidget Title";
 ///   void updateMyWidget() {
-///     title = "MyWidget Title Updated";
-///     $<MyWidget>().update();
+///     $<MyWidget>().update(() => title = "MyWidget Title Updated");
 ///   }
 /// }
-/// // in the view
+/// // In the view
 /// class MyView extends MvcView {
 ///   @override
 ///   MvcViewBuilder build(BuildContext context) {
@@ -34,9 +34,9 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 /// }
 /// ```
 ///
-/// also can be update by [MvcController.$] if [MvcWidget.id] or [MvcWidget.classes] be set.
+/// Also can be update by [MvcController.$] if [MvcWidget.id] or [MvcWidget.classes] be set.
 ///
-/// example:
+/// Example:
 /// ```dart
 /// class MyWidget extends MvcStatelessWidget {
 ///   const MyWidget({required this.title, super.key, super.id, super.classes});
@@ -46,15 +46,14 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 ///     return Text(title);
 ///   }
 /// }
-/// // in the controller
+/// // In the controller
 /// class MyController extends MvcController {
 ///   String title = "MyWidget Title";
 ///   void updateMyWidget() {
-///     title = "MyWidget Title Updated";
-///     $("#my-widget").update(); // or $(".my-widget").update();
+///     $("#my-widget").update(() => title = "MyWidget Title Updated");; // or $(".my-widget").update(() => title = "MyWidget Title Updated");;
 ///   }
 /// }
-/// // in the view
+/// // In the view
 /// class MyView extends MvcView {
 ///   @override
 ///   MvcViewBuilder build(BuildContext context) {
@@ -67,11 +66,11 @@ mixin MvcWidget<TControllerType extends MvcController> on Widget {
   List<String>? get classes;
 }
 
-/// mvc framework stateless widget
+/// Mvc framework stateless widget
 ///
 /// [build] method context can cast to [MvcContext<TControllerType>]
 ///
-/// about how to update this widget, see [MvcWidget]
+/// About how to update this widget, see [MvcWidget]
 abstract class MvcStatelessWidget<TControllerType extends MvcController> extends StatelessWidget with MvcWidget {
   const MvcStatelessWidget({this.id, this.classes, super.key});
 
@@ -84,9 +83,9 @@ abstract class MvcStatelessWidget<TControllerType extends MvcController> extends
   StatelessElement createElement() => MvcStatelessElement<TControllerType>(this);
 }
 
-/// mvc framework stateful widget
+/// Mvc framework stateful widget
 ///
-/// about how to update this widget, see [MvcWidget]
+/// About how to update this widget, see [MvcWidget]
 abstract class MvcStatefulWidget<TControllerType extends MvcController> extends StatefulWidget with MvcWidget {
   const MvcStatefulWidget({this.id, this.classes, super.key});
 
@@ -102,25 +101,7 @@ abstract class MvcStatefulWidget<TControllerType extends MvcController> extends 
   MvcWidgetState<MvcStatefulWidget<TControllerType>, TControllerType> createState();
 }
 
-/// mvc framework context
-///
-/// this is the [MvcWidget]'s context, can be get in [MvcStatelessWidget.build] method or [MvcWidgetState.context].
-abstract class MvcContext<TControllerType extends MvcController> extends BuildContext {
-  /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
-  TControllerType get controller;
 
-  /// depend on a service, if the service is not exist, will throw an exception.
-  ///
-  /// if the service is [MvcService],this context will be update when the service call [MvcService.update].
-  ///
-  /// alse will be update when the nearest [Mvc] call [MvcController.updateService<T>].
-  ///
-  /// see [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection) about how to inject service.
-  T dependOnService<T extends Object>();
-
-  /// try depend on a service, if the service is not exist, will return null. same as [dependOnService] but not throw an exception when the service is not exist.
-  T? tryDependOnService<T extends Object>();
-}
 
 /// The common element of the [MvcWidget]
 mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElement implements MvcContext<TControllerType> {
@@ -129,7 +110,7 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on ComponentElemen
 
   ServiceProvider? _serviceProvider;
 
-  /// every [MvcWidget] will to create a [ServiceProvider] as a new scope
+  /// Every [MvcWidget] will to create a [ServiceProvider] as a new scope
   ServiceProvider get serviceProvider {
     assert(_serviceProvider != null, 'Use the serviceProvider must after the widget has been mounted.');
     return _serviceProvider!;
@@ -321,12 +302,13 @@ class MvcOwner extends MvcProxyController {
   }
 }
 
-/// with the service get power to update [MvcServiceScope]
+/// With the service get power to update [MvcServiceScope]
 mixin MvcService on DependencyInjectionService {
   late final Set<MvcWidgetElement> _dependents = <MvcWidgetElement>{};
 
   /// update all [MvcWidget] that depend on this service
-  void update() {
+  void update([void Function()? fn]) {
+    fn?.call();
     for (var element in _dependents) {
       element.markNeedsBuild();
     }

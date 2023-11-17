@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
+  ServiceCollection collection = ServiceCollection();
+  collection.addSingleton<TestService>((_) => TestService());
   runApp(
     MvcApp(
+      owner: MvcOwner(serviceProvider: collection.build()),
       child: MvcDependencyProvider(
         provider: (collection) {
-          // inject service, you can inject any object, then you can get it in controller and view with getService<T> method
           collection.addSingleton<TestService>((_) => TestService());
         },
         child: const MyApp(),
@@ -77,9 +79,8 @@ class TestMvcController extends MvcController<TestModel> {
 
   /// timer callback
   void timerCallback(Timer timer) {
-    timerCount++;
     // update the widget with classes "timerCount"
-    $(".timerCount").update();
+    $(".timerCount").update(() => timerCount++);
   }
 
   /// click the FloatingActionButton
@@ -156,11 +157,11 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update title by self service"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcHeader>(),
+                    onPressed: () => controller.$<MvcHeader>().update(),
                     child: const Text("update header"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcFooter>(),
+                    onPressed: () => controller.$<MvcFooter>().update(),
                     child: const Text("update footer"),
                   ),
                 ],

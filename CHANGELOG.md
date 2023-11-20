@@ -1,3 +1,7 @@
+## 3.1.0
+
+* widget dependent services
+
 ## 3.0.1+2
 
 * fix bugs

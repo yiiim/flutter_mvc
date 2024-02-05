@@ -58,11 +58,12 @@ packages:
     source: hosted
     version: "1.0.6"
   dart_dependency_injection:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
-      path: "../../dart_dependency_injection"
-      relative: true
-    source: path
+      name: dart_dependency_injection
+      sha256: a0cc541cc6d6222a390882f69dbd479242d4b1a4f135bed483b47c91eb90d239
+      url: "https://pub.dev"
+    source: hosted
     version: "1.1.2+1"
   fake_async:
     dependency: transitive

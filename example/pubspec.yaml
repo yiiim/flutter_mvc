@@ -37,10 +37,6 @@ dependencies:
   flutter_mvc:
     path: ../
 
-dependency_overrides:
-  dart_dependency_injection:
-    path: ../../dart_dependency_injection
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -13,17 +13,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
-  ServiceCollection collection = ServiceCollection();
-  collection.addSingleton<TestService>((_) => TestService());
   runApp(
-    MvcApp(
-      owner: MvcOwner(serviceProvider: collection.build()),
-      child: MvcDependencyProvider(
-        provider: (collection) {
-          collection.addSingleton<TestService>((_) => TestService());
-        },
-        child: const MyApp(),
-      ),
+    MvcDependencyProvider(
+      provider: (collection) {
+        collection.addSingleton<TestService>((_) => TestService());
+      },
+      child: const MyApp(),
     ),
   );
 }
@@ -87,14 +82,14 @@ class TestMvcController extends MvcController<TestModel> {
   /// timer callback
   void timerCallback(Timer timer) {
     // update the widget with classes "timerCount"
-    $(".timerCount").update(() => timerCount++);
+    querySelectorAll(".timerCount").update(() => timerCount++);
   }
 
   /// click the FloatingActionButton
   void tapAdd() {
     count++;
     // update the widget with id "count"
-    $("#count").update();
+    querySelectorAll("#count").update();
   }
 
   /// click the "update title by controller"
@@ -102,7 +97,7 @@ class TestMvcController extends MvcController<TestModel> {
     // get TestService and set title
     getService<TestService>().title = "Controller Changed Title";
     // update The TestService, will be update all MvcServiceScope<TestService>
-    updateService<TestService>();
+    getService<TestService>().update();
   }
 }
 
@@ -164,11 +159,11 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update title by self service"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcHeader>().update(),
+                    onPressed: () => controller.querySelectorAll<MvcHeader>().update(),
                     child: const Text("update header"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcFooter>().update(),
+                    onPressed: () => controller.querySelectorAll<MvcFooter>().update(),
                     child: const Text("update footer"),
                   ),
                 ],
@@ -240,8 +235,6 @@ Mvc(
 )
 ```
 
-The only thing you need to pay attention to is that `Mvc` must have an `MvcApp` as its parent.
-
 ## Dependency Injection
 
 Dependency injection is provided by [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection).
@@ -250,7 +243,7 @@ Dependency injection is provided by [dart_dependency_injection](https://github.c
 
 There are many ways to get the objects you've injected.
 
-Use `getService` in `MvcController`, `MvcWidgetState`, `MvcView` to get them.
+Use the `getService` method in `MvcController`, `MvcWidgetState`, `MvcView` to get them.
 
 ```dart
 // In MvcController
@@ -300,7 +293,7 @@ Use `BuildContext` to get them.
 
 ```dart
 Widget build(BuildContext context) {
-  final testService = context.getService<TestService>();
+  final testService = context.getMvcService<TestService>();
   return Text(testService.title);
 }
 ```
@@ -310,13 +303,12 @@ Widget build(BuildContext context) {
 Create initial dependency injection objects in `MvcApp`.
 
 ```dart
-var collection = ServiceCollection();
-collection.addSingleton<TestService>((_) => TestService());
-var serviceProvider = collection.build();
+final ServiceCollection serviceCollection = ServiceCollection();
+serviceCollection.addSingleton<TestService>((_) => TestService());
 MvcApp(
-  owner: MvcOwner(serviceProvider: serviceProvider),
-  child: MyApp(),
-)
+  serviceProvider: serviceCollection.build(),
+  child: const MyApp(),
+);
 ```
 
 Use `MvcDependencyProvider` to inject to children.
@@ -368,7 +360,7 @@ class MyWidget extends MvcStatelessWidget {
   const MyWidget({super.key, super.id, super.classes});
   @override
   Widget build(BuildContext context) {
-    return Text('${context.getService<TestMvcController>().count}');
+    return Text('${context.getMvcService<TestMvcController>().count}');
   }
 }
 class TestMvcController extends MvcController<TestModel> {
@@ -376,9 +368,9 @@ class TestMvcController extends MvcController<TestModel> {
   @override
   MvcView view() => TestMvcView();
   void tapAdd() {
-    $("#count").update(() => count++); // update the widget with id "count"
-    $(".count").update(() => count++); // update the widget with classes "count"
-    $<MyWidget>().update(() => count++); // update the widget with WidgetType MyWidget
+    querySelectorAll("#count").update(() => count++); // update the widget with id "count"
+    querySelectorAll(".count").update(() => count++); // update the widget with classes "count"
+    querySelectorAll<MyWidget>().update(() => count++); // update the widget with WidgetType MyWidget
   }
 }
 class TestMvcView extends MvcView<TestMvcController, TestModel> {
@@ -395,6 +387,8 @@ class TestMvcView extends MvcView<TestMvcController, TestModel> {
   }
 }
 ```
+
+The `querySelectorAll` method follows most of the [w3c](https://www.w3.org/TR/selectors-4/#grammar) standard syntax, but note that sibling lookups and pseudo-classes are currently not supported.
 
 ### Make Widget depend on injected objects
 
@@ -419,7 +413,7 @@ class TestMvcView extends MvcView<TestMvcController, TestModel> {
 class TestMvcView extends MvcView<TestMvcController, TestModel> {
   @override
   Widget buildView() {
-    final testService = context.getService<TestService>();
+    final testService = context.getMvcService<TestService>();
     return MvcBuilder(
       builder: (context) {
         return Text('${context.dependOnService<TestService>().count}');
@@ -438,16 +432,6 @@ class TestService with DependencyInjectionService, MvcService {
   int count = 0;
   void changeTitle() {
     update(()=>count++);
-  }
-}
-```
-
-Update in MvcController
-
-```dart
-class TestMvcController extends MvcController<TestModel> {
-  void changeTitle() {
-    updateService<TestService>((service) => service.count++);
   }
 }
 ```

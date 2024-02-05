@@ -6,17 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
-  ServiceCollection collection = ServiceCollection();
-  collection.addSingleton<TestService>((_) => TestService());
   runApp(
-    MvcApp(
-      owner: MvcOwner(serviceProvider: collection.build()),
-      child: MvcDependencyProvider(
-        provider: (collection) {
-          collection.addSingleton<TestService>((_) => TestService());
-        },
-        child: const MyApp(),
-      ),
+    MvcDependencyProvider(
+      provider: (collection) {
+        collection.addSingleton<TestService>((_) => TestService());
+      },
+      child: const MyApp(),
     ),
   );
 }
@@ -80,14 +75,14 @@ class TestMvcController extends MvcController<TestModel> {
   /// timer callback
   void timerCallback(Timer timer) {
     // update the widget with classes "timerCount"
-    $(".timerCount").update(() => timerCount++);
+    querySelectorAll(".timerCount").update(() => timerCount++);
   }
 
   /// click the FloatingActionButton
   void tapAdd() {
     count++;
     // update the widget with id "count"
-    $("#count").update();
+    querySelectorAll("#count").update();
   }
 
   /// click the "update title by controller"
@@ -95,7 +90,7 @@ class TestMvcController extends MvcController<TestModel> {
     // get TestService and set title
     getService<TestService>().title = "Controller Changed Title";
     // update The TestService, will be update all MvcServiceScope<TestService>
-    updateService<TestService>();
+    getService<TestService>().update();
   }
 }
 
@@ -157,11 +152,11 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update title by self service"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcHeader>().update(),
+                    onPressed: () => controller.querySelectorAll<MvcHeader>().update(),
                     child: const Text("update header"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.$<MvcFooter>().update(),
+                    onPressed: () => controller.querySelectorAll<MvcFooter>().update(),
                     child: const Text("update footer"),
                   ),
                 ],

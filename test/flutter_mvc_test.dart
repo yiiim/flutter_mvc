@@ -5,12 +5,13 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class TestMvcWidget<TControllerType extends MvcController> extends MvcStatelessWidget<TControllerType> {
-  const TestMvcWidget({required this.builder, super.key});
+  const TestMvcWidget({required this.builder, super.key, super.id, super.classes, super.attributes});
   final WidgetBuilder builder;
   @override
   Widget build(BuildContext context) {
@@ -90,7 +91,7 @@ void main() {
           ),
         ),
       );
-      expect(tester.takeException(), isNull);
+      expect(tester.takeException(), null);
       expect(find.text('modelValue2'), findsOneWidget);
     },
   );
@@ -132,18 +133,116 @@ void main() {
       expect(find.text('cls_controllerValue'), findsOneWidget);
 
       controller.controllerValue = "controllerValue2";
-      controller.$(".cls").update();
+      controller.querySelectorAll(".cls").update();
       await tester.pump();
 
       expect(find.text('id_controllerValue'), findsOneWidget);
       expect(find.text('cls_controllerValue2'), findsOneWidget);
 
       controller.controllerValue = "controllerValue3";
-      controller.$("#id").update();
+      controller.querySelectorAll("#id").update();
       await tester.pump();
 
       expect(find.text('id_controllerValue3'), findsOneWidget);
       expect(find.text('cls_controllerValue2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Test compound selectors',
+    (WidgetTester tester) async {
+      GlobalKey rootKey = GlobalKey();
+      GlobalKey child1Key = GlobalKey();
+      GlobalKey child2Key = GlobalKey();
+      GlobalKey child1DescendantsKey = GlobalKey();
+      GlobalKey child2DescendantsKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MvcApp(
+              id: 'root',
+              classes: const ['root'],
+              attributes: const {"data-attr": "root"},
+              key: rootKey,
+              child: Column(
+                children: [
+                  MvcBuilder(
+                    id: 'child1',
+                    classes: const ['child1'],
+                    attributes: const {"data-attr": "child1"},
+                    key: child1Key,
+                    builder: (_) {
+                      return Column(
+                        children: [
+                          MvcBuilder(
+                            id: 'child1Descendants',
+                            classes: const ['child1Descendants'],
+                            attributes: const {"data-attr": "child1Descendants"},
+                            key: child1DescendantsKey,
+                            builder: (_) {
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  MvcBuilder(
+                    id: 'child2',
+                    classes: const ['child2'],
+                    attributes: const {"data-attr": "child2"},
+                    key: child2Key,
+                    builder: (_) {
+                      return Column(
+                        children: [
+                          TestMvcWidget(
+                            id: 'child2Descendants',
+                            classes: const ['child2Descendants'],
+                            attributes: const {"data-attr": "child2Descendants"},
+                            key: child2DescendantsKey,
+                            builder: (_) {
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      MvcWidgetUpdater rootUpdater = (rootKey.currentContext as MvcWidgetElement).debugUpdater;
+      MvcWidgetUpdater child1Updater = (child1Key.currentContext as MvcWidgetElement).debugUpdater;
+      MvcWidgetUpdater child2Updater = (child2Key.currentContext as MvcWidgetElement).debugUpdater;
+      MvcWidgetUpdater child1DescendantsUpdater = (child1DescendantsKey.currentContext as MvcWidgetElement).debugUpdater;
+      MvcWidgetUpdater child2DescendantsUpdater = (child2DescendantsKey.currentContext as MvcWidgetElement).debugUpdater;
+
+      void expectWithOutSort(Iterable actual, Iterable expected) {
+        expect(actual.sorted((a, b) => a.hashCode.compareTo(b.hashCode)), expected.sorted((a, b) => a.hashCode.compareTo(b.hashCode)));
+      }
+
+      expectWithOutSort(Mvc.querySelectorAll('*'), [rootUpdater, child1Updater, child2Updater, child1DescendantsUpdater, child2DescendantsUpdater]);
+      expect(Mvc.querySelector('#root'), rootUpdater);
+      expect(Mvc.querySelector('#root[data-attr=root]'), rootUpdater);
+      expect(Mvc.querySelector('#root[data-attr]'), rootUpdater);
+      expect(Mvc.querySelector('#root[data-bttr]'), isNull);
+      expect(Mvc.querySelector('#root[data-attr=child1]'), isNull);
+      expect(Mvc.querySelector<MvcApp>(), rootUpdater);
+      expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('*') ?? <MvcWidgetUpdater>[], [child1Updater, child2Updater, child1DescendantsUpdater, child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget'), [child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('TestMvcWidget') ?? <MvcWidgetUpdater>[], [child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root MvcBuilder'), [child1Updater, child2Updater, child1DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root .child1'), [child1Updater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root .child2Descendants'), [child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr=child2Descendants]'), [child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr]'), [child2DescendantsUpdater]);
+      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr=child1Descendants]'), []);
+      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-bttr]'), []);
+      expect(Mvc.querySelectorAll('#child1'), [child1Updater]);
+      expect(Mvc.querySelectorAll('.child1'), [child1Updater]);
     },
   );
 
@@ -172,12 +271,13 @@ void main() {
       expect(find.text('controllerValue'), findsOneWidget);
 
       controller.controllerValue = "controllerValue2";
-      controller.$<TestMvcWidget>().update();
+      controller.querySelectorAll<TestMvcWidget>().update();
       await tester.pump();
 
       expect(find.text('controllerValue2'), findsOneWidget);
     },
   );
+
   testWidgets(
     'test update service',
     (WidgetTester tester) async {
@@ -205,7 +305,7 @@ void main() {
       );
 
       expect(find.text('serviceValue'), findsOneWidget);
-      controller.updateService<TestService>(fn: (service) => service.stateValue = "serviceValue2");
+      controller.getService<TestService>().update(() => service.stateValue = "serviceValue2");
       await tester.pump();
       expect(find.text('serviceValue2'), findsOneWidget);
 
@@ -312,7 +412,7 @@ void main() {
 
       controller.controllerValue = "controllerValue2";
       childController.controllerValue = "childControllerValue2";
-      controller.$('.cls').update();
+      controller.querySelectorAll('.cls').update();
       await tester.pump();
 
       expect(find.text('controllerValue'), findsNothing);
@@ -322,7 +422,7 @@ void main() {
 
       controller.controllerValue = "controllerValue3";
       childController.controllerValue = "childControllerValue3";
-      childController.$(".cls").update();
+      childController.querySelectorAll(".cls").update();
       await tester.pump();
 
       expect(find.text('controllerValue'), findsNothing);
@@ -372,9 +472,11 @@ void main() {
             child: Mvc<TestController, TestModel>(
               model: TestModel(
                 "modelValue",
-                child: MvcBuilder<TestController>(builder: (context) {
-                  return Text(context.controller.controllerValue, textDirection: TextDirection.ltr);
-                }),
+                child: MvcBuilder<TestController>(
+                  builder: (context) {
+                    return Text(context.controller.controllerValue, textDirection: TextDirection.ltr);
+                  },
+                ),
               ),
             ),
           ),
@@ -399,16 +501,16 @@ void main() {
         ),
       );
 
-      expect(controller.isDisposed, isFalse);
+      expect(controller.isDisposed, false);
 
       await tester.pumpWidget(const SizedBox());
 
-      expect(controller.isDisposed, isTrue);
+      expect(controller.isDisposed, true);
     },
   );
 
   testWidgets(
-    "test mvcowner",
+    "test mvcapp",
     (tester) async {
       ServiceCollection collection = ServiceCollection();
       collection.add<TestService>((_) => TestService());
@@ -416,13 +518,13 @@ void main() {
       var provider = collection.build();
       await tester.pumpWidget(
         MvcApp(
-          owner: MvcOwner(serviceProvider: provider),
+          serviceProvider: provider,
           child: const Mvc<TestController, TestModel>(
             model: TestModel("modelValue", child: SizedBox.shrink()),
           ),
         ),
       );
-      expect(tester.takeException(), isNull);
+      expect(tester.takeException(), null);
     },
   );
 }

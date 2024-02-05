@@ -1,3 +1,7 @@
+## 4.0.0
+
+* upgrade to 4.0.0
+
 ## 3.1.0
 
 * widget dependent services

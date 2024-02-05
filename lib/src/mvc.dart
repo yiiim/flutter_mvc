@@ -1,11 +1,15 @@
+import 'package:dart_dependency_injection/dart_dependency_injection.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mvc/flutter_mvc.dart';
+import 'package:flutter_mvc/src/selector/node.dart';
 
-/// extend this class to create a mvc controller, and override [view] method to return a [MvcView]
-abstract class MvcController<TModelType> with DependencyInjectionService {
-  late _MvcControllerState _state;
-  TModelType get model => _state.widget.model;
-  BuildContext get context => _state.context;
+import 'framework.dart';
+import 'selector.dart';
+
+/// Extend this class to create a mvc controller, and override [view] method to return a [MvcView]
+abstract class MvcController<TModelType> with DependencyInjectionService implements MvcWidgetSelector {
+  _MvcControllerState? _state;
+  TModelType get model => _state!.widget.model;
+  MvcContext get context => _state!.context;
 
   MvcView view();
 
@@ -21,21 +25,14 @@ abstract class MvcController<TModelType> with DependencyInjectionService {
   void deactivate() {}
   @mustCallSuper
   @protected
-  void initService(ServiceCollection collection) {}
+  void initServices(ServiceCollection collection) {}
 
-  void update<T extends MvcWidget>() => _state._update();
-  void updateService<T extends Object>({void Function(T service)? fn}) {
-    fn?.call(getService<T>());
-    _find(MvcUpdaterQueryPredicate.makeWithServiceType(T)).update();
-  }
+  void update<T extends MvcWidget>() => _state!._update();
 
-  Iterable<MvcWidgetUpdater> $<T extends MvcWidget>([String? q]) {
-    return _find(MvcUpdaterQueryPredicate.makeWithQuery(q ?? T.toString()));
-  }
-
-  Iterable<MvcWidgetUpdater> _find(MvcUpdaterQueryPredicate predicate) {
-    return getService<MvcWidgetManager>().query(predicate);
-  }
+  @override
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) => context.querySelectorAll<T>(selectors);
+  @override
+  MvcWidgetUpdater? querySelector<T>([String? selectors]) => context.querySelector<T>(selectors);
 }
 
 /// TODO: it's can't update when call [update] method
@@ -54,6 +51,14 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
 
   @override
   MvcWidgetState createState() => _MvcControllerState<TControllerType, TModelType>();
+
+  static Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) {
+    return MvcImplicitRootNode.instance.querySelectorAll<T>(selectors);
+  }
+
+  static MvcWidgetUpdater? querySelector<T>([String? selectors]) {
+    return MvcImplicitRootNode.instance.querySelector<T>(selectors);
+  }
 }
 
 class MvcProxy<TControllerType extends MvcController<Widget>> extends Mvc<TControllerType, Widget> {
@@ -69,7 +74,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
   }
 
   @override
-  bool get isUpdaterQueryerBreaker => true;
+  bool get isSelectorBreaker => true;
 
   @mustCallSuper
   @override
@@ -106,10 +111,11 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
 
   @mustCallSuper
   @override
-  void initServices(ServiceCollection collection, ServiceProvider parent) {
+  void initServices(ServiceCollection collection, ServiceProvider? parent) {
     super.initServices(collection, parent);
-    TControllerType controller = widget.create?.call() ?? parent.get<_MvcControllerProvider<TControllerType>>().create();
-    controller._state = this;
+    TControllerType? controller = widget.create?.call() ?? parent?.get<_MvcControllerProvider<TControllerType>>().create();
+    assert(controller != null, "can't create controller");
+    controller!._state = this;
     collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
     collection.addSingleton<MvcView>(
       (serviceProvider) {
@@ -119,7 +125,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
     if (TControllerType != MvcController) {
       collection.addSingleton<TControllerType>((_) => controller);
     }
-    controller.initService(collection);
+    controller.initServices(collection);
   }
 }
 
@@ -157,7 +163,7 @@ class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, 
   }
 
   @override
-  void initServices(ServiceCollection collection, ServiceProvider parent) {
+  void initServices(ServiceCollection collection, ServiceProvider? parent) {
     super.initServices(collection, parent);
     widget.provider?.call(collection);
   }

@@ -37,9 +37,9 @@ dependencies:
   flutter_mvc:
     path: ../
 
-# dependency_overrides:
-#   dart_dependency_injection:
-#     path: /Users/ybz/ybz/Projects/macos_task_manager/lib/git_submodule/dart_dependency_injection
+dependency_overrides:
+  dart_dependency_injection:
+    path: ../../dart_dependency_injection
 
 dev_dependencies:
   flutter_test:

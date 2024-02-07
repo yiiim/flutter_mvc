@@ -1,10 +1,10 @@
-[English，[中文](README_CN.md)]
+[[English](README.md),中文]
 
-# Quick Start
+# 快速开始
 
-## Using MVC
+## 使用MVC
 
-Create `model`, `view`, `controller`
+分别创建`model`、`view`、`controller`
 
 ```dart
 
@@ -29,7 +29,7 @@ class HomeView extends MvcView<HomeController> {
 
 ```
 
-Using Mvc in Flutter
+在Flutter中使用Mvc
 
 ```dart
 Mvc(
@@ -38,11 +38,11 @@ Mvc(
 )
 ```
 
-This will display the text `Flutter Mvc Demo`.
+将会显示`Flutter Mvc Demo`的文本。
 
->If you don't need a Model, you can omit it.
+>如果你不需要Model，可以省略。
 
-## Updating MVC
+## 更新MVC
 
 ```dart
 class _MyHomePageState extends State<MyHomePage> {
@@ -69,9 +69,9 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
-After clicking the button, the `title` of `HomeModel` will be updated, and `HomeView` will also be updated.
+点击按钮后，将会更新`HomeModel`的`title`，并且`HomeView`也会更新。
 
-## Controller Lifecycle
+## Controller的生命周期
 
 ```dart
 class HomeController extends MvcController<HomeModel> {
@@ -105,11 +105,11 @@ class HomeController extends MvcController<HomeModel> {
 }
 ```
 
-The `Controller` lifecycle is consistent with the `State` lifecycle in `StatefulWidget`.
+`Controller`生命周期和`StatefulWidget`中的`State`的生命周期一致。
 
-## Updating Widget
+## 更新Widget
 
-### Updating MvcView
+### 更新MvcView
 
 ```dart
 class HomeController extends MvcController {
@@ -141,9 +141,9 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-Using the `update` method in `Controller` can update the entire `MvcView`.
+使用`Controller`中的`update`方法可以更新整个`MvcView`。
 
-### Update Specific Widget With Widget Type
+### 根据Widget类型更新指定Widget
 
 ```dart
 class HomeController extends MvcController {
@@ -186,7 +186,7 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-Not all Widgets can be updated with type, only Widgets that extend from `MvcStatelessWidget` or `MvcStatefulWidget` can be updated with type.
+并不是所有的Widget都可以根据类型更新，只有继承自`MvcStatelessWidget`或`MvcStatefulWidget`的Widget才可以根据类型来更新。
 
 ```dart
 class MyMvcWidget extends MvcStatelessWidget<HomeController> {
@@ -230,7 +230,7 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-### Update Specific Widget with id, class, attribute
+### 根据id,class,attribute更新指定Widget
 
 ```dart
 class HomeController extends MvcController {
@@ -285,43 +285,43 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-`querySelectorAll` follows the [web selector rules](https://www.w3.org/TR/selectors-4). It can be used to update multiple widgets that meet the rules at the same time, but it does not support sibling selectors.
+`querySelectorAll`遵循[web选择器规则](https://www.w3.org/TR/selectors-4)。可以使用它同时更新多个符合规则的Widget，但是它不支持同级选择器。
 
-There is also a static method: `Mvc.querySelectorAll`, which can update the widgets on the current widget tree anywhere.
+同时有一个静态的方法：`Mvc.querySelectorAll`，可以在任何地方更新当前Widget树上的Widget。
 
-## Dependency Injection
+## 依赖注入
 
-Dependency injection is a core feature of flutter_mvc. It allows you to easily get the objects you need in the framework.
+依赖注入是flutter_mvc的核心功能。它可以让你在框架中轻松的获取到你需要的对象。
 
-### Overview
+### 概念
 
-In the dependency injection of flutter_mvc, you only need to provide the object type and the method of creating the object. The framework will automatically create the object and provide it to you when needed. It also provides three different lifecycles: `singleton mode`, `transient mode`, `scope mode`.
+在flutter_mvc的依赖注入中，你只需要提供对象类型以及对象的创建方法，框架会自动的创建对象并且在需要的时候提供给你，同时它还提供了三种不同的生命周期：`单例模式`、`瞬时模式`、`作用域模式`。
 
-Singleton mode, the object will only be created once, and the same object will be returned for subsequent acquisitions.
+单例模式，只会创建一次对象，之后的获取都会返回同一个对象。
 
 ```dart
 collection.addSingleton<TestService>((_) => TestService());
 ```
 
-Transient mode, a new object will be created every time it is obtained.
+瞬时模式，每次获取都会创建一个新的对象。
 
 ```dart
 collection.add<TestService>((_) => TestService());
 ```
 
-Scope mode, a new object will be created every time it is obtained, but the objects obtained in the same scope are the same.
+作用域模式，每次获取都会创建一个新的对象，但是在同一个作用域内获取到的对象都是同一个。
 
 ```dart
 collection.addScopedSingleton<TestService>((_) => TestService());
 ```
 
-The scope mode is a very important concept in flutter_mvc. It allows you to get the same object in the same scope, but the objects obtained in different scopes are different. **And even if it is in singleton mode, if the scope that injects the object is destroyed, the object will also be destroyed.**
+作用域模式是flutter_mvc中很重要的一个概念，它可以让你在同一个作用域内获取到同一个对象，但是在不同的作用域内获取到的对象是不同的。**并且即使是单例模式，如果注入该对象的作用域销毁了，那么该对象也会被销毁。**
 
 ---
 
-**In flutter_mvc, every widget that extend from `MvcStatefulWidget` and `MvcStatelessWidget` is a new scope, including `Mvc`, `MvcBuilder`, `MvcHeader`, `MvcBody`, `MvcFooter`, `MvcServiceScope`, etc.**
+**在flutter_mvc中，每一个继承自`MvcStatefulWidget`和`MvcStatelessWidget`的Widget都是一个新的作用域，包括`Mvc`、`MvcBuilder`、`MvcHeader`、`MvcBody`、`MvcFooter`、`MvcServiceScope`等。**
 
-Inject the following objects:
+注入如下对象：
 
 ```dart
 MvcDependencyProvider(
@@ -334,7 +334,7 @@ MvcDependencyProvider(
 )
 ```
 
-Get objects:
+获取对象：
 
 ```dart
 class HomeController extends MvcController {
@@ -373,13 +373,13 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-All `TestService2` are not the same instance because it is in transient mode.
+其中所有的`TestService2`均不是同一实例，因为它是瞬时模式。
 
-All `TestService1` are the same instance because it is in singleton mode.
+所有的`TestService1`都是同一实例，因为它是单例模式。
 
-The `TestService3` obtained in `Controller` and `MvcView` is the same instance because `Controller` and `MvcView` belong to the same scope. However, the `TestService3` obtained through its `context` in `MvcBuilder` is a new instance because `MvcBuilder` is a new scope.
+`Controller`中获取的`TestService3`和`MvcView`中获取的`TestService3`是同一实例，因为`Controller`和`MvcView`属于同一个作用域。但是`MvcBuilder`中通过其`context`获取的`TestService3`是一个新的实例，因为`MvcBuilder`是一个新的作用域。
 
-Let's look at another example:
+再来看另外一个例子：
 
 ```dart
 MvcDependencyProvider(
@@ -414,25 +414,25 @@ MvcDependencyProvider(
 )
 ```
 
-Key2 and Key3 belong to two different scopes, they have a common parent scope Key1.
+Key2和Key3分别属于两个不同的作用域，它们有一个共同的父级作用域Key1。
 
-`TestService2` is a transient mode in the parent level of Key1, and it is always a new instance when obtained.
+其中`TestService2`是Key1父级中的瞬时模式，无论何时获取到的都是新的实例。
 
-`TestService1` is a singleton mode in the parent level of Key1, and it is the same instance when obtained in Key2 and Key3 and their sublevels.
+`TestService1`是Key1父级中的单例模式，在Key2和Key3以及其子级中获取均为同一实例。
 
-`TestService3` is a scoped mode in the parent level of Key1, and it is different instances when obtained in Key2 and Key3, but it is the same instance when obtained multiple times in Key2 or Key3 or obtained in their sublevels.
+`TestService3`是Key1父级中的作用域模式，在Key2和Key3中获取到的是不同实例，但是如果在Key2或Key3中多次获取或者在它们的子级中获取时获取到的是同一实例。
 
-`TestService7`, `TestService8`, and `TestService9` cannot be obtained in Key1 because they and their parents have not injected these objects, similarly, `TestService4`, `TestService5`, and `TestService6` cannot be obtained in Key2.
+在Key1中无法获取到`TestService7`、`TestService8`、`TestService9`，因为它以及它的父级都没有注入这些对象，同理在Key2中无法获取到`TestService4`、`TestService5`、`TestService6`。
 
 ---
 
-For more features about dependency injection, you can refer to [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection), there are more interesting uses inside.
+关于依赖注入的更多功能可以参考[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)，里面有更多有趣的用法。
 
-### Injecting Objects
+### 注入对象
 
-There are many ways to inject objects.
+有很多种方法可以注入对象。
 
-As mentioned earlier, use `MvcDependencyProvider` to inject objects.
+如前文所说的使用`MvcDependencyProvider`注入对象。
 
 ```dart
 MvcDependencyProvider(
@@ -445,7 +445,7 @@ MvcDependencyProvider(
 
 ---
 
-Inject objects in `Controller`.
+在`Controller`中注入对象。
 
 ```dart
 class HomeController extends MvcController {
@@ -459,7 +459,7 @@ class HomeController extends MvcController {
 
 ---
 
-Use `MvcStatefulWidget` to inject objects.
+使用`MvcStatefulWidget`注入对象。
 
 ```dart
 class TestMvcStatefulWidget extends MvcStatefulWidget {
@@ -476,14 +476,14 @@ class TestMvcStatefulState extends MvcWidgetState {
 
 ---
 
-Each `Mvc` has already injected `MvcController` and `MvcView` by default in singleton mode.
+每一个`Mvc`都已经以单例模式默认注入了`MvcController`和`MvcView`。
 
-### Getting Objects
+### 获取对象
 
-When getting objects, you can get the objects injected in the current scope and all its parent scopes.
+获取对象时可以获取当前作用域以及其所有上级作用域注入的对象。
 
-Any object injected through dependency injection can be obtained by mixing in `DependencyInjectionService` and then using the `getService` method. In flutter_mvc, `MvcController`, `MvcView`, `MvcWidgetState` all meet this condition. You can also get it through the injected object, for example:
-
+任何通过依赖注入注入的对象都可以通过混入`DependencyInjectionService`然后通过`getService`方法获取对象。在flutter_mvc中，`MvcController`、`MvcView`、`MvcWidgetState`均符合这个条件。也可以通过注入的对象来获取，例如：
+  
 ```dart
 class TestService with DependencyInjectionService {
   void test() {
@@ -493,11 +493,11 @@ class TestService with DependencyInjectionService {
 }
 ```
 
-As the above code shows, you can get the `Controller` you want in the injected object at any time, but please be sure to pay attention to the scope.
+正如上面的代码所示，你可以在注入的对象中随时获取到你想要的`Controller`，但是请一定注意作用域。
 
 ---
 
-You can also get objects through context.
+还可以通过context来获取对象。
 
 ```dart
 class HomeView extends MvcView<HomeController> {
@@ -517,31 +517,31 @@ class HomeView extends MvcView<HomeController> {
 }
 ```
 
-The scope of context acquisition is the scope where the nearest MvcWidget in the current context is located.
+context获取的范围为当前上下文最近的一个MvcWidget所在的作用域。
 
-### Object Lifecycle
+### 对象的生命周期
 
-The lifecycle methods of objects are limited to objects that mix in `DependencyInjectionService`.
-
----
-
-- Initialization
-
-When an object is created, `dependencyInjectionServiceInitialize` will be executed immediately and synchronously, and each instance will only be executed once. This method can be asynchronous. When `dependencyInjectionServiceInitialize` is an asynchronous method, after getting the object, you can use `await waitLatestServiceInitialize()` or `await waitServicesInitialize()` to wait for initialization to complete. `waitLatestServiceInitialize` only waits for the initialization of the most recently obtained object in the current run loop to complete, and `waitServicesInitialize` waits for all current initializations to complete.
+对象的生命周期方法仅限混入了`DependencyInjectionService`的对象。
 
 ---
 
-- Destruction
+- 初始化
 
-When the scope where the object is located is destroyed, the `dispose` method of the object **created by this scope** will be executed. An exception is if the object is in transient mode, it may be cleared by GC at any time when it is not in use, and its `dispose` method will not be executed.
-
-### Using Dependency Injection Objects to Update Widgets
-
-If the injected object mixes in `MvcService`, then you can use some methods to update the widget.
+当对象被创建时会立即同步执行`dependencyInjectionServiceInitialize`，每一个实例仅执行一次。这个方法可以异步。当`dependencyInjectionServiceInitialize`是异步方法时，获取对象之后可以通过`await waitLatestServiceInitialize()`或者`await waitServicesInitialize()`来等待初始化完成。其中`waitLatestServiceInitialize`仅等待当前运行循环内最近获取的对象初始化完成，`waitServicesInitialize`是等待当前所有的初始化完成。
 
 ---
 
-Use `MvcServiceScope`
+- 销毁
+
+当对象所在范围被销毁时会执行**由该范围创建的**对象的`dispose`方法。有一个例外时如果是瞬时模式的对象，当不在使用时随时可能被GC清楚，并且不会执行其`dispose`方法。
+
+### 使用依赖注入的对象来更新Widget
+
+如果注入的对象混入了`MvcService`，那么可以通过一些方法来更新Widget。
+
+---
+
+使用`MvcServiceScope`
 
 ```dart
 class TestService with DependencyInjectionService, MvcService {
@@ -574,11 +574,11 @@ MvcDependencyProvider(
 )
 ```
 
-Clicking the button will update the content of `Text`.
+点击按钮将会更新`Text`的内容。
 
 ---
 
-If you have an `MvcContext`, you can also depend it on the object.
+如果你有一个`MvcContext`，也可以将它依赖到对象。
 
 ```dart
 class TestService with DependencyInjectionService, MvcService {
@@ -617,9 +617,9 @@ MvcDependencyProvider(
 )
 ```
 
-The `context` in the `build` method of `MvcStatelessWidget` and `MvcWidgetState` can be forcibly converted to `MvcContext`, and the `context` returned by `MvcWidgetState` is also `MvcContext`.
+`MvcStatelessWidget`和`MvcWidgetState`的`build`方法中的`context`可以强制转换为`MvcContext`，并且`MvcWidgetState`的`context`返回的也是`MvcContext`。
 
-In addition, `MvcService` also has a `querySelectorAll` method, you can use it to find and update widgets. Its search logic is to search with the widget that depends on it as the root node.
+另外`MvcService`也有`querySelectorAll`方法，你可以使用它来查找并更新Widget。它查找逻辑是以依赖它的Widget为根节点进行查找。
 
 ```dart
 class TestService with DependencyInjectionService, MvcService {
@@ -666,8 +666,8 @@ MvcDependencyProvider(
 )
 ```
 
-The above code can also update the content of `Text`.
+上面的代码也可以更新`Text`的内容。
 
 ---
 
-The same `MvcService` can have multiple dependent widgets, and they will all be updated when the `update` method is called. When the `querySelectorAll` method is called, they will be searched separately with them as the root node, and the result is their union.
+同一个`MvcService`可以存在多个依赖的Widget，调用`update`方法时它们都会更新。调用`querySelectorAll`方法时将会分别以它们为根节点进行查找，结果为它们的并集。

@@ -126,6 +126,12 @@ abstract class MvcContext<TControllerType extends MvcController> extends BuildCo
   /// Try depend on a service, if the service is not exist, will return null.
   /// Same as [dependOnService] but not throw an exception when the service is not exist.
   T? tryDependOnService<T extends Object>();
+
+  /// get service in current scope
+  T getService<T extends Object>();
+
+  /// get service in current scope
+  T? tryGetService<T extends Object>();
 }
 
 /// The common element of the [MvcWidget]

@@ -62,7 +62,7 @@ import 'package:flutter_mvc/src/selector/node.dart';
 ///   }
 /// }
 /// ```
-abstract class MvcWidget<TControllerType extends MvcController> implements Widget {
+abstract class MvcWidget implements Widget {
   String? get id;
   List<String>? get classes;
   Map<Object, String>? get attributes;
@@ -70,10 +70,10 @@ abstract class MvcWidget<TControllerType extends MvcController> implements Widge
 
 /// Mvc framework stateless widget
 ///
-/// [build] method context can cast to [MvcContext<TControllerType>]
+/// [build] method context can cast to [MvcContext]
 ///
 /// About how to update this widget, see [MvcWidget]
-abstract class MvcStatelessWidget<TControllerType extends MvcController> extends StatelessWidget implements MvcWidget {
+abstract class MvcStatelessWidget extends StatelessWidget implements MvcWidget {
   const MvcStatelessWidget({this.id, this.classes, this.attributes, super.key});
 
   @override
@@ -84,13 +84,13 @@ abstract class MvcStatelessWidget<TControllerType extends MvcController> extends
   final Map<Object, String>? attributes;
 
   @override
-  StatelessElement createElement() => MvcStatelessElement<TControllerType>(this);
+  StatelessElement createElement() => MvcStatelessElement(this);
 }
 
 /// Mvc framework stateful widget
 ///
 /// About how to update this widget, see [MvcWidget]
-abstract class MvcStatefulWidget<TControllerType extends MvcController> extends StatefulWidget implements MvcWidget {
+abstract class MvcStatefulWidget extends StatefulWidget implements MvcWidget {
   const MvcStatefulWidget({this.id, this.classes, this.attributes, super.key});
 
   @override
@@ -101,19 +101,16 @@ abstract class MvcStatefulWidget<TControllerType extends MvcController> extends 
   final Map<Object, String>? attributes;
 
   @override
-  StatefulElement createElement() => MvcStatefulElement<TControllerType>(this);
+  StatefulElement createElement() => MvcStatefulElement(this);
 
   @override
-  MvcWidgetState<MvcStatefulWidget<TControllerType>, TControllerType> createState();
+  MvcWidgetState<MvcStatefulWidget> createState();
 }
 
 /// Mvc framework context
 ///
 /// This is the [MvcWidget]'s context, can be get in [MvcStatelessWidget.build] method or [MvcWidgetState.context].
-abstract class MvcContext<TControllerType extends MvcController> extends BuildContext implements MvcWidgetSelector {
-  /// The nearest [Mvc]'s controller in this context if of type [TControllerType]
-  TControllerType get controller;
-
+abstract class MvcContext extends BuildContext implements MvcWidgetSelector {
   /// Depend on a service, if the service is not exist, will throw an exception.
   ///
   /// If the service is [MvcService],this context will be update when the service call [MvcService.update].
@@ -135,7 +132,7 @@ abstract class MvcContext<TControllerType extends MvcController> extends BuildCo
 }
 
 /// The common element of the [MvcWidget]
-mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjectionService, MvcBasicElement, MvcNodeMixin implements MvcContext<TControllerType> {
+mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjectionService, MvcBasicElement, MvcNodeMixin implements MvcContext {
   late final Map<Type, Object> _dependencieServices = {};
 
   @override
@@ -144,7 +141,6 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjec
   TControllerType? _controller;
 
   /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
-  @override
   TControllerType get controller {
     assert(_controller != null, '$TControllerType not found in current context');
     return _controller!;
@@ -211,14 +207,12 @@ mixin _DisposeHelper<T extends StatefulWidget> on State<T> {
   void _dispose() => super.dispose();
 }
 
-abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TControllerType extends MvcController> extends State<T> with _DisposeHelper, DependencyInjectionService implements MvcWidgetSelector {
-  /// the nearest [Mvc]'s controller in this context if of type [TControllerType]
-  TControllerType get controller => getService();
+abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with _DisposeHelper, DependencyInjectionService implements MvcWidgetSelector {
 
   /// Whether to allow queries from superiors to continue looking for children
   bool get isSelectorBreaker => false;
   @override
-  MvcContext<TControllerType> get context => super.context as MvcContext<TControllerType>;
+  MvcContext get context => super.context as MvcContext;
 
   @override
   @mustCallSuper
@@ -230,9 +224,6 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget<TControllerType>, TCon
   @mustCallSuper
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     collection.addSingleton<MvcWidgetState>((serviceProvider) => this, initializeWhenServiceProviderBuilt: true);
-    if (MvcWidgetState<T, TControllerType> != MvcWidgetState) {
-      collection.addSingleton<MvcWidgetState<T, TControllerType>>((serviceProvider) => this);
-    }
   }
 
   @mustCallSuper

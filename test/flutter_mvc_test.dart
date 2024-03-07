@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class TestMvcWidget<TControllerType extends MvcController> extends MvcStatelessWidget<TControllerType> {
+class TestMvcWidget extends MvcStatelessWidget {
   const TestMvcWidget({required this.builder, super.key, super.id, super.classes, super.attributes});
   final WidgetBuilder builder;
   @override
@@ -62,9 +62,9 @@ void main() {
             create: () => controller,
             model: TestModel(
               "modelValue",
-              child: MvcBuilder<TestController>(
+              child: MvcBuilder(
                 builder: (context) {
-                  return Text(context.controller.model.modelValue, textDirection: TextDirection.ltr);
+                  return Text(context.getMvcService<TestController>().model.modelValue, textDirection: TextDirection.ltr);
                 },
               ),
             ),
@@ -82,9 +82,9 @@ void main() {
             },
             model: TestModel(
               "modelValue2",
-              child: MvcBuilder<TestController>(
+              child: MvcBuilder(
                 builder: (context) {
-                  return Text(context.controller.model.modelValue, textDirection: TextDirection.ltr);
+                  return Text(context.getMvcService<TestController>().model.modelValue, textDirection: TextDirection.ltr);
                 },
               ),
             ),
@@ -110,16 +110,16 @@ void main() {
               "modelValue",
               child: Column(
                 children: [
-                  MvcBuilder<TestController>(
+                  MvcBuilder(
                     id: "id",
                     builder: (context) {
-                      return Text("id_${context.controller.controllerValue}", textDirection: TextDirection.ltr);
+                      return Text("id_${context.getMvcService<TestController>().controllerValue}", textDirection: TextDirection.ltr);
                     },
                   ),
-                  MvcBuilder<TestController>(
+                  MvcBuilder(
                     classes: const ["cls"],
                     builder: (context) {
-                      return Text("cls_${context.controller.controllerValue}", textDirection: TextDirection.ltr);
+                      return Text("cls_${context.getMvcService<TestController>().controllerValue}", textDirection: TextDirection.ltr);
                     },
                   ),
                 ],
@@ -472,9 +472,9 @@ void main() {
             child: Mvc<TestController, TestModel>(
               model: TestModel(
                 "modelValue",
-                child: MvcBuilder<TestController>(
+                child: MvcBuilder(
                   builder: (context) {
-                    return Text(context.controller.controllerValue, textDirection: TextDirection.ltr);
+                    return Text(context.getMvcService<TestController>().controllerValue, textDirection: TextDirection.ltr);
                   },
                 ),
               ),

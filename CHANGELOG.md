@@ -1,3 +1,7 @@
+## 4.1.0
+
+* remove type arguments
+
 ## 4.0.0+1
 
 * docs

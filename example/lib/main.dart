@@ -125,7 +125,7 @@ class TestMvcView extends MvcView<TestMvcController> {
                       return Text(service.title);
                     },
                   ),
-                  MvcBuilder<TestMvcController>(
+                  MvcBuilder(
                     classes: const ["timerCount"],
                     builder: (context) {
                       return Text(
@@ -134,7 +134,7 @@ class TestMvcView extends MvcView<TestMvcController> {
                       );
                     },
                   ),
-                  MvcBuilder<TestMvcController>(
+                  MvcBuilder(
                     id: "count",
                     builder: (context) {
                       return Text(

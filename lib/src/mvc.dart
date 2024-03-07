@@ -69,6 +69,8 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
   @override
   Mvc<TControllerType, TModelType> get widget => super.widget as Mvc<TControllerType, TModelType>;
 
+  late final TControllerType controller = getService<TControllerType>();
+
   void _update() {
     setState(() {});
   }
@@ -78,7 +80,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
 
   @mustCallSuper
   @override
-  void didUpdateWidget(covariant MvcStatefulWidget<MvcController> oldWidget) {
+  void didUpdateWidget(covariant MvcStatefulWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     controller.didUpdateModel((oldWidget as Mvc<TControllerType, TModelType>).model);
   }
@@ -149,10 +151,10 @@ class MvcDependencyProvider extends MvcStatefulWidget {
   final Widget child;
 
   @override
-  MvcWidgetState<MvcStatefulWidget<MvcController>, MvcController> createState() => _MvcDependencyProviderState();
+  MvcWidgetState<MvcStatefulWidget> createState() => _MvcDependencyProviderState();
 }
 
-class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider, MvcController> {
+class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider> {
   @override
   Widget build(BuildContext context) {
     return Builder(

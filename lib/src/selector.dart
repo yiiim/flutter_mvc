@@ -27,8 +27,8 @@ abstract class MvcWidgetSelector {
   /// You can use a querySelectorAll-like syntax from the W3C standard to query Widgets,
   /// but sibling lookups are not supported. When you provide [T],
   /// the type [T] will be inserted at the beginning of [selectors] as the localName.
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]);
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]);
 
   /// See [querySelectorAll]
-  MvcWidgetUpdater? querySelector<T>([String? selectors]);
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]);
 }

@@ -8,9 +8,13 @@ import 'node.dart';
 
 bool matches(MvcNode node, String selector) => SelectorEvaluator().matches(node, _parseSelectorList(selector));
 
-MvcNode? querySelector(MvcNode node, String selector) => SelectorEvaluator().querySelector(node, _parseSelectorList(selector));
+MvcNode? querySelector(MvcNode node, String selector, {bool ignoreSelectorBreaker = false}) => SelectorEvaluator().querySelector(
+      node,
+      _parseSelectorList(selector),
+      ignoreSelectorBreaker: ignoreSelectorBreaker,
+    );
 
-List<MvcNode> querySelectorAll(MvcNode node, String selector) {
+List<MvcNode> querySelectorAll(MvcNode node, String selector, {bool ignoreSelectorBreaker = false}) {
   final results = <MvcNode>[];
   SelectorEvaluator().querySelectorAll(node, _parseSelectorList(selector), results);
   return results;
@@ -35,19 +39,23 @@ class SelectorEvaluator extends Visitor {
     return visitSelectorGroup(selector);
   }
 
-  MvcNode? querySelector(MvcNode root, SelectorGroup selector) {
+  MvcNode? querySelector(MvcNode root, SelectorGroup selector, {bool ignoreSelectorBreaker = false}) {
     for (var element in root.children.whereType<MvcNode>()) {
       if (matches(element, selector)) return element;
-      final result = querySelector(element, selector);
-      if (result != null) return result;
+      if (ignoreSelectorBreaker || !element.isSelectorBreaker) {
+        final result = querySelector(element, selector);
+        if (result != null) return result;
+      }
     }
     return null;
   }
 
-  void querySelectorAll(MvcNode root, SelectorGroup selector, List<MvcNode> results) {
+  void querySelectorAll(MvcNode root, SelectorGroup selector, List<MvcNode> results, {bool ignoreSelectorBreaker = false}) {
     for (var element in root.children.whereType<MvcNode>()) {
       if (matches(element, selector)) results.add(element);
-      querySelectorAll(element, selector, results);
+      if (ignoreSelectorBreaker || !root.isSelectorBreaker) {
+        querySelectorAll(element, selector, results);
+      }
     }
   }
 

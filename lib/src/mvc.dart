@@ -30,9 +30,9 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   void update<T extends MvcWidget>() => _state!._update();
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) => context.querySelectorAll<T>(selectors);
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) => context.querySelector<T>(selectors);
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<T>(selectors, ignoreSelectorBreaker);
 }
 
 /// TODO: it's can't update when call [update] method
@@ -119,13 +119,13 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
     assert(controller != null, "can't create controller");
     controller!._state = this;
     collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
-    collection.addSingleton<MvcView>(
+    collection.add<MvcView>(
       (serviceProvider) {
         return controller.view();
       },
     );
     if (TControllerType != MvcController) {
-      collection.addSingleton<TControllerType>((_) => controller);
+      collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
     }
     controller.initServices(collection);
   }

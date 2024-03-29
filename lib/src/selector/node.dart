@@ -14,23 +14,33 @@ abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
   Map<Object, String> get attributes;
   MvcNode? get nextElementSibling;
   MvcNode? get previousElementSibling;
+  bool get isSelectorBreaker;
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) {
-    final result = query_selector.querySelectorAll(this, "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}");
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+    final result = query_selector.querySelectorAll(
+      this,
+      "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}",
+      ignoreSelectorBreaker: ignoreSelectorBreaker,
+    );
     return result;
   }
 
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) {
-    return query_selector.querySelector(this, "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}");
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+    return query_selector.querySelector(
+      this,
+      "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}",
+      ignoreSelectorBreaker: ignoreSelectorBreaker,
+    );
   }
 }
 
 class MvcElementNode extends MvcNode {
-  MvcElementNode(this.element, {this.isSelectorBreaker = false});
+  MvcElementNode(this.element);
   final MvcNodeMixin element;
-  final bool isSelectorBreaker;
+  @override
+  bool get isSelectorBreaker => element.isSelectorBreaker;
 
   @override
   Map<Object, String> get attributes {
@@ -41,7 +51,7 @@ class MvcElementNode extends MvcNode {
   }
 
   @override
-  List<MvcNode> get children => isSelectorBreaker ? [] : element._childrenElements.map((e) => e._mvcNode).toList();
+  List<MvcNode> get children => element._childrenElements.map((e) => e._mvcNode).toList();
 
   @override
   List<String> get classes {
@@ -73,22 +83,6 @@ class MvcElementNode extends MvcNode {
   void update([void Function()? fn]) {
     fn?.call();
     element.markNeedsBuild();
-  }
-
-  @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) {
-    if (isSelectorBreaker) {
-      return MvcElementNode(element).querySelectorAll<T>(selectors);
-    }
-    return super.querySelectorAll<T>(selectors);
-  }
-
-  @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) {
-    if (isSelectorBreaker) {
-      return MvcElementNode(element).querySelector<T>(selectors);
-    }
-    return super.querySelector<T>(selectors);
   }
 }
 
@@ -122,12 +116,15 @@ class MvcImplicitRootNode extends MvcNode {
       element.markNeedsBuild();
     }
   }
+
+  @override
+  bool get isSelectorBreaker => false;
 }
 
 mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
   MvcNodeMixin? _parentElement;
   final List<MvcNodeMixin> _childrenElements = [];
-  late final MvcElementNode _mvcNode = MvcElementNode(this, isSelectorBreaker: isSelectorBreaker);
+  late final MvcElementNode _mvcNode = MvcElementNode(this);
 
   @visibleForTesting
   MvcWidgetUpdater get debugUpdater => _mvcNode;
@@ -177,8 +174,14 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) => _mvcNode.querySelectorAll<T>(selectors);
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelectorAll<T>(
+        selectors,
+        ignoreSelectorBreaker,
+      );
 
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) => _mvcNode.querySelector<T>(selectors);
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelector<T>(
+        selectors,
+        ignoreSelectorBreaker,
+      );
 }

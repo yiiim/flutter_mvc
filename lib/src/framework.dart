@@ -208,7 +208,6 @@ mixin _DisposeHelper<T extends StatefulWidget> on State<T> {
 }
 
 abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with _DisposeHelper, DependencyInjectionService implements MvcWidgetSelector {
-
   /// Whether to allow queries from superiors to continue looking for children
   bool get isSelectorBreaker => false;
   @override
@@ -234,9 +233,9 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<E>([String? selectors]) => context.querySelectorAll<E>(selectors);
+  Iterable<MvcWidgetUpdater> querySelectorAll<E>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<E>(selectors, ignoreSelectorBreaker);
   @override
-  MvcWidgetUpdater? querySelector<E>([String? selectors]) => context.querySelector<E>(selectors);
+  MvcWidgetUpdater? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<E>(selectors, ignoreSelectorBreaker);
 }
 
 mixin MvcService on DependencyInjectionService implements MvcWidgetSelector {
@@ -255,16 +254,16 @@ mixin MvcService on DependencyInjectionService implements MvcWidgetSelector {
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) sync* {
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) sync* {
     for (var element in _dependents) {
-      yield* element.querySelectorAll<T>(selectors);
+      yield* element.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
     }
   }
 
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) {
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     for (var element in _dependents) {
-      var result = element.querySelector<T>(selectors);
+      var result = element.querySelector<T>(selectors, ignoreSelectorBreaker);
       if (result != null) return result;
     }
     return null;

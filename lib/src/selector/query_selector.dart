@@ -53,7 +53,7 @@ class SelectorEvaluator extends Visitor {
   void querySelectorAll(MvcNode root, SelectorGroup selector, List<MvcNode> results, {bool ignoreSelectorBreaker = false}) {
     for (var element in root.children.whereType<MvcNode>()) {
       if (matches(element, selector)) results.add(element);
-      if (ignoreSelectorBreaker || !root.isSelectorBreaker) {
+      if (ignoreSelectorBreaker || !element.isSelectorBreaker) {
         querySelectorAll(element, selector, results);
       }
     }

@@ -10,6 +10,7 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   _MvcControllerState? _state;
   TModelType get model => _state!.widget.model;
   MvcContext get context => _state!.context;
+  bool get isSelectorBreaker => true;
 
   MvcView view();
 
@@ -76,7 +77,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
   }
 
   @override
-  bool get isSelectorBreaker => true;
+  bool get isSelectorBreaker => controller.isSelectorBreaker;
 
   @mustCallSuper
   @override

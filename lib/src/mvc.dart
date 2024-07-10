@@ -6,7 +6,7 @@ import 'framework.dart';
 import 'selector.dart';
 
 /// Extend this class to create a mvc controller, and override [view] method to return a [MvcView]
-abstract class MvcController<TModelType> with DependencyInjectionService implements MvcWidgetSelector {
+abstract class MvcController<TModelType> with DependencyInjectionService, MvcService implements MvcWidgetSelector {
   _MvcControllerState? _state;
   TModelType get model => _state!.widget.model;
   MvcContext get context => _state!.context;
@@ -28,7 +28,10 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   @protected
   void initServices(ServiceCollection collection) {}
 
-  void update<T extends MvcWidget>() => _state!._update();
+  @override
+  void update([void Function()? fn]) => _state!._update();
+
+  
 
   @override
   Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
@@ -44,7 +47,7 @@ class MvcProxyController extends MvcController<Widget> {
 }
 
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends MvcStatefulWidget {
-  const Mvc({this.create, TModelType? model, Key? key})
+  const Mvc({this.create, TModelType? model, Key? key, super.id, super.classes})
       : model = model ?? model as TModelType,
         super(key: key);
   final TControllerType Function()? create;
@@ -72,8 +75,8 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
 
   late final TControllerType controller = getService<TControllerType>();
 
-  void _update() {
-    setState(() {});
+  void _update([void Function()? fn]) {
+    setState(fn ?? () {});
   }
 
   @override

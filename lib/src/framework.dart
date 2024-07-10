@@ -131,6 +131,14 @@ abstract class MvcContext extends BuildContext implements MvcWidgetSelector {
   T? tryGetService<T extends Object>();
 }
 
+extension MvcContextEx on MvcContext {
+  /// Depend on a value, if the value is not exist, will throw an exception.
+  T dependOnValue<T>() => dependOnService<MvcValueService<T>>().value;
+
+  /// Get value in current context
+  T getValue<T>() => getService<MvcValueService<T>>().value;
+}
+
 /// The common element of the [MvcWidget]
 mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjectionService, MvcBasicElement, MvcNodeMixin implements MvcContext {
   late final Map<Type, Object> _dependencieServices = {};
@@ -144,6 +152,18 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjec
   TControllerType get controller {
     assert(_controller != null, '$TControllerType not found in current context');
     return _controller!;
+  }
+
+  @override
+  void dispose() {
+    for (var element in _dependencieServices.values) {
+      if (element is MvcService) {
+        element._dependents.remove(this);
+      }
+    }
+    _dependencieServices.clear();
+    _controller = null;
+    super.dispose();
   }
 
   /// you can be inject some services here when [ServiceProvider] is created
@@ -238,14 +258,34 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with
   MvcWidgetUpdater? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<E>(selectors, ignoreSelectorBreaker);
 }
 
+class MvcValueService<T> with DependencyInjectionService, MvcService {
+  MvcValueService([this._value]);
+  T? _value;
+  T get value {
+    if (_value is T) {
+      return _value as T;
+    }
+    throw Exception("value is not set");
+  }
+
+  set value(T value) {
+    _value = value;
+    update();
+  }
+}
+
 mixin MvcService on DependencyInjectionService implements MvcWidgetSelector {
   late final Set<MvcWidgetElement> _dependents = <MvcWidgetElement>{};
+  void updateValue<T>(T value) => getService<MvcValueService<T>>().value = value;
+  T getValue<T>() => getService<MvcValueService<T>>().value;
 
   /// update all [MvcWidget] that depend on this service
   void update([void Function()? fn]) {
     fn?.call();
     for (var element in _dependents) {
-      element.markNeedsBuild();
+      if (element.mounted) {
+        element.markNeedsBuild();
+      }
     }
   }
 

@@ -84,6 +84,9 @@ class MvcElementNode extends MvcNode {
     fn?.call();
     element.markNeedsBuild();
   }
+
+  @override
+  MvcContext get context => element as MvcContext;
 }
 
 class MvcImplicitRootNode extends MvcNode {
@@ -119,6 +122,9 @@ class MvcImplicitRootNode extends MvcNode {
 
   @override
   bool get isSelectorBreaker => false;
+
+  @override
+  MvcContext get context => throw UnimplementedError();
 }
 
 mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {

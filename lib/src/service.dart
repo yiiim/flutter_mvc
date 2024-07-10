@@ -25,7 +25,7 @@ class _MvcServiceObserver implements ServiceObserver {
   final MvcBasicElement element;
   @override
   void onServiceCreated(service) {
-    if (service is MvcElementService && service.serviceProvider == element.serviceProvider) {
+    if (service is MvcWidgetService && service.serviceProvider == element.serviceProvider) {
       element._elementServices.add(service);
     }
   }
@@ -67,9 +67,9 @@ class _MvcWeakReferenceList<T extends Object> {
 }
 
 mixin MvcBasicElement on ComponentElement, DependencyInjectionService {
-  int? _parentHashCode;
+  ServiceProvider? _parentServiceProvider;
   ServiceProvider? scopedServiceProvider;
-  late final _MvcWeakReferenceList<MvcElementService> _elementServices = _MvcWeakReferenceList();
+  late final _MvcWeakReferenceList<MvcWidgetService> _elementServices = _MvcWeakReferenceList();
 
   @override
   void mount(Element? parent, Object? newSlot) {
@@ -93,6 +93,7 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService {
   void dispose() {
     super.dispose();
     scopedServiceProvider?.dispose();
+    _elementServices.dispose();
   }
 
   @override
@@ -127,11 +128,10 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService {
   }
 
   void _setUp(ServiceProvider? parentServiceProvider) {
-    final int? parentHashCode = parentServiceProvider?.hashCode;
-    if (isAttached && _parentHashCode == parentHashCode) {
+    if (isAttached && _parentServiceProvider == parentServiceProvider) {
       return;
     }
-    _parentHashCode = parentHashCode;
+    _parentServiceProvider = parentServiceProvider;
     if (parentServiceProvider != null) {
       scopedServiceProvider = parentServiceProvider.buildScoped(
         builder: (collection) {
@@ -153,7 +153,7 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService {
   }
 }
 
-mixin MvcElementService on DependencyInjectionService {
+mixin MvcWidgetService on DependencyInjectionService {
   MvcBasicElement? _element;
 
   BuildContext get context {

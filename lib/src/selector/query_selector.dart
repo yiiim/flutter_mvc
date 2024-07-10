@@ -43,7 +43,7 @@ class SelectorEvaluator extends Visitor {
     for (var element in root.children.whereType<MvcNode>()) {
       if (matches(element, selector)) return element;
       if (ignoreSelectorBreaker || !element.isSelectorBreaker) {
-        final result = querySelector(element, selector);
+        final result = querySelector(element, selector, ignoreSelectorBreaker: ignoreSelectorBreaker);
         if (result != null) return result;
       }
     }
@@ -54,7 +54,7 @@ class SelectorEvaluator extends Visitor {
     for (var element in root.children.whereType<MvcNode>()) {
       if (matches(element, selector)) results.add(element);
       if (ignoreSelectorBreaker || !element.isSelectorBreaker) {
-        querySelectorAll(element, selector, results);
+        querySelectorAll(element, selector, results, ignoreSelectorBreaker: ignoreSelectorBreaker);
       }
     }
   }

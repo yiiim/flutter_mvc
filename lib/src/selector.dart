@@ -1,3 +1,5 @@
+import 'framework.dart';
+
 extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
   void update([void Function()? fn]) {
     fn?.call();
@@ -21,6 +23,8 @@ extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
 
 abstract class MvcWidgetUpdater extends MvcWidgetSelector {
   void update([void Function()? fn]);
+
+  MvcContext get context;
 }
 
 abstract class MvcWidgetSelector {

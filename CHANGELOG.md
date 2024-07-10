@@ -1,3 +1,7 @@
+## 4.2.0
+
+* MvcServiceValue
+
 ## 4.1.0
 
 * remove type arguments

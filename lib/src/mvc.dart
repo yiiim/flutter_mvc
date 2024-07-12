@@ -29,7 +29,7 @@ abstract class MvcController<TModelType> with DependencyInjectionService, MvcSer
   void initServices(ServiceCollection collection) {}
 
   @override
-  void update([void Function()? fn]) => _state!._update();
+  void update([void Function()? fn]) => _state!._update(fn);
 
   
 

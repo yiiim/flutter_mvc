@@ -171,6 +171,7 @@ mixin MvcWidgetElement<TControllerType extends MvcController> on DependencyInjec
   @override
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     super.initServices(collection, parent);
+    collection.addSingleton<MvcContext>((serviceProvider) => this);
   }
 
   /// see the [MvcContext.dependOnService]

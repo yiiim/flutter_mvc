@@ -1,10 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'query_selector.dart' as query_selector;
 
-abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
-  static String typeLocalName(Type type) => type.toString().replaceAll(RegExp(r'<[\s\S]+>$'), "").toLowerCase();
+String _typeLocalName(Type type) {
+  final result = type.toString().replaceAll(RegExp(r'<[\s\S]+>$'), "").toLowerCase();
+  if (kIsWeb) {
+    return result.replaceFirst(":", "");
+  }
+  return result;
+}
 
+abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
   String get id;
   MvcNode? get parent;
   String get localName;
@@ -20,7 +27,7 @@ abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
   Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     final result = query_selector.querySelectorAll(
       this,
-      "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}",
+      "${T != dynamic ? _typeLocalName(T) : ""}${selectors ?? ""}",
       ignoreSelectorBreaker: ignoreSelectorBreaker,
     );
     return result;
@@ -30,7 +37,7 @@ abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
   MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     return query_selector.querySelector(
       this,
-      "${T != dynamic ? typeLocalName(T) : ""}${selectors ?? ""}",
+      "${T != dynamic ? _typeLocalName(T) : ""}${selectors ?? ""}",
       ignoreSelectorBreaker: ignoreSelectorBreaker,
     );
   }
@@ -65,7 +72,7 @@ class MvcElementNode extends MvcNode {
   String get id => element.widget is MvcWidget ? (element.widget as MvcWidget).id ?? "" : "";
 
   @override
-  String get localName => element.widget.runtimeType.toString().replaceAll(RegExp(r'<[\s\S]+>$'), "").toLowerCase();
+  String get localName => _typeLocalName(element.widget.runtimeType);
 
   @override
   String? get namespaceUri => null;

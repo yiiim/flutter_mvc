@@ -6,11 +6,12 @@ import 'framework.dart';
 import 'selector.dart';
 
 /// Extend this class to create a mvc controller, and override [view] method to return a [MvcView]
-abstract class MvcController<TModelType> with DependencyInjectionService, MvcService implements MvcWidgetSelector {
+abstract class MvcController<TModelType> with DependencyInjectionService implements MvcWidgetSelector {
   _MvcControllerState? _state;
   TModelType get model => _state!.widget.model;
   MvcContext get context => _state!.context;
   bool get isSelectorBreaker => true;
+  bool get createStateScope => true;
 
   MvcView view();
 
@@ -28,22 +29,18 @@ abstract class MvcController<TModelType> with DependencyInjectionService, MvcSer
   @protected
   void initServices(ServiceCollection collection) {}
 
-  @override
   void update([void Function()? fn]) => _state!._update(fn);
 
-  
-
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<T>(
+        selectors,
+        ignoreSelectorBreaker,
+      );
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<T>(selectors, ignoreSelectorBreaker);
-}
-
-/// TODO: it's can't update when call [update] method
-class MvcProxyController extends MvcController<Widget> {
-  MvcProxyController();
-  @override
-  MvcView view() => MvcViewBuilder((controller) => model);
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<T>(
+        selectors,
+        ignoreSelectorBreaker,
+      );
 }
 
 class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends MvcStatefulWidget {
@@ -65,10 +62,6 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
   }
 }
 
-class MvcProxy<TControllerType extends MvcController<Widget>> extends Mvc<TControllerType, Widget> {
-  const MvcProxy({super.create, required Widget child, super.key}) : super(model: child);
-}
-
 class _MvcControllerState<TControllerType extends MvcController<TModelType>, TModelType> extends MvcWidgetState {
   @override
   Mvc<TControllerType, TModelType> get widget => super.widget as Mvc<TControllerType, TModelType>;
@@ -81,6 +74,8 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
 
   @override
   bool get isSelectorBreaker => controller.isSelectorBreaker;
+  @override
+  bool get createStateScope => controller.createStateScope;
 
   @mustCallSuper
   @override
@@ -129,7 +124,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
       },
     );
     if (TControllerType != MvcController) {
-      collection.addSingleton<TControllerType>((_) => controller, initializeWhenServiceProviderBuilt: true);
+      collection.addSingleton<TControllerType>((_) => controller);
     }
     controller.initServices(collection);
   }
@@ -147,32 +142,6 @@ class MvcViewBuilder<TControllerType extends MvcController> extends MvcView<TCon
   final Widget Function(TControllerType controller) builder;
   @override
   Widget buildView() => builder(controller);
-}
-
-class MvcDependencyProvider extends MvcStatefulWidget {
-  const MvcDependencyProvider({required this.child, required this.provider, super.key});
-  final void Function(ServiceCollection collection)? provider;
-  final Widget child;
-
-  @override
-  MvcWidgetState<MvcStatefulWidget> createState() => _MvcDependencyProviderState();
-}
-
-class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider> {
-  @override
-  Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        return widget.child;
-      },
-    );
-  }
-
-  @override
-  void initServices(ServiceCollection collection, ServiceProvider? parent) {
-    super.initServices(collection, parent);
-    widget.provider?.call(collection);
-  }
 }
 
 abstract class _MvcControllerProvider<T extends MvcController> {

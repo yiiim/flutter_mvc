@@ -1,4 +1,4 @@
-import 'framework.dart';
+import 'package:flutter_mvc/src/framework.dart';
 
 extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
   void update([void Function()? fn]) {

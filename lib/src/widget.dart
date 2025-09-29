@@ -24,10 +24,10 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 /// ```
 class MvcBuilder extends MvcStatelessWidget {
   const MvcBuilder({super.key, super.classes, super.id, super.attributes, required this.builder});
-  final Widget Function(MvcContext context) builder;
+  final Widget Function(BuildContext context) builder;
   @override
   Widget build(BuildContext context) {
-    return builder(context as MvcContext);
+    return builder(context);
   }
 }
 
@@ -110,27 +110,17 @@ class MvcFooter extends MvcBuilder {
 ///   }
 /// }
 /// ```
-class MvcServiceScope<TServiceType extends MvcService> extends MvcStatefulWidget {
+class MvcServiceScope<TServiceType extends MvcDependentObject> extends MvcStatefulWidget {
   const MvcServiceScope({required this.builder, super.id, super.classes, super.attributes, super.key});
-  final Widget Function(MvcContext context, TServiceType) builder;
+  final Widget Function(BuildContext context, TServiceType) builder;
 
   @override
   MvcWidgetState<MvcStatefulWidget> createState() => _MvcServiceScopeState<TServiceType>();
 }
 
-class _MvcServiceScopeState<TServiceType extends MvcService> extends MvcWidgetState<MvcServiceScope<TServiceType>> {
+class _MvcServiceScopeState<TServiceType extends MvcDependentObject> extends MvcWidgetState<MvcServiceScope<TServiceType>> {
   @override
   Widget build(BuildContext context) {
-    return widget.builder(this.context, this.context.dependOnService<TServiceType>());
+    return widget.builder(this.context, context.dependOnMvcServiceOfExactType<TServiceType>());
   }
-}
-
-/// We can use [MvcApp] to provide initial services.
-class MvcApp extends MvcStatelessWidget implements MvcServiceProviderSetUpWidget {
-  const MvcApp({required this.child, this.serviceProvider, super.key, super.id, super.classes, super.attributes});
-  @override
-  final ServiceProvider? serviceProvider;
-  final Widget child;
-  @override
-  Widget build(BuildContext context) => child;
 }

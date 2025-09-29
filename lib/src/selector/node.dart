@@ -4,6 +4,7 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 import 'query_selector.dart' as query_selector;
 
 String _typeLocalName(Type type) {
+  /// TODO web can't get type name
   final result = type.toString().replaceAll(RegExp(r'<[\s\S]+>$'), "").toLowerCase();
   if (kIsWeb) {
     return result.replaceFirst(":", "");
@@ -158,6 +159,7 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
   @override
   void activate() {
     super.activate();
+    assert(_parentElement == null);
     visitAncestorElements(
       (element) {
         _parentElement = element.tryGetMvcService<MvcNodeMixin>();

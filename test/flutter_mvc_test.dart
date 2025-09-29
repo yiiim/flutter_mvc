@@ -8,6 +8,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
+import 'package:flutter_mvc/src/selector/node.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class TestMvcWidget extends MvcStatelessWidget {
@@ -19,7 +20,7 @@ class TestMvcWidget extends MvcStatelessWidget {
   }
 }
 
-class TestService with DependencyInjectionService, MvcService {
+class TestService with DependencyInjectionService, MvcDependentObject {
   TestService();
   String stateValue = "";
 }
@@ -160,9 +161,6 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: MvcApp(
-              id: 'root',
-              classes: const ['root'],
-              attributes: const {"data-attr": "root"},
               key: rootKey,
               child: Column(
                 children: [
@@ -214,11 +212,11 @@ void main() {
           ),
         ),
       );
-      MvcWidgetUpdater rootUpdater = (rootKey.currentContext as MvcWidgetElement).debugUpdater;
-      MvcWidgetUpdater child1Updater = (child1Key.currentContext as MvcWidgetElement).debugUpdater;
-      MvcWidgetUpdater child2Updater = (child2Key.currentContext as MvcWidgetElement).debugUpdater;
-      MvcWidgetUpdater child1DescendantsUpdater = (child1DescendantsKey.currentContext as MvcWidgetElement).debugUpdater;
-      MvcWidgetUpdater child2DescendantsUpdater = (child2DescendantsKey.currentContext as MvcWidgetElement).debugUpdater;
+      MvcWidgetUpdater rootUpdater = (rootKey.currentContext as MvcNodeMixin).debugUpdater;
+      MvcWidgetUpdater child1Updater = (child1Key.currentContext as MvcNodeMixin).debugUpdater;
+      MvcWidgetUpdater child2Updater = (child2Key.currentContext as MvcNodeMixin).debugUpdater;
+      MvcWidgetUpdater child1DescendantsUpdater = (child1DescendantsKey.currentContext as MvcNodeMixin).debugUpdater;
+      MvcWidgetUpdater child2DescendantsUpdater = (child2DescendantsKey.currentContext as MvcNodeMixin).debugUpdater;
 
       void expectWithOutSort(Iterable actual, Iterable expected) {
         expect(actual.sorted((a, b) => a.hashCode.compareTo(b.hashCode)), expected.sorted((a, b) => a.hashCode.compareTo(b.hashCode)));
@@ -352,7 +350,7 @@ void main() {
             provider: (collection) => collection.addSingleton<TestService>((_) => service),
             child: MvcBuilder(
               builder: (context) {
-                return Text(context.dependOnService<TestService>().stateValue, textDirection: TextDirection.ltr);
+                return Text(context.dependOnMvcServiceOfExactType<TestService>().stateValue, textDirection: TextDirection.ltr);
               },
             ),
           ),

@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
 }
 
 /// The dependency injection service
-class TestService with DependencyInjectionService, MvcService {
+class TestService with DependencyInjectionService, MvcDependentObject {
   String title = "Default Title";
 
   void changeTitle() {
@@ -94,6 +94,11 @@ class TestMvcController extends MvcController<TestModel> {
   }
 }
 
+class CounterState {
+  CounterState(this.count);
+  int count;
+}
+
 /// The View
 class TestMvcView extends MvcView<TestMvcController> {
   @override
@@ -105,6 +110,15 @@ class TestMvcView extends MvcView<TestMvcController> {
       ),
       body: Column(
         children: [
+          MvcUseState(
+            builder: (useState) {
+              return Text(
+                useState.useState(
+                  (CounterState state) => "useState count: ${state.count}",
+                ),
+              );
+            },
+          ),
           MvcHeader(
             builder: (context) {
               return Container(

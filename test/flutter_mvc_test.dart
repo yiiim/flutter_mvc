@@ -20,9 +20,13 @@ class TestMvcWidget extends MvcStatelessWidget {
   }
 }
 
-class TestService with DependencyInjectionService, MvcDependentObject {
+class TestService with DependencyInjectionService, MvcDependableObject {
   TestService();
   String stateValue = "";
+
+  void update(VoidCallback fn) {
+    notifyAllDependents();
+  }
 }
 
 class TestModel {
@@ -161,52 +165,59 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: MvcApp(
-              key: rootKey,
-              child: Column(
-                children: [
-                  MvcBuilder(
-                    id: 'child1',
-                    classes: const ['child1'],
-                    attributes: const {"data-attr": "child1"},
-                    key: child1Key,
-                    builder: (_) {
-                      return Column(
-                        children: [
-                          MvcBuilder(
-                            id: 'child1Descendants',
-                            classes: const ['child1Descendants'],
-                            attributes: const {"data-attr": "child1Descendants"},
-                            key: child1DescendantsKey,
-                            builder: (_) {
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  MvcBuilder(
-                    id: 'child2',
-                    classes: const ['child2'],
-                    attributes: const {"data-attr": "child2"},
-                    key: child2Key,
-                    builder: (_) {
-                      return Column(
-                        children: [
-                          TestMvcWidget(
-                            id: 'child2Descendants',
-                            classes: const ['child2Descendants'],
-                            attributes: const {"data-attr": "child2Descendants"},
-                            key: child2DescendantsKey,
-                            builder: (_) {
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+              child: MvcBody(
+                key: rootKey,
+                id: 'root',
+                classes: const ['root'],
+                attributes: const {"data-attr": "root"},
+                builder: (context) {
+                  return Column(
+                    children: [
+                      MvcBuilder(
+                        id: 'child1',
+                        classes: const ['child1'],
+                        attributes: const {"data-attr": "child1"},
+                        key: child1Key,
+                        builder: (_) {
+                          return Column(
+                            children: [
+                              MvcBuilder(
+                                id: 'child1Descendants',
+                                classes: const ['child1Descendants'],
+                                attributes: const {"data-attr": "child1Descendants"},
+                                key: child1DescendantsKey,
+                                builder: (_) {
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      MvcBuilder(
+                        id: 'child2',
+                        classes: const ['child2'],
+                        attributes: const {"data-attr": "child2"},
+                        key: child2Key,
+                        builder: (_) {
+                          return Column(
+                            children: [
+                              TestMvcWidget(
+                                id: 'child2Descendants',
+                                classes: const ['child2Descendants'],
+                                attributes: const {"data-attr": "child2Descendants"},
+                                key: child2DescendantsKey,
+                                builder: (_) {
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -222,13 +233,12 @@ void main() {
         expect(actual.sorted((a, b) => a.hashCode.compareTo(b.hashCode)), expected.sorted((a, b) => a.hashCode.compareTo(b.hashCode)));
       }
 
-      expectWithOutSort(Mvc.querySelectorAll('*'), [rootUpdater, child1Updater, child2Updater, child1DescendantsUpdater, child2DescendantsUpdater]);
       expect(Mvc.querySelector('#root'), rootUpdater);
       expect(Mvc.querySelector('#root[data-attr=root]'), rootUpdater);
       expect(Mvc.querySelector('#root[data-attr]'), rootUpdater);
       expect(Mvc.querySelector('#root[data-bttr]'), isNull);
       expect(Mvc.querySelector('#root[data-attr=child1]'), isNull);
-      expect(Mvc.querySelector<MvcApp>(), rootUpdater);
+      expect(Mvc.querySelector<MvcBody>(), rootUpdater);
       expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('*') ?? <MvcWidgetUpdater>[], [child1Updater, child2Updater, child1DescendantsUpdater, child2DescendantsUpdater]);
       expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget'), [child2DescendantsUpdater]);
       expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('TestMvcWidget') ?? <MvcWidgetUpdater>[], [child2DescendantsUpdater]);
@@ -273,69 +283,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('controllerValue2'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'test update service',
-    (WidgetTester tester) async {
-      var controller = TestController();
-      var service = TestService();
-      service.stateValue = "serviceValue";
-
-      await tester.pumpWidget(
-        MvcApp(
-          child: MvcDependencyProvider(
-            provider: (collection) => collection.addSingleton<TestService>((_) => service),
-            child: Mvc(
-              create: () => controller,
-              model: TestModel(
-                "modelValue",
-                child: MvcServiceScope<TestService>(
-                  builder: (context, service) {
-                    return Text(service.stateValue, textDirection: TextDirection.ltr);
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('serviceValue'), findsOneWidget);
-      controller.getService<TestService>().update(() => service.stateValue = "serviceValue2");
-      await tester.pump();
-      expect(find.text('serviceValue2'), findsOneWidget);
-
-      service.stateValue = "serviceValue3";
-      service.update();
-      await tester.pump();
-      expect(find.text('serviceValue3'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'test mvc service',
-    (tester) async {
-      var service = TestService();
-      service.stateValue = '1';
-      await tester.pumpWidget(
-        MvcApp(
-          child: MvcDependencyProvider(
-            provider: (collection) => collection.addSingleton<TestService>((_) => service),
-            child: MvcServiceScope<TestService>(
-              builder: (context, service) {
-                return Text(service.stateValue, textDirection: TextDirection.ltr);
-              },
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('1'), findsOneWidget);
-      service.update(() => service.stateValue = '2');
-      await tester.pump();
-      expect(find.text('2'), findsOneWidget);
     },
   );
 

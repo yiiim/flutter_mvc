@@ -7,11 +7,13 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 
 void main() {
   runApp(
-    MvcDependencyProvider(
-      provider: (collection) {
-        collection.addSingleton<TestService>((_) => TestService());
-      },
-      child: const MyApp(),
+    MvcApp(
+      child: MvcDependencyProvider(
+        provider: (collection) {
+          collection.addSingleton<TestService>((_) => TestService());
+        },
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -36,12 +38,16 @@ class MyApp extends StatelessWidget {
 }
 
 /// The dependency injection service
-class TestService with DependencyInjectionService, MvcDependentObject {
+class TestService with DependencyInjectionService, MvcDependableObject {
   String title = "Default Title";
 
   void changeTitle() {
     title = "Service Changed Title";
-    update();
+    notifyAllDependents();
+  }
+
+  void update() {
+    notifyAllDependents();
   }
 }
 
@@ -95,8 +101,9 @@ class TestMvcController extends MvcController<TestModel> {
 }
 
 class CounterState {
-  CounterState(this.count);
+  CounterState(this.count, [this.count1 = 0]);
   int count;
+  int count1;
 }
 
 /// The View
@@ -110,13 +117,19 @@ class TestMvcView extends MvcView<TestMvcController> {
       ),
       body: Column(
         children: [
-          MvcUseState(
-            builder: (useState) {
+          Builder(
+            builder: (context) {
               return Text(
-                useState.useState(
+                context.stateAccessor.useState(
                   (CounterState state) => "useState count: ${state.count}",
+                  initializer: () => CounterState(0),
                 ),
               );
+            },
+          ),
+          MvcServiceScope<TestService>(
+            builder: (context, service) {
+              return Text(service.title);
             },
           ),
           MvcHeader(
@@ -134,11 +147,6 @@ class TestMvcView extends MvcView<TestMvcController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  MvcServiceScope<TestService>(
-                    builder: (context, service) {
-                      return Text(service.title);
-                    },
-                  ),
                   MvcBuilder(
                     classes: const ["timerCount"],
                     builder: (context) {
@@ -172,6 +180,12 @@ class TestMvcView extends MvcView<TestMvcController> {
                   CupertinoButton(
                     onPressed: () => controller.querySelectorAll<MvcFooter>().update(),
                     child: const Text("update footer"),
+                  ),
+                  CupertinoButton(
+                    onPressed: () => controller.stateScope.setState<CounterState>((state) {
+                      state.count++;
+                    }),
+                    child: const Text("update counter"),
                   ),
                 ],
               ),

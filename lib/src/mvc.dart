@@ -12,6 +12,7 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   MvcContext get context => _state!.context;
   bool get isSelectorBreaker => true;
   bool get createStateScope => true;
+  late final MvcWidgetScope stateScope = getService<MvcWidgetScope>();
 
   MvcView view();
 
@@ -66,7 +67,7 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
   @override
   Mvc<TControllerType, TModelType> get widget => super.widget as Mvc<TControllerType, TModelType>;
 
-  late final TControllerType controller = getService<TControllerType>();
+  late final TControllerType controller;
 
   void _update([void Function()? fn]) {
     setState(fn ?? () {});
@@ -113,10 +114,11 @@ class _MvcControllerState<TControllerType extends MvcController<TModelType>, TMo
   @mustCallSuper
   @override
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
-    super.initServices(collection, parent);
     TControllerType? controller = widget.create?.call() ?? parent?.get<_MvcControllerProvider<TControllerType>>().create();
     assert(controller != null, "can't create controller");
-    controller!._state = this;
+    this.controller = controller!;
+    super.initServices(collection, parent);
+    controller._state = this;
     collection.addSingleton<MvcController>((_) => controller, initializeWhenServiceProviderBuilt: true);
     collection.add<MvcView>(
       (serviceProvider) {

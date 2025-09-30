@@ -24,10 +24,10 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 /// ```
 class MvcBuilder extends MvcStatelessWidget {
   const MvcBuilder({super.key, super.classes, super.id, super.attributes, required this.builder});
-  final Widget Function(BuildContext context) builder;
+  final Widget Function(MvcContext context) builder;
   @override
   Widget build(BuildContext context) {
-    return builder(context);
+    return builder(context as MvcContext);
   }
 }
 
@@ -110,7 +110,7 @@ class MvcFooter extends MvcBuilder {
 ///   }
 /// }
 /// ```
-class MvcServiceScope<TServiceType extends MvcDependentObject> extends MvcStatefulWidget {
+class MvcServiceScope<TServiceType extends MvcDependableObject> extends MvcStatefulWidget {
   const MvcServiceScope({required this.builder, super.id, super.classes, super.attributes, super.key});
   final Widget Function(BuildContext context, TServiceType) builder;
 
@@ -118,7 +118,7 @@ class MvcServiceScope<TServiceType extends MvcDependentObject> extends MvcStatef
   MvcWidgetState<MvcStatefulWidget> createState() => _MvcServiceScopeState<TServiceType>();
 }
 
-class _MvcServiceScopeState<TServiceType extends MvcDependentObject> extends MvcWidgetState<MvcServiceScope<TServiceType>> {
+class _MvcServiceScopeState<TServiceType extends MvcDependableObject> extends MvcWidgetState<MvcServiceScope<TServiceType>> {
   @override
   Widget build(BuildContext context) {
     return widget.builder(this.context, context.dependOnMvcServiceOfExactType<TServiceType>());

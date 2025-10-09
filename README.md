@@ -101,8 +101,8 @@ class CounterView extends MvcView<CounterController> {
 
 ## Documentation
 
-- [Dependency Injection](./docs/en/dependency_injection.md)
-- [MVC Basics](./docs/en/mvc.md)
-- [Store State Management](./docs/en/store.md)
-- [CSS Selector](./docs/en/selector.md)
-- [Widget Depends on Service](./docs/en/depend_on_service.md)
+- [Dependency Injection](./doc/en/dependency_injection.md)
+- [MVC Basics](./doc/en/mvc.md)
+- [Store State Management](./doc/en/store.md)
+- [CSS Selector](./doc/en/selector.md)
+- [Widget Depends on Service](./doc/en/depend_on_service.md)

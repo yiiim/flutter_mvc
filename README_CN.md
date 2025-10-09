@@ -101,8 +101,8 @@ class CounterView extends MvcView<CounterController> {
 
 ## 文档目录
 
-- [依赖注入](./docs/cn/dependency_injection.md)
-- [MVC 基础](./docs/cn/mvc.md)
-- [Store 状态管理](./docs/cn/store.md)
-- [Css 选择器](./docs/cn/selector.md)
-- [Widget 依赖于对象](./docs/cn/depend_on_service.md)
+- [依赖注入](./doc/cn/dependency_injection.md)
+- [MVC 基础](./doc/cn/mvc.md)
+- [Store 状态管理](./doc/cn/store.md)
+- [Css 选择器](./doc/cn/selector.md)
+- [Widget 依赖于对象](./doc/cn/depend_on_service.md)

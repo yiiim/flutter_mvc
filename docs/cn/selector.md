@@ -1,4 +1,4 @@
-# Css 选择器
+# 选择器
 
 `flutter_mvc` 支持类似 Web 的 Css 选择器来定位 Widget。您可以通过 ID、Class 甚至是 Widget 类型来精确定位/更新 Widget。
 

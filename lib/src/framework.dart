@@ -133,10 +133,12 @@ class MvcApp extends StatelessWidget {
   const MvcApp({
     required this.child,
     this.serviceProvider,
+    this.serviceProviderBuilder,
     super.key,
   });
   final Widget child;
   final ServiceProvider? serviceProvider;
+  final void Function(ServiceCollection? collection)? serviceProviderBuilder;
   static bool _debugHasMvcApp(BuildContext? context) {
     assert(() {
       if (context?.getElementForInheritedWidgetOfExactType<_MvcApp>() == null) {
@@ -151,6 +153,7 @@ class MvcApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _MvcApp(
       serviceProvider: serviceProvider,
+      serviceProviderBuilder: serviceProviderBuilder,
       child: child,
     );
   }
@@ -159,10 +162,11 @@ class MvcApp extends StatelessWidget {
 class _MvcApp extends InheritedWidget {
   const _MvcApp({
     this.serviceProvider,
+    this.serviceProviderBuilder,
     required super.child,
   });
   final ServiceProvider? serviceProvider;
-
+  final void Function(ServiceCollection? collection)? serviceProviderBuilder;
   @override
   InheritedElement createElement() => _MvcAppElement(this);
 
@@ -171,9 +175,10 @@ class _MvcApp extends InheritedWidget {
 }
 
 class _MvcDependentObjectAspect {
-  _MvcDependentObjectAspect(this.service, {this.aspect});
+  _MvcDependentObjectAspect(this.service, {this.aspect, this.group});
   final MvcDependableObject service;
   final Object? aspect;
+  final Object? group;
 
   @override
   bool operator ==(Object other) => other is _MvcDependentObjectAspect && other.service == service && other.aspect == aspect;
@@ -187,14 +192,13 @@ class _MvcAppElement extends InheritedElement {
 
   @override
   void updateDependencies(Element dependent, Object? aspect) {
-    WidgetsFlutterBinding.ensureInitialized();
     final Set<_MvcDependentObjectAspect>? dependencies = getDependencies(dependent) as Set<_MvcDependentObjectAspect>?;
     if (aspect == null) {
       setDependencies(dependent, HashSet<_MvcDependentObjectAspect>());
     } else {
       assert(aspect is _MvcDependentObjectAspect);
       _MvcDependentObjectAspect serviceAspect = aspect as _MvcDependentObjectAspect;
-      serviceAspect.service.updateDependencies(dependent, aspect: serviceAspect.aspect);
+      serviceAspect.service.updateDependencies(_MvcDependableElementListener(dependent), aspect: serviceAspect.aspect, group: serviceAspect.group);
       setDependencies(dependent, (dependencies ?? HashSet<_MvcDependentObjectAspect>())..add(serviceAspect));
     }
   }
@@ -208,7 +212,7 @@ class _MvcAppElement extends InheritedElement {
         .toSet();
     if (dependencies != null) {
       for (var element in dependencies) {
-        element.removeDependencies(dependent);
+        element.removeDependencies(_MvcDependableElementListener(dependent));
       }
     }
     super.removeDependent(dependent);
@@ -221,6 +225,7 @@ class _MvcAppElement extends InheritedElement {
       child: MvcDependencyProvider(
         child: MvcStateScope(builder: (_) => super.build()),
         provider: (collection) {
+          (widget as _MvcApp).serviceProviderBuilder?.call(collection);
           collection.add<MvcStateAccessor>((_) => MvcStateAccessor());
           collection.addScopedSingleton(
             (_) => MvcWidgetScope(),
@@ -449,36 +454,131 @@ class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider> 
   }
 }
 
+abstract class MvcDependableListener {
+  void onDependencyChanged(Object? aspect);
+}
+
+class MvcDependableFunctionListener extends MvcDependableListener {
+  MvcDependableFunctionListener(this.listener);
+  final void Function(Object? aspect) listener;
+  @override
+  void onDependencyChanged(Object? aspect) {
+    listener(aspect);
+  }
+}
+
+class _MvcDependableElementListener extends MvcDependableListener {
+  _MvcDependableElementListener(this.element);
+  final Element element;
+  @override
+  void onDependencyChanged(Object? aspect) {
+    element.markNeedsBuild();
+  }
+
+  @override
+  bool operator ==(Object other) => other is _MvcDependableElementListener && other.element == element;
+
+  @override
+  int get hashCode => element.hashCode;
+}
+
+class _MvcDependableStateListener<T, R> extends MvcDependableListener {
+  _MvcDependableStateListener({
+    required this.state,
+    required this.listener,
+    this.selector,
+  });
+  final T state;
+  final void Function(R value) listener;
+  final R Function(T state)? selector;
+  @override
+  void onDependencyChanged(Object? aspect) {
+    final value = selector?.call(state) ?? state as R;
+    listener(value);
+  }
+
+  @override
+  bool operator ==(Object other) => other is _MvcDependableStateListener && other.state == state && other.listener == listener;
+
+  @override
+  int get hashCode => state.hashCode ^ listener.hashCode;
+}
+
 mixin MvcDependableObject {
-  final Map<Element, Object?> _dependents = HashMap<Element, Object?>();
+  final Map<MvcDependableListener, Object?> _dependents = HashMap<MvcDependableListener, Object?>();
+  final Map<Object, Set<MvcDependableListener>> _dependentGroups = HashMap<Object, Set<MvcDependableListener>>();
+  final Map<MvcDependableListener, Object?> _dependentToGroup = HashMap<MvcDependableListener, Object?>();
 
   @protected
-  Object? getDependencies(Element dependent) {
+  Object? getDependencies(MvcDependableListener dependent) {
     return _dependents[dependent];
   }
 
   @protected
-  void setDependencies(Element dependent, Object? value) {
+  void setDependencies(MvcDependableListener dependent, Object? value, {Object? group}) {
     _dependents[dependent] = value;
+
+    // Remove dependent from previous group if it exists
+    final previousGroup = _dependentToGroup[dependent];
+    if (previousGroup != null && previousGroup != group) {
+      final previousGroupSet = _dependentGroups[previousGroup];
+      if (previousGroupSet != null) {
+        previousGroupSet.remove(dependent);
+        // Clean up empty group
+        if (previousGroupSet.isEmpty) {
+          _dependentGroups.remove(previousGroup);
+        }
+      }
+    }
+
+    // Add dependent to new group if group is specified
+    if (group != null) {
+      _dependentGroups.putIfAbsent(group, () => HashSet<MvcDependableListener>()).add(dependent);
+      _dependentToGroup[dependent] = group;
+    } else {
+      // If no group specified, remove from group tracking
+      _dependentToGroup.remove(dependent);
+    }
   }
 
   @protected
-  void updateDependencies(Element dependent, {Object? aspect}) {
-    setDependencies(dependent, null);
+  void updateDependencies(MvcDependableListener dependent, {Object? aspect, Object? group}) {
+    setDependencies(dependent, aspect, group: group);
   }
 
   @protected
-  void removeDependencies(Element element) {
+  void removeDependencies(MvcDependableListener element) {
     _dependents.remove(element);
+
+    // Remove from group tracking
+    final group = _dependentToGroup.remove(element);
+
+    // Remove from the specific group if it exists
+    if (group != null) {
+      final groupSet = _dependentGroups[group];
+      if (groupSet != null) {
+        groupSet.remove(element);
+        // Clean up empty group
+        if (groupSet.isEmpty) {
+          _dependentGroups.remove(group);
+        }
+      }
+    } else {
+      // Fallback: remove from all groups (in case of inconsistent state)
+      for (var groupSet in _dependentGroups.values) {
+        groupSet.remove(element);
+      }
+      _dependentGroups.removeWhere((key, value) => value.isEmpty);
+    }
   }
 
   @protected
-  void notifyDependent(Element dependent, {Object? aspect}) {
-    dependent.markNeedsBuild();
+  void notifyDependent(MvcDependableListener dependent, {Object? aspect}) {
+    dependent.onDependencyChanged(aspect);
   }
 
   @protected
-  bool shouldNotifyDependents(Element dependent, {Object? aspect}) {
+  bool shouldNotifyDependents(MvcDependableListener dependent, {Object? aspect}) {
     return true;
   }
 
@@ -488,6 +588,41 @@ mixin MvcDependableObject {
       if (shouldNotifyDependents(element.key, aspect: element.value)) {
         notifyDependent(element.key, aspect: element.value);
       }
+    }
+  }
+
+  @protected
+  void notifyDependentsInGroup(Object group) {
+    final dependentsInGroup = _dependentGroups[group];
+    if (dependentsInGroup != null) {
+      for (final dependent in dependentsInGroup) {
+        final aspect = _dependents[dependent];
+        if (shouldNotifyDependents(dependent, aspect: aspect)) {
+          notifyDependent(dependent, aspect: aspect);
+        }
+      }
+    }
+  }
+
+  /// Get all available dependency groups
+  Set<Object> get dependencyGroups => _dependentGroups.keys.toSet();
+
+  /// Check if a dependency group exists
+  bool hasDependencyGroup(Object group) => _dependentGroups.containsKey(group);
+
+  /// Get the count of dependents in a specific group
+  int getDependentsCountInGroup(Object group) => _dependentGroups[group]?.length ?? 0;
+
+  /// Remove all dependents from a specific group
+  void clearDependencyGroup(Object group) {
+    final dependentsInGroup = _dependentGroups[group];
+    if (dependentsInGroup != null) {
+      // Remove these dependents from the main _dependents map
+      for (final dependent in dependentsInGroup) {
+        _dependents.remove(dependent);
+      }
+      // Remove the group
+      _dependentGroups.remove(group);
     }
   }
 }
@@ -513,26 +648,29 @@ class _MvcStateStoreAspect<T, R> {
 
 class MvcRawStore<T> with MvcDependableObject {
   final T state;
-
   MvcRawStore(this.state);
 
   @override
-  void updateDependencies(Element dependent, {Object? aspect}) {
+  void updateDependencies(MvcDependableListener dependent, {Object? aspect, Object? group}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
     if (dependencies != null && dependencies.isEmpty) {
       return;
     }
 
     if (aspect == null) {
-      setDependencies(dependent, HashSet<_MvcStateStoreAspect>());
+      setDependencies(dependent, HashSet<_MvcStateStoreAspect>(), group: group);
     } else {
       assert(aspect is _MvcStateStoreAspect);
-      setDependencies(dependent, (dependencies ?? HashSet<_MvcStateStoreAspect>())..add(aspect as _MvcStateStoreAspect));
+      setDependencies(
+        dependent,
+        (dependencies ?? HashSet<_MvcStateStoreAspect>())..add(aspect as _MvcStateStoreAspect),
+        group: group,
+      );
     }
   }
 
   @override
-  bool shouldNotifyDependents(Element dependent, {Object? aspect}) {
+  bool shouldNotifyDependents(MvcDependableListener dependent, {Object? aspect}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
     if (dependencies == null) {
       return false;
@@ -554,13 +692,14 @@ class MvcRawStore<T> with MvcDependableObject {
         selector: use,
         value: value,
       ),
+      group: T,
     );
     return value;
   }
 
   void setState(void Function(T state) set) {
     set(state);
-    notifyAllDependents();
+    notifyDependentsInGroup(T);
   }
 }
 
@@ -717,7 +856,11 @@ class MvcWidgetScope with DependencyInjectionService {
   void setStateOfExactStoreType<T, E extends MvcRawStore<T>>(void Function(T state) set) {
     final store = _repository.getStore<T, E>();
     assert(store != null, "can't find state $T in scope");
-    store?.setState(set);
+    setStateOfExactStore<T, E>(store!, set);
+  }
+
+  void setStateOfExactStore<T, R extends MvcRawStore<T>>(R store, void Function(T state) set) {
+    store.setState(set);
   }
 
   MvcRawStore<T>? getStore<T>() {
@@ -726,6 +869,36 @@ class MvcWidgetScope with DependencyInjectionService {
 
   R? getStoreOfExactType<T, R extends MvcRawStore<T>>() {
     return _repository.getStore<T, R>();
+  }
+
+  R listenState<T, R>(void Function(R value) listener, [R Function(T state)? use]) {
+    final store = getStore<T>();
+    assert(store != null, "can't find state $T in scope");
+    final value = use?.call(store!.state) ?? store!.state as R;
+    store!.updateDependencies(
+      _MvcDependableStateListener(
+        state: store.state,
+        listener: listener,
+        selector: use,
+      ),
+      aspect: _MvcStateStoreAspect<T, R>(
+        selector: use,
+        value: value,
+      ),
+      group: T,
+    );
+    return value;
+  }
+
+  void removeStateListener<T>(void Function(Object? state) listener) {
+    final store = getStore<T>();
+    assert(store != null, "can't find state $T in scope");
+    store?.removeDependencies(
+      _MvcDependableStateListener(
+        state: store.state,
+        listener: listener,
+      ),
+    );
   }
 }
 
@@ -768,9 +941,15 @@ extension MvcServicesExtension on BuildContext {
     return service;
   }
 
-  void dependOnMvcService(MvcDependableObject service, {Object? aspect}) {
+  void dependOnMvcService(MvcDependableObject service, {Object? aspect, Object? group}) {
     assert(MvcApp._debugHasMvcApp(this));
-    dependOnInheritedWidgetOfExactType<_MvcApp>(aspect: _MvcDependentObjectAspect(service, aspect: aspect));
+    dependOnInheritedWidgetOfExactType<_MvcApp>(
+      aspect: _MvcDependentObjectAspect(
+        service,
+        aspect: aspect,
+        group: group,
+      ),
+    );
   }
 
   static final Expando<MvcStateAccessor> _stateAccessor = Expando<MvcStateAccessor>();
@@ -785,7 +964,10 @@ extension MvcServicesExtension on BuildContext {
       accessor._frameNumber = currentFrame;
       accessor.setUpBeforeUse(this);
     }
-    Timer.run(() => accessor); // keep accessor alive until this frame end
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // keep accessor alive until this frame end
+      accessor;
+    });
     return accessor;
   }
 }

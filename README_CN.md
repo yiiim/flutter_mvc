@@ -45,11 +45,11 @@ class CounterState {
 class CounterController extends MvcController<void> {
   @override
   void init() {
-    stateScope.createState(CounterState(0));
+    widgetScope.createState(CounterState(0));
   }
 
   void increment() {
-    stateScope.setState(
+    widgetScope.setState(
       (CounterState state) {
         state.count++;
       },
@@ -57,7 +57,7 @@ class CounterController extends MvcController<void> {
   }
 
   @override
-  MvcView<MvcController<dynamic>> view() {
+  MvcView view() {
     return CounterView();
   }
 }
@@ -104,6 +104,6 @@ class CounterView extends MvcView<CounterController> {
 
 - [依赖注入](./docs/cn/dependency_injection.md)
 - [MVC 基础](./docs/cn/mvc.md)
-- [Css 选择器](./docs/cn/selector.md)
 - [Store 状态管理](./docs/cn/store.md)
+- [Css 选择器](./docs/cn/selector.md)
 - [Widget 依赖于对象](./docs/cn/depend_on_service.md)

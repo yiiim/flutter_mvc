@@ -12,7 +12,7 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   MvcContext get context => _state!.context;
   bool get isSelectorBreaker => true;
   bool get createStateScope => true;
-  late final MvcWidgetScope stateScope = getService<MvcWidgetScope>();
+  late final MvcWidgetScope widgetScope = getService<MvcWidgetScope>();
 
   MvcView view();
 

@@ -17,7 +17,7 @@ void main() {
 }
 ```
 
-其中 Model 是可选的，如果您不需要通过外部传入数据，可以省略。
+其中 Model 是可选的，如果您不需要通过外部传入数据，通常可以省略。
 
 ### Controller 示例
 
@@ -48,7 +48,7 @@ class IndexController extends MvcController<IndexPageModel> {
 }
 ```
 
-Controller 继承自 `MvcController<TModelType>`，其中 `TModelType` 是传入的 Model 类型，如果没有传入 Model，可以使用 `MvcController<void>`。 `view()` 方法必须实现，返回一个 `MvcView` 实例。您可以通过 `update()` 方法来重建整个 `View`。或者通过[选择器](./selectors.md)或者[Store](./store.md)来局部更新。
+Controller 继承自 `MvcController<TModelType>`，其中 `TModelType` 是传入的 Model 类型，如果没有传入 Model，可以使用 `MvcController<void>`，或者直接省略泛型。 `view()` 方法必须实现，返回一个 `MvcView` 实例。您可以通过 `update()` 方法来重建整个 `View`。或者通过[选择器](./selectors.md)或者[Store](./store.md)来局部更新。
 
 ### View 示例
 
@@ -69,7 +69,6 @@ View 继承自 `MvcView<TControllerType>`，其中 `TControllerType` 是关联�
 
 ## Mvc和依赖注入
 Controller 和 View 都是依赖注入对象，它们都可以可以通过 `getService<T>()` 方法获取其他依赖注入对象。
-
 
 ```dart
 class IndexController extends MvcController<IndexPageModel> {

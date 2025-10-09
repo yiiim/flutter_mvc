@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
+import 'dependency_group_example.dart';
 
 void main() {
   runApp(
@@ -182,10 +183,18 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update footer"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.stateScope.setState<CounterState>((state) {
+                    onPressed: () => controller.widgetScope.setState<CounterState>((state) {
                       state.count++;
                     }),
                     child: const Text("update counter"),
+                  ),
+                  CupertinoButton(
+                    onPressed: () => Navigator.of(controller.context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const DependencyGroupExamplePage(),
+                      ),
+                    ),
+                    child: const Text("依赖分组示例"),
                   ),
                 ],
               ),

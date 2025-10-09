@@ -192,7 +192,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => TestService(
                 initCounterState: CounterState(10),
                 initUserState: UserState(name: 'Alice', age: 30),
@@ -218,7 +218,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => TestService(initCounterState: CounterState(25)),
               initializeWhenServiceProviderBuilt: true,
             );
@@ -244,7 +244,7 @@ void main() {
       Widget buildStateWidget() {
         return MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => testService = TestService(
                 initCounterState: CounterState(500),
               ),
@@ -273,7 +273,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => TestService(
                 initCounterState: CounterState(200),
                 initUserState: UserState(name: 'Bob', age: 25),
@@ -595,7 +595,7 @@ void main() {
     await tester.pumpWidget(
       MvcApp(
         serviceProviderBuilder: (collection) {
-          collection?.add<TestService>(
+          collection.add<TestService>(
             (_) => TestService(
               initComplexState: ComplexState(
                 data: {'key1': 'value1', 'key2': 42},
@@ -638,7 +638,7 @@ void main() {
     await tester.pumpWidget(
       MvcApp(
         serviceProviderBuilder: (collection) {
-          collection?.add<TestService>(
+          collection.add<TestService>(
             (_) => TestService(
               initComplexState: ComplexState(
                 data: {'counter': 0, 'name': 'initial'},
@@ -684,7 +684,7 @@ void main() {
     await tester.pumpWidget(
       MvcApp(
         serviceProviderBuilder: (collection) {
-          collection?.add<TestService>(
+          collection.add<TestService>(
             (_) => testService = TestService(
               initCounterState: CounterState(0),
             ),
@@ -716,7 +716,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => testService = TestService(
                 initCounterState: CounterState(100),
                 initUserState: UserState(name: 'GroupTest', age: 30),
@@ -760,7 +760,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => testService = TestService(
                 initCounterState: CounterState(200),
               ),
@@ -798,7 +798,7 @@ void main() {
       await tester.pumpWidget(
         MvcApp(
           serviceProviderBuilder: (collection) {
-            collection?.add<TestService>(
+            collection.add<TestService>(
               (_) => testService = TestService(
                 initCounterState: CounterState(300),
                 initUserState: UserState(name: 'RepoTest', age: 25),

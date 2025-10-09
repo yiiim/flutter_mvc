@@ -269,7 +269,7 @@ class _MvcAppElement extends InheritedElement {
   }
 
   void clearObjectDependencies(Element dependent) {
-    setDependencies(dependent, null);
+    removeDependent(dependent);
   }
 }
 
@@ -724,6 +724,7 @@ class MvcRawStore<T> with MvcDependableObject {
   /// Creates a raw store with the initial state.
   MvcRawStore(this.state);
 
+  @protected
   @override
   void updateDependencies(MvcDependableListener dependent, {Object? aspect, Object? group}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
@@ -743,6 +744,7 @@ class MvcRawStore<T> with MvcDependableObject {
     }
   }
 
+  @protected
   @override
   bool shouldNotifyDependents(MvcDependableListener dependent, {Object? aspect}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;

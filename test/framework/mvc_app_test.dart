@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(
       MvcApp(
         serviceProviderBuilder: (collection) {
-          collection?.add<TestService>(
+          collection.add<TestService>(
             (_) {
               serviceResolved = true;
               return TestService();

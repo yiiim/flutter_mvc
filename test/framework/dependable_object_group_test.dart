@@ -1,6 +1,6 @@
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'common.dart';
+import '../common.dart';
 
 void main() {
   late TestService testService;

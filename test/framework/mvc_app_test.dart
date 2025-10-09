@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'common.dart';
+import '../common.dart';
 
 void main() {
   testWidgets('should work with service provider builder', (tester) async {
     bool serviceResolved = false;
-
     await tester.pumpWidget(
       MvcApp(
         serviceProviderBuilder: (collection) {

@@ -7,51 +7,6 @@ import 'common.dart';
 
 void main() {
   testWidgets(
-    'test model update',
-    (WidgetTester tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc<TestController, TestModel>(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              child: MvcBuilder(
-                builder: (context) {
-                  return Text(context.getMvcService<TestController>().model.modelValue, textDirection: TextDirection.ltr);
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('modelValue'), findsOneWidget);
-
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc<TestController, TestModel>(
-            create: () {
-              throw Exception("should't create controller");
-            },
-            model: TestModel(
-              "modelValue2",
-              child: MvcBuilder(
-                builder: (context) {
-                  return Text(context.getMvcService<TestController>().model.modelValue, textDirection: TextDirection.ltr);
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-      expect(tester.takeException(), null);
-      expect(find.text('modelValue2'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
     'test id and classes update',
     (WidgetTester tester) async {
       var controller = TestController();
@@ -63,7 +18,7 @@ void main() {
             create: () => controller,
             model: TestModel(
               "modelValue",
-              child: Column(
+              builder: (context) => Column(
                 children: [
                   MvcBuilder(
                     id: "id",
@@ -205,64 +160,7 @@ void main() {
   );
 
   testWidgets(
-    'test update widget',
-    (WidgetTester tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
-
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              child: TestMvcWidget(
-                builder: (context) {
-                  return Text(controller.controllerValue, textDirection: TextDirection.ltr);
-                },
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('controllerValue'), findsOneWidget);
-
-      controller.controllerValue = "controllerValue2";
-      controller.querySelectorAll<TestMvcWidget>().update();
-      await tester.pump();
-
-      expect(find.text('controllerValue2'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'test depend on service',
-    (tester) async {
-      var service = TestService();
-      service.stateValue = '1';
-      await tester.pumpWidget(
-        MvcApp(
-          child: MvcDependencyProvider(
-            provider: (collection) => collection.addSingleton<TestService>((_) => service),
-            child: MvcBuilder(
-              builder: (context) {
-                return Text(context.dependOnMvcServiceOfExactType<TestService>().stateValue, textDirection: TextDirection.ltr);
-              },
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('1'), findsOneWidget);
-      service.update(() => service.stateValue = '2');
-      await tester.pump();
-      expect(find.text('2'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'test child mvc',
+    'test mvc break selector',
     (WidgetTester tester) async {
       var controller = TestController();
       controller.controllerValue = "controllerValue";
@@ -275,7 +173,7 @@ void main() {
             create: () => controller,
             model: TestModel(
               "modelValue",
-              child: Column(
+              builder: (context) => Column(
                 children: [
                   MvcBuilder(
                     classes: const ['cls'],
@@ -287,7 +185,7 @@ void main() {
                     create: () => childController,
                     model: TestModel(
                       "childModelValue",
-                      child: MvcBuilder(
+                      builder: (context) => MvcBuilder(
                         classes: const ['cls'],
                         builder: (context) {
                           return Text(childController.controllerValue, textDirection: TextDirection.ltr);
@@ -326,100 +224,6 @@ void main() {
       expect(find.text('childControllerValue'), findsNothing);
       expect(find.text('childControllerValue2'), findsNothing);
       expect(find.text('childControllerValue3'), findsOneWidget);
-    },
-  );
-  testWidgets(
-    "test dependency provider",
-    (tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
-      await tester.pumpWidget(
-        MvcApp(
-          child: MvcDependencyProvider(
-            provider: (collection) => collection.add<TestService>((_) => TestService()..stateValue = "objectValue"),
-            child: Mvc(
-              create: () => controller,
-              model: TestModel(
-                "modelValue",
-                child: Builder(
-                  builder: (context) {
-                    return Text(controller.getService<TestService>().stateValue, textDirection: TextDirection.ltr);
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('objectValue'), findsOneWidget);
-    },
-  );
-  testWidgets(
-    "test controller provider",
-    (tester) async {
-      await tester.pumpWidget(
-        MvcApp(
-          child: MvcDependencyProvider(
-            provider: (collection) {
-              collection.addController((provider) => TestController()..controllerValue = "controllerValue");
-            },
-            child: Mvc<TestController, TestModel>(
-              model: TestModel(
-                "modelValue",
-                child: MvcBuilder(
-                  builder: (context) {
-                    return Text(context.getMvcService<TestController>().controllerValue, textDirection: TextDirection.ltr);
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('controllerValue'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "test controller dispose",
-    (tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc(
-            create: () => controller,
-            model: const TestModel("modelValue", child: SizedBox.shrink()),
-          ),
-        ),
-      );
-
-      expect(controller.isDisposed, false);
-
-      await tester.pumpWidget(const SizedBox());
-
-      expect(controller.isDisposed, true);
-    },
-  );
-
-  testWidgets(
-    "test mvcapp",
-    (tester) async {
-      ServiceCollection collection = ServiceCollection();
-      collection.add<TestService>((_) => TestService());
-      collection.addController((_) => TestController());
-      var provider = collection.build();
-      await tester.pumpWidget(
-        MvcApp(
-          serviceProvider: provider,
-          child: const Mvc<TestController, TestModel>(
-            model: TestModel("modelValue", child: SizedBox.shrink()),
-          ),
-        ),
-      );
-      expect(tester.takeException(), null);
     },
   );
 }

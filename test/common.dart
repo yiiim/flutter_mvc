@@ -34,15 +34,15 @@ class TestService with DependencyInjectionService, MvcDependableObject {
 }
 
 class TestModel {
-  const TestModel(this.modelValue, {required this.child});
+  const TestModel(this.modelValue, {required this.builder});
   final String modelValue;
-  final Widget child;
+  final Widget Function(BuildContext context) builder;
 }
 
 class TestView extends MvcView<TestController> {
   @override
   Widget buildView() {
-    return controller.model.child;
+    return controller.model.builder(context);
   }
 }
 

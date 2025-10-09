@@ -166,7 +166,7 @@ class MvcApp extends StatelessWidget {
   final ServiceProvider? serviceProvider;
 
   /// A builder function to register services in the root scope.
-  final void Function(ServiceCollection? collection)? serviceProviderBuilder;
+  final void Function(ServiceCollection collection)? serviceProviderBuilder;
   static bool _debugHasMvcApp(BuildContext? context) {
     assert(() {
       if (context?.getElementForInheritedWidgetOfExactType<_MvcApp>() == null) {
@@ -194,7 +194,7 @@ class _MvcApp extends InheritedWidget {
     required super.child,
   });
   final ServiceProvider? serviceProvider;
-  final void Function(ServiceCollection? collection)? serviceProviderBuilder;
+  final void Function(ServiceCollection collection)? serviceProviderBuilder;
   @override
   InheritedElement createElement() => _MvcAppElement(this);
 

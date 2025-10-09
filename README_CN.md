@@ -16,7 +16,7 @@
 
 ## 依赖注入
 
-`flutter_mvc` 基于强大的依赖注入库[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)，它允许你将依赖注入对象与 Widget 关联以获取强大的功能。详细内容请参考[依赖注入章节](./docs/cn/dependency_injection.md)。
+`flutter_mvc` 基于强大的依赖注入库[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)，它允许你将依赖注入对象与 Widget 关联以获取强大的功能。详细内容请参考[依赖注入章节](./doc/cn/dependency_injection.md)。
 
 > `flutter_mvc` 内部有一个**依赖注入范围树**，所以必须使用一个 MvcApp 作为根 Widget 以便提供根依赖注入容器。
 

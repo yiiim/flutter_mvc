@@ -16,7 +16,7 @@ English | [简体中文](README_CN.md)
 
 ## Dependency Injection
 
-`flutter_mvc` is based on the powerful dependency injection library [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection), which allows you to associate dependency-injected objects with widgets to gain powerful functionality. For detailed information, please refer to the [Dependency Injection section](./docs/en/dependency_injection.md).
+`flutter_mvc` is based on the powerful dependency injection library [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection), which allows you to associate dependency-injected objects with widgets to gain powerful functionality. For detailed information, please refer to the [Dependency Injection section](./doc/en/dependency_injection.md).
 
 > `flutter_mvc` has an internal **dependency injection scope tree**, so you must use an MvcApp as the root widget to provide the root dependency injection container.
 

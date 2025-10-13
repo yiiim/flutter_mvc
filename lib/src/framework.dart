@@ -538,26 +538,23 @@ class _MvcDependableElementListener extends MvcDependableListener {
   int get hashCode => element.hashCode;
 }
 
-class _MvcDependableStateListener<T, R> extends MvcDependableListener {
+abstract class MvcStateListener {
+  void onMvcStateChanged(Object state);
+}
+
+class _MvcDependableStateListener<T extends Object, R> extends MvcDependableListener {
   _MvcDependableStateListener({
-    required this.state,
+    required this.store,
     required this.listener,
     this.selector,
   });
-  final T state;
-  final void Function(R value) listener;
+  final MvcRawStore<T> store;
+  final MvcStateListener listener;
   final R Function(T state)? selector;
   @override
   void onDependencyChanged(Object? aspect) {
-    final value = selector?.call(state) ?? state as R;
-    listener(value);
+    listener.onMvcStateChanged(store.state);
   }
-
-  @override
-  bool operator ==(Object other) => other is _MvcDependableStateListener && other.state == state && other.listener == listener;
-
-  @override
-  int get hashCode => state.hashCode ^ listener.hashCode;
 }
 
 /// A mixin for objects that can be depended upon by widgets.
@@ -633,6 +630,14 @@ mixin MvcDependableObject {
         groupSet.remove(element);
       }
       _dependentGroups.removeWhere((key, value) => value.isEmpty);
+    }
+  }
+
+  @protected
+  void removeWhere(bool Function(MvcDependableListener dependent, Object? aspect) test) {
+    final toRemove = _dependents.entries.where((entry) => test(entry.key, entry.value)).map((entry) => entry.key).toList();
+    for (var element in toRemove) {
+      removeDependencies(element);
     }
   }
 
@@ -717,7 +722,7 @@ class _MvcStateStoreAspect<T, R> {
 /// A raw store that holds a state object [T] and manages its dependencies.
 ///
 /// This is the core of the state management system.
-class MvcRawStore<T> with MvcDependableObject {
+class MvcRawStore<T extends Object> with MvcDependableObject {
   /// The state object.
   final T state;
 
@@ -767,7 +772,7 @@ class MvcRawStore<T> with MvcDependableObject {
   /// This method must be called within a widget's `build` method.
   R useState<R>(BuildContext context, [R Function(T state)? use]) {
     assert(context.debugDoingBuild, 'can only be called during build');
-    final value = use?.call(state) ?? state as R;
+    final value = use != null ? use!(state) : state as R;
     context.dependOnMvcService(
       this,
       aspect: _MvcStateStoreAspect<T, R>(
@@ -782,8 +787,8 @@ class MvcRawStore<T> with MvcDependableObject {
   /// Updates the state and notifies listening widgets.
   ///
   /// The [set] function receives the current state and can modify it.
-  void setState(void Function(T state) set) {
-    set(state);
+  void setState([void Function(T state)? set]) {
+    set?.call(state);
     notifyDependentsInGroup(T);
   }
 }
@@ -793,11 +798,11 @@ class _MvcStoreRepository with DependencyInjectionService {
   final _MvcStoreRepository? _parent;
   final Map<Type, MvcRawStore> _stores = {};
   late final Widget debugWidget;
-  R? getStore<T, R extends MvcRawStore<T>>() {
+  R? getStore<T extends Object, R extends MvcRawStore<T>>() {
     return _stores[T] as R? ?? _parent?.getStore<T, R>();
   }
 
-  void addStore<T, R extends MvcRawStore<T>>(R store) {
+  void addStore<T extends Object, R extends MvcRawStore<T>>(R store) {
     assert(!_stores.containsKey(T), "state $T already exists");
     _stores[T] = store;
   }
@@ -879,12 +884,12 @@ class MvcStateAccessor with DependencyInjectionService {
   /// will only rebuild if the selected value changes.
   ///
   /// If the state does not exist, [initializer] will be called to create it.
-  R useState<T, R>(R Function(T use) fn, {T Function()? initializer, MvcRawStore<T> Function(T state)? storeInitializer}) {
+  R useState<T extends Object, R>(R Function(T use) fn, {T Function()? initializer, MvcRawStore<T> Function(T state)? storeInitializer}) {
     return useStateOfExactRawStoreType<T, R, MvcRawStore<T>>(fn, initializer: initializer, storeInitializer: storeInitializer);
   }
 
   /// A more specific version of [useState] that allows specifying the exact store type.
-  R useStateOfExactRawStoreType<T, R, E extends MvcRawStore<T>>(R Function(T use) fn, {T Function()? initializer, E Function(T state)? storeInitializer}) {
+  R useStateOfExactRawStoreType<T extends Object, R, E extends MvcRawStore<T>>(R Function(T use) fn, {T Function()? initializer, E Function(T state)? storeInitializer}) {
     E? store = _storeRepository.getStore<T, E>();
     if (store == null && initializer != null) {
       store = storeInitializer?.call(initializer()) ?? MvcRawStore<T>(initializer()) as E;
@@ -895,7 +900,7 @@ class MvcStateAccessor with DependencyInjectionService {
   }
 
   /// Subscribes to a specific store instance.
-  R useStateOfExactRawStore<T, R, E extends MvcRawStore<T>>(E store, R Function(T use) fn) {
+  R useStateOfExactRawStore<T extends Object, R, E extends MvcRawStore<T>>(E store, R Function(T use) fn) {
     assert(_context != null, "please call setUpBeforUse(context) before useState");
     assert(_context!.debugDoingBuild, 'can only be called during build');
     return store.useState<R>(_context!, fn);
@@ -916,9 +921,9 @@ mixin MvcWidgetService on DependencyInjectionService {
   }
 
   /// Triggers a rebuild of the associated widget.
-  void update(VoidCallback fn) {
+  void update([VoidCallback? fn]) {
     assert(_element != null, "context unable");
-    fn();
+    fn?.call();
     _element?.markNeedsBuild();
   }
 
@@ -955,12 +960,12 @@ class MvcWidgetScope with DependencyInjectionService {
 
   /// Creates and registers a new state of type [T].
   /// Throws an error if a state of the same type already exists in the current scope.
-  T createState<T>(T state) {
-    return createStateOfExactStoreType<T, MvcRawStore<T>>(state).state;
+  MvcRawStore<T> createState<T extends Object>(T state) {
+    return createStateOfExactStoreType<T, MvcRawStore<T>>(state);
   }
 
   /// A more specific version of [createState] that allows specifying the exact store type.
-  R createStateOfExactStoreType<T, R extends MvcRawStore<T>>(
+  R createStateOfExactStoreType<T extends Object, R extends MvcRawStore<T>>(
     T state, {
     R Function(T state)? initializer,
   }) {
@@ -971,29 +976,34 @@ class MvcWidgetScope with DependencyInjectionService {
 
   /// Updates a state of type [T].
   /// The [set] function receives the current state and can modify it.
-  void setState<T>(void Function(T state) set) {
+  void setState<T extends Object>([void Function(T state)? set]) {
     setStateOfExactStoreType<T, MvcRawStore<T>>(set);
   }
 
   /// A more specific version of [setState] that allows specifying the exact store type.
-  void setStateOfExactStoreType<T, E extends MvcRawStore<T>>(void Function(T state) set) {
+  void setStateOfExactStoreType<T extends Object, E extends MvcRawStore<T>>([void Function(T state)? set]) {
     final store = _repository.getStore<T, E>();
     assert(store != null, "can't find state $T in scope");
     setStateOfExactStore<T, E>(store!, set);
   }
 
   /// Updates a specific store instance.
-  void setStateOfExactStore<T, R extends MvcRawStore<T>>(R store, void Function(T state) set) {
+  void setStateOfExactStore<T extends Object, R extends MvcRawStore<T>>(R store, [void Function(T state)? set]) {
     store.setState(set);
   }
 
+  /// Gets the current state of type [T].
+  /// Returns `null` if the state does not exist.
+  T? getState<T extends Object>() => getStore<T>()?.state;
+
   /// Gets the raw store for a state of type [T].
-  MvcRawStore<T>? getStore<T>() {
+  /// Returns `null` if the store does not exist.
+  MvcRawStore<T>? getStore<T extends Object>() {
     return _repository.getStore<T, MvcRawStore<T>>();
   }
 
   /// A more specific version of [getStore] that allows specifying the exact store type.
-  R? getStoreOfExactType<T, R extends MvcRawStore<T>>() {
+  R? getStoreOfExactType<T extends Object, R extends MvcRawStore<T>>() {
     return _repository.getStore<T, R>();
   }
 
@@ -1001,13 +1011,13 @@ class MvcWidgetScope with DependencyInjectionService {
   ///
   /// The [listener] is called whenever the selected part of the state changes.
   /// The [use] function selects the part of the state to listen to.
-  R listenState<T, R>(void Function(R value) listener, [R Function(T state)? use]) {
+  R listenState<T extends Object, R>(MvcStateListener listener, [R Function(T state)? use]) {
     final store = getStore<T>();
     assert(store != null, "can't find state $T in scope");
     final value = use?.call(store!.state) ?? store!.state as R;
     store!.updateDependencies(
       _MvcDependableStateListener(
-        state: store.state,
+        store: store,
         listener: listener,
         selector: use,
       ),
@@ -1021,14 +1031,11 @@ class MvcWidgetScope with DependencyInjectionService {
   }
 
   /// Removes a state listener.
-  void removeStateListener<T>(void Function(Object? state) listener) {
+  void removeStateListener<T extends Object>(MvcStateListener listener) {
     final store = getStore<T>();
     assert(store != null, "can't find state $T in scope");
-    store?.removeDependencies(
-      _MvcDependableStateListener(
-        state: store.state,
-        listener: listener,
-      ),
+    store?.removeWhere(
+      (dependent, aspect) => dependent is _MvcDependableStateListener && dependent.store == store && dependent.listener == listener,
     );
   }
 }

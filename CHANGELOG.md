@@ -1,3 +1,7 @@
+## 5.0.0-dev.2
+
+* upgrade to 5.0.0
+
 ## 5.0.0-dev.1
 
 * upgrade to 5.0.0

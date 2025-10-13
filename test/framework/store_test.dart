@@ -43,14 +43,14 @@ class ComplexState {
   String toString() => 'ComplexState($data, $metadata)';
 }
 
-class CustomStore<T> extends MvcRawStore<T> {
+class CustomStore<T extends Object> extends MvcRawStore<T> {
   CustomStore(super.state);
 
   bool customNotificationCalled = false;
   int updateCount = 0;
 
   @override
-  void setState(void Function(T state) set) {
+  void setState([void Function(T state)? set]) {
     super.setState(set);
     customNotificationCalled = true;
     updateCount++;
@@ -407,12 +407,12 @@ void main() {
           child: MvcStateScope(
             builder: (context) {
               final scope = context.getMvcService<MvcWidgetScope>();
-              parentState = scope.createState<CounterState>(CounterState(300));
+              parentState = scope.createState<CounterState>(CounterState(300)).state;
 
               return MvcStateScope(
                 builder: (context) {
                   final childScope = context.getMvcService<MvcWidgetScope>();
-                  childState = childScope.createState<CounterState>(CounterState(400));
+                  childState = childScope.createState<CounterState>(CounterState(400)).state;
 
                   return Text('Nested: ${parentState?.count}, ${childState?.count}', textDirection: TextDirection.ltr);
                 },

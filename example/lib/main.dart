@@ -128,11 +128,6 @@ class TestMvcView extends MvcView<TestMvcController> {
               );
             },
           ),
-          MvcServiceScope<TestService>(
-            builder: (context, service) {
-              return Text(service.title);
-            },
-          ),
           MvcHeader(
             builder: (context) {
               return Container(

@@ -772,7 +772,7 @@ class MvcRawStore<T extends Object> with MvcDependableObject {
   /// This method must be called within a widget's `build` method.
   R useState<R>(BuildContext context, [R Function(T state)? use]) {
     assert(context.debugDoingBuild, 'can only be called during build');
-    final value = use != null ? use!(state) : state as R;
+    final value = use != null ? use(state) : state as R;
     context.dependOnMvcService(
       this,
       aspect: _MvcStateStoreAspect<T, R>(

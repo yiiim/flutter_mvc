@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_mvc/src/framework.dart';
 
 /// Extension methods for collections of [MvcWidgetUpdater].
@@ -49,7 +50,7 @@ abstract class MvcWidgetUpdater extends MvcWidgetSelector {
   void update([void Function()? fn]);
 
   /// The context of the widget that can be updated.
-  MvcContext get context;
+  MvcWidgetScope get widgetScope;
 }
 
 /// An interface for an object that can query for [MvcWidget]s using selectors.
@@ -76,4 +77,26 @@ abstract class MvcWidgetSelector {
   ///
   /// See [querySelectorAll] for more details on selectors.
   MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]);
+}
+
+class MvcSelectorBreaker extends MvcStatefulWidget {
+  const MvcSelectorBreaker({
+    super.key,
+    required this.child,
+  });
+
+  final Widget child;
+
+  @override
+  MvcWidgetState<MvcSelectorBreaker> createState() => _MvcSelectorBreakerState();
+}
+
+class _MvcSelectorBreakerState extends MvcWidgetState<MvcSelectorBreaker> {
+  @override
+  bool get isSelectorBreaker => true;
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
+  }
 }

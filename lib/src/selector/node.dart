@@ -94,7 +94,7 @@ class MvcElementNode extends MvcNode {
   }
 
   @override
-  MvcContext get context => element as MvcContext;
+  MvcWidgetScope get widgetScope => element.widgetScope;
 }
 
 class MvcImplicitRootNode extends MvcNode {
@@ -132,7 +132,7 @@ class MvcImplicitRootNode extends MvcNode {
   bool get isSelectorBreaker => false;
 
   @override
-  MvcContext get context => throw UnimplementedError();
+  MvcWidgetScope get widgetScope => throw UnimplementedError();
 }
 
 mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
@@ -182,6 +182,7 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
     _parentElement = null;
   }
 
+  @mustCallSuper
   @override
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     super.initServices(collection, parent);

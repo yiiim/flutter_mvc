@@ -1,6 +1,23 @@
-# 状态商店
+# 状态存储 (Store)
 
-`flutter_mvc` 提供了一个简单的状态管理解决方案，称为 Store。Store 是一个可以存储状态的对象，并且它还可以关联 `BuildContext`，以便在状态变化时通知相关的 Widget 进行重建。
+`flutter_mvc` 提供了一套内置的、轻量级的状态管理方案，其核心是 `MvcRawStore`（通常简称为 Store）。Store 允许你在应用中创建、管理和响应状态变化，并能精确地更新依赖于该状态的 Widget。
+
+## 核心概念
+
+1.  **状态对象 (State Object)**:
+    一个普通的 Dart 类，用于存放你的数据。例如 `class CounterState { int count; }`。
+
+2.  **`MvcRawStore<T>`**:
+    一个包装器，它持有你的状态对象 `T`，并混入了 `MvcDependableObject`，使其具备了依赖追踪和通知的能力。
+
+3.  **`context.stateAccessor.useState<T, R>()`**:
+    这是在 Widget 中**订阅**和**读取**状态的核心方法。它必须在 `build` 方法中调用。
+    -   `T`: 你想要订阅的状态对象的类型。
+    -   `R`: 你从状态对象 `T` 中实际**选择 (select)** 的数据部分。Widget 只会在这部分数据 `R` 发生变化时才重建。
+    -   `initializer`: 一个可选的回调函数，用于在状态首次被访问且不存在时创建它。
+
+4.  **`MvcStateScope`**:
+    状态管理的作用域。它决定了状态的可见性和生命周期。默认情况下，整个应用共享一个根状态作用域。你可以创建新的 `MvcStateScope` 来隔离状态。
 
 ## 快速开始
 
@@ -10,6 +27,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 
+// 1. 定义你的状态类
 class CounterState {
   CounterState(this.count);
   int count;
@@ -23,10 +41,15 @@ void main() {
           body: Center(
             child: Builder(
               builder: (context) {
+                // 2. 在 build 方法中使用 useState 订阅状态
+                //    - (CounterState state) => state.count 是一个 "selector" 函数
+                //    - Widget 只在 state.count 变化时重建
                 final count = context.stateAccessor.useState(
                   (CounterState state) => state.count,
+                  // 首次访问时，如果 CounterState 不存在，则创建它
                   initializer: () => CounterState(0),
                 );
+                
                 return Text(
                   '$count',
                   style: Theme.of(context).textTheme.headlineMedium,
@@ -38,12 +61,11 @@ void main() {
             builder: (context) {
               return FloatingActionButton(
                 onPressed: () {
-                  final MvcWidgetScope widgetScope = context.getMvcService<MvcWidgetScope>();
-                  widgetScope.setState<CounterState>(
-                    (state) {
-                      state.count++;
-                    },
-                  );
+                  // 3. 获取当前作用域并更新状态
+                  final scope = context.getMvcService<MvcStateScope>();
+                  scope.setState<CounterState>((state) {
+                    state.count++;
+                  });
                 },
                 tooltip: 'Increment',
                 child: const Icon(Icons.add),
@@ -57,75 +79,80 @@ void main() {
 }
 ```
 
-当按下浮动按钮时，会触发`CounterState`更新，并且关联的 Widget 会有条件的更新，比如上面的`Text` Widget 只获取了`count`字段，所以只有当`count`字段变化时它才会更新。
+### 工作流程解析
 
-## context.stateAccessor
-
-`context.stateAccessor` 是`flutter_mvc`推荐使用 Store 的唯一方式，你只能在构建期间使用它，`useState<T, R>`是一个泛型方法，接受一个 `R Function(T)`参数，通常，你无需指定全部的泛型类型，只需要在`R Function(T)`中指定`T`状态的类型即可，返回 R 类型编译器会自动推断出来。当状态更新时，只有当`R`类型的值变化时，才会触发 Widget 重建。所以如果`R`是一个对象，如果你只修改了对象的某个字段，而没有修改对象本身，那么 Widget 不会重建。
-
-`useState` 还有一个可选的 `initializer` 参数，用于初始化状态对象，当状态对象不存在时会调用它来创建一个新的状态对象，否则会抛出异常。
+1.  `Text` Widget 在 `build` 方法中调用 `context.stateAccessor.useState`，并提供了一个选择器 `(state) => state.count`。
+2.  框架发现 `CounterState` 不存在，于是调用 `initializer` 创建了一个 `CounterState(0)` 的实例，并将其存储在当前的 `MvcStateScope` 中。
+3.  `useState` 返回 `count` 的初始值 `0`，`Text` Widget 显示 "0"。同时，框架记录下此 Widget 依赖于 `CounterState` 的 `count` 属性。
+4.  当按钮被点击时，`scope.setState<CounterState>` 被调用。
+5.  框架找到 `CounterState` 的实例，执行 `(state) { state.count++; }`，`count` 变为 `1`。
+6.  `setState` 完成后，框架通知所有依赖于 `CounterState` 的订阅者。
+7.  框架检查到 `Text` Widget 的依赖项（`count` 属性）的值从 `0` 变成了 `1`。由于值发生了变化，框架触发该 `Text` Widget 的重建。
+8.  `Text` Widget 重新 `build`，再次调用 `useState`，这次获取到新的 `count` 值 `1`，UI 更新为 "1"。
 
 ## 创建和更新状态
 
-除了使用`context.stateAccessor.useState`中的`initializer`参数来创建状态对象，你还可以通过`MvcWidgetScope`的`createState<T>(T state)`方法来创建状态对象，`MvcWidgetScope`是一个在 `MvcApp` 中注册的作用域服务，你可以通过依赖注入获取它：
+### 创建状态
 
-```dart
-class MyService with DependencyInjectionService {
-  late final MvcWidgetScope widgetScope = getService<MvcWidgetScope>();
-  void incrementCounter() {
-    widgetScope.setState<CounterState>((state) {
-      state.count++;
+-   **懒加载创建 (推荐)**: 如上例所示，通过 `useState` 的 `initializer` 参数。这是最常见和推荐的方式，状态只在首次需要时被创建。
+-   **主动创建**: 你可以从依赖注入容器中获取 `MvcStateScope`，并调用 `createState` 方法。
+
+    ```dart
+    // 在 Controller 或 Service 中
+    final scope = getService<MvcStateScope>();
+    scope.createState(MyState("initial data"));
+    ```
+
+### 更新状态
+
+-   通过 `MvcStateScope.setState<T>()` 或 `MvcController.stateScope.setState<T>()` 来更新。
+
+    ```dart
+    // 获取 MvcStateScope
+    final scope = context.getMvcService<MvcStateScope>();
+    
+    // 更新状态
+    scope.setState<MyState>((state) {
+      state.value = "new value";
     });
-  }
+    ```
 
-  @override
-  FutureOr<dynamic> dependencyInjectionServiceInitialize() {
-    widgetScope.createState(CounterState(0));
-  }
-}
-```
+## 状态作用域 (`MvcStateScope`)
 
-`MyService` 是一个依赖注入对象，你可以在它的初始化方法中创建状态。使用`MyService`修改 计数器示例。
+默认情况下，所有状态都存在于根 `MvcStateScope` 中。这意味着在应用任何地方创建的 `CounterState` 都是同一个实例。
 
-```dart
-MvcDependencyProvider(
-  provider: (collection) {
-    collection.addSingleton<MyService>(
-      (_) => MyService(),
-      initializeWhenServiceProviderBuilt: true,
-    );
-  },
-  child: Scaffold(
-    body: Center(
-      child: Builder(
-        builder: (context) {
-          final count = context.stateAccessor.useState(
-            (CounterState state) => state.count
-          );
-          return Text(
-            '$count',
-            style: Theme.of(context).textTheme.headlineMedium,
-          );
-        },
-      ),
-    ),
-    floatingActionButton: Builder(
+如果你需要隔离状态（例如，在一个列表中，每个列表项都有自己独立的计数器状态），你可以创建一个新的 `MvcStateScope`。
+
+### 创建新作用域的方式
+
+1.  **`MvcStateScopeBuilder` Widget**:
+    这是一个专门用于创建新状态作用y域的 Widget。
+
+    ```dart
+    MvcStateScopeBuilder(
       builder: (context) {
-        return FloatingActionButton(
-          onPressed: () {
-            context.getMvcService<MyService>().incrementCounter();
-          },
-          tooltip: 'Increment',
-          child: const Icon(Icons.add),
-        );
+        // 在这个子树中创建或访问的状态将位于一个新的、独立的作用域中
+        return CounterWidget();
       },
-    ),
-  ),
-);
-```
+    )
+    ```
 
-`initializeWhenServiceProviderBuilt` 参数确保在服务提供者构建完成后立即初始化服务，否则服务会等到第一次获取它时才会初始化。
+2.  **`Mvc` Widget**:
+    默认情况下，每个 `Mvc` Widget 都会创建一个新的 `MvcStateScope`。你可以通过在 `MvcController` 中重写 `createStateScope` 属性来改变这个行为。
 
-需要注意的是，你不能创建重复类型的状态对象，否则会抛出异常，即使在不同的作用域中也不行。状态具有单独的作用域范围，你可以通过`MvcStateScope`Widget 来创建一个新的状态作用域，在新的作用域中可以创建重复类型的状态对象覆盖父作用域中的状态对象。覆盖后的状态对象只在当前作用域及其子作用域中可见。每一个 `Mvc` Widget 也会创建一个独立的状态作用域， 你可以通过重写`MvcController`的`createStateScope`属性来禁止此行为。
+    ```dart
+    class MyController extends MvcController {
+      // 返回 false 来禁用自动创建新作用域
+      @override
+      bool get createStateScope => false;
+    }
+    ```
 
-> 得益于状态独立作用域，即使在子Widget作用域中创建的状态，只要位于同一个状态作用域，父Widget作用域也可以访问它。
+### 作用域查找规则
+
+当获取一个状态时（如 `useState` 或 `getState`），框架会：
+1.  在当前 `MvcStateScope` 中查找。
+2.  如果找不到，则向上遍历 Widget 树，到父级的 `MvcStateScope` 中查找。
+3.  重复此过程，直到找到状态或到达根作用域。
+
+这种机制允许子 Widget 访问由父 Widget 提供的状态，同时也允许子 Widget 通过创建新作用域来“覆盖”或“隐藏”父级的同类型状态。

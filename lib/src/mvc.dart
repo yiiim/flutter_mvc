@@ -30,10 +30,8 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   /// Gets the data model associated with this controller.
   TModelType get model => _state!.widget.model;
 
-  /// Gets the [MvcContext] associated with this controller.
-  ///
-  /// The [MvcContext] provides access to the UI and features like selector queries.
-  MvcContext get context => _state!.context;
+  /// Gets the [BuildContext] for this controller.
+  BuildContext get context => _state!.context;
 
   /// Whether to break the propagation of selector queries.
   ///
@@ -48,9 +46,11 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   /// See `MvcStateScope` for more details.
   bool get createStateScope => true;
 
-  /// Gets the [MvcWidgetScope] associated with this controller.
+  /// Gets the [MvcStateScope] associated with this controller.
   ///
-  /// The [MvcWidgetScope] provides functionality for creating and updating states.
+  /// The [MvcStateScope] provides functionality for creating and updating states.
+  late final MvcStateScope stateScope = getService<MvcStateScope>();
+
   late final MvcWidgetScope widgetScope = getService<MvcWidgetScope>();
 
   /// Builds the view ([MvcView]) associated with this controller.
@@ -120,12 +120,12 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   void update([void Function()? fn]) => _state!._update(fn);
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<T>(
+  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<T>(
         selectors,
         ignoreSelectorBreaker,
       );
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<T>(
+  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<T>(
         selectors,
         ignoreSelectorBreaker,
       );

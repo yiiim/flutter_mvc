@@ -1,0 +1,3 @@
+dependency_overrides:
+  dart_dependency_injection:
+    path: ../dart_dependency_injection

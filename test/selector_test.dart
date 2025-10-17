@@ -1,229 +1,407 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
-import 'package:flutter_mvc/src/selector/node.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'common.dart';
 
 void main() {
-  testWidgets(
-    'test id and classes update',
-    (WidgetTester tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
-
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              builder: (context) => Column(
-                children: [
-                  MvcBuilder(
-                    id: "id",
-                    builder: (context) {
-                      return Text("id_${context.getMvcService<TestController>().controllerValue}", textDirection: TextDirection.ltr);
-                    },
-                  ),
-                  MvcBuilder(
-                    classes: const ["cls"],
-                    builder: (context) {
-                      return Text("cls_${context.getMvcService<TestController>().controllerValue}", textDirection: TextDirection.ltr);
-                    },
-                  ),
-                ],
+  group('Widget Selector (querySelector)', () {
+    group('Query by Type', () {
+      testWidgets('querySelectorAll finds widgets by type', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_TypeSelectorController, void>(
+                create: _TypeSelectorController.new,
               ),
             ),
           ),
-        ),
-      );
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('id_controllerValue'), findsOneWidget);
-      expect(find.text('cls_controllerValue'), findsOneWidget);
+        expect(find.text('Item A: 0'), findsOneWidget);
+        expect(find.text('Item B: 0'), findsOneWidget);
+        expect(find.text('Item C: 0'), findsOneWidget);
 
-      controller.controllerValue = "controllerValue2";
-      controller.querySelectorAll(".cls").update();
-      await tester.pump();
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_TypeSelectorController>();
 
-      expect(find.text('id_controllerValue'), findsOneWidget);
-      expect(find.text('cls_controllerValue2'), findsOneWidget);
+        controller.incrementAll();
+        await tester.pumpAndSettle();
 
-      controller.controllerValue = "controllerValue3";
-      controller.querySelectorAll("#id").update();
-      await tester.pump();
+        // All items were updated
+        expect(find.text('Item A: 1'), findsOneWidget);
+        expect(find.text('Item B: 1'), findsOneWidget);
+        expect(find.text('Item C: 1'), findsOneWidget);
+      });
 
-      expect(find.text('id_controllerValue3'), findsOneWidget);
-      expect(find.text('cls_controllerValue2'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'Test compound selectors',
-    (WidgetTester tester) async {
-      GlobalKey rootKey = GlobalKey();
-      GlobalKey child1Key = GlobalKey();
-      GlobalKey child2Key = GlobalKey();
-      GlobalKey child1DescendantsKey = GlobalKey();
-      GlobalKey child2DescendantsKey = GlobalKey();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MvcApp(
-              child: MvcBody(
-                key: rootKey,
-                id: 'root',
-                classes: const ['root'],
-                attributes: const {"data-attr": "root"},
-                builder: (context) {
-                  return Column(
-                    children: [
-                      MvcBuilder(
-                        id: 'child1',
-                        classes: const ['child1'],
-                        attributes: const {"data-attr": "child1"},
-                        key: child1Key,
-                        builder: (_) {
-                          return Column(
-                            children: [
-                              MvcBuilder(
-                                id: 'child1Descendants',
-                                classes: const ['child1Descendants'],
-                                attributes: const {"data-attr": "child1Descendants"},
-                                key: child1DescendantsKey,
-                                builder: (_) {
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      MvcBuilder(
-                        id: 'child2',
-                        classes: const ['child2'],
-                        attributes: const {"data-attr": "child2"},
-                        key: child2Key,
-                        builder: (_) {
-                          return Column(
-                            children: [
-                              TestMvcWidget(
-                                id: 'child2Descendants',
-                                classes: const ['child2Descendants'],
-                                attributes: const {"data-attr": "child2Descendants"},
-                                key: child2DescendantsKey,
-                                builder: (_) {
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
+      testWidgets('querySelector finds first widget by type', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_TypeSelectorController, void>(
+                create: _TypeSelectorController.new,
               ),
             ),
           ),
-        ),
-      );
-      MvcWidgetUpdater rootUpdater = (rootKey.currentContext as MvcNodeMixin).debugUpdater;
-      MvcWidgetUpdater child1Updater = (child1Key.currentContext as MvcNodeMixin).debugUpdater;
-      MvcWidgetUpdater child2Updater = (child2Key.currentContext as MvcNodeMixin).debugUpdater;
-      MvcWidgetUpdater child1DescendantsUpdater = (child1DescendantsKey.currentContext as MvcNodeMixin).debugUpdater;
-      MvcWidgetUpdater child2DescendantsUpdater = (child2DescendantsKey.currentContext as MvcNodeMixin).debugUpdater;
+        );
+        await tester.pumpAndSettle();
 
-      void expectWithOutSort(Iterable actual, Iterable expected) {
-        expect(actual.sorted((a, b) => a.hashCode.compareTo(b.hashCode)), expected.sorted((a, b) => a.hashCode.compareTo(b.hashCode)));
-      }
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_TypeSelectorController>();
 
-      expect(Mvc.querySelector('#root'), rootUpdater);
-      expect(Mvc.querySelector('#root[data-attr=root]'), rootUpdater);
-      expect(Mvc.querySelector('#root[data-attr]'), rootUpdater);
-      expect(Mvc.querySelector('#root[data-bttr]'), isNull);
-      expect(Mvc.querySelector('#root[data-attr=child1]'), isNull);
-      expect(Mvc.querySelector<MvcBody>(), rootUpdater);
-      expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('*') ?? <MvcWidgetUpdater>[], [child1Updater, child2Updater, child1DescendantsUpdater, child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget'), [child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelector('#root')?.querySelectorAll('TestMvcWidget') ?? <MvcWidgetUpdater>[], [child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root MvcBuilder'), [child1Updater, child2Updater, child1DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root .child1'), [child1Updater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root .child2Descendants'), [child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr=child2Descendants]'), [child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr]'), [child2DescendantsUpdater]);
-      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-attr=child1Descendants]'), []);
-      expectWithOutSort(Mvc.querySelectorAll('#root TestMvcWidget[data-bttr]'), []);
-      expect(Mvc.querySelectorAll('#child1'), [child1Updater]);
-      expect(Mvc.querySelectorAll('.child1'), [child1Updater]);
-    },
-  );
+        controller.incrementFirst();
+        await tester.pumpAndSettle();
 
-  testWidgets(
-    'test mvc break selector',
-    (WidgetTester tester) async {
-      var controller = TestController();
-      controller.controllerValue = "controllerValue";
+        // Only first item was updated
+        expect(find.text('Item A: 1'), findsOneWidget);
+        expect(find.text('Item B: 0'), findsOneWidget);
+        expect(find.text('Item C: 0'), findsOneWidget);
+      });
+    });
 
-      var childController = TestController();
-      childController.controllerValue = "childControllerValue";
-      await tester.pumpWidget(
-        MvcApp(
-          child: Mvc(
-            create: () => controller,
-            model: TestModel(
-              "modelValue",
-              builder: (context) => Column(
-                children: [
-                  MvcBuilder(
-                    classes: const ['cls'],
-                    builder: (context) {
-                      return Text(controller.controllerValue, textDirection: TextDirection.ltr);
-                    },
-                  ),
-                  Mvc<TestController, TestModel>(
-                    create: () => childController,
-                    model: TestModel(
-                      "childModelValue",
-                      builder: (context) => MvcBuilder(
-                        classes: const ['cls'],
-                        builder: (context) {
-                          return Text(childController.controllerValue, textDirection: TextDirection.ltr);
-                        },
-                      ),
-                    ),
-                  ),
-                ],
+    group('Query by ID', () {
+      testWidgets('querySelector finds widget by id', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_IdSelectorController, void>(
+                create: _IdSelectorController.new,
               ),
             ),
           ),
-        ),
-      );
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('controllerValue'), findsOneWidget);
-      expect(find.text('childControllerValue'), findsOneWidget);
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_IdSelectorController>();
 
-      controller.controllerValue = "controllerValue2";
-      childController.controllerValue = "childControllerValue2";
-      controller.querySelectorAll('.cls').update();
-      await tester.pump();
+        controller.incrementItemById('item-b');
+        await tester.pumpAndSettle();
 
-      expect(find.text('controllerValue'), findsNothing);
-      expect(find.text('controllerValue2'), findsOneWidget);
-      expect(find.text('childControllerValue'), findsOneWidget);
-      expect(find.text('childControllerValue2'), findsNothing);
+        // Only item-b was updated
+        expect(find.text('Item A: 0'), findsOneWidget);
+        expect(find.text('Item B: 1'), findsOneWidget);
+        expect(find.text('Item C: 0'), findsOneWidget);
+      });
+    });
 
-      controller.controllerValue = "controllerValue3";
-      childController.controllerValue = "childControllerValue3";
-      childController.querySelectorAll(".cls").update();
-      await tester.pump();
+    group('Query by Class', () {
+      testWidgets('querySelectorAll finds widgets by class', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_ClassSelectorController, void>(
+                create: _ClassSelectorController.new,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('controllerValue'), findsNothing);
-      expect(find.text('controllerValue2'), findsOneWidget);
-      expect(find.text('controllerValue3'), findsNothing);
-      expect(find.text('childControllerValue'), findsNothing);
-      expect(find.text('childControllerValue2'), findsNothing);
-      expect(find.text('childControllerValue3'), findsOneWidget);
-    },
-  );
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_ClassSelectorController>();
+
+        controller.incrementHighlighted();
+        await tester.pumpAndSettle();
+
+        // Only items with 'highlight' class were updated
+        expect(find.text('Item A: 1'), findsOneWidget);
+        expect(find.text('Item B: 0'), findsOneWidget);
+        expect(find.text('Item C: 1'), findsOneWidget);
+      });
+    });
+
+    group('Selector Breaker', () {
+      testWidgets('isSelectorBreaker stops query propagation', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_BreakerTestController, void>(
+                create: _BreakerTestController.new,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_BreakerTestController>();
+
+        // Try to update all items from root
+        controller.incrementAll();
+        await tester.pumpAndSettle();
+
+        // Only items outside breaker are updated
+        expect(find.text('Outside 1: 1'), findsOneWidget);
+        expect(find.text('Outside 2: 1'), findsOneWidget);
+        expect(find.text('Inside: 0'), findsOneWidget);
+      });
+
+      testWidgets('ignoreSelectorBreaker bypasses breaker', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_BreakerTestController, void>(
+                create: _BreakerTestController.new,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(Scaffold));
+        final controller = context.getMvcService<_BreakerTestController>();
+
+        controller.incrementAllIgnoringBreaker();
+        await tester.pumpAndSettle();
+
+        // All items updated, even inside breaker
+        expect(find.text('Outside 1: 1'), findsOneWidget);
+        expect(find.text('Outside 2: 1'), findsOneWidget);
+        expect(find.text('Inside: 1'), findsOneWidget);
+      });
+    });
+
+    group('MvcWidgetUpdater Methods', () {
+      testWidgets('update() method rebuilds widget', (tester) async {
+        await tester.pumpWidget(
+          const MvcApp(
+            child: MaterialApp(
+              home: Mvc<_UpdaterTestController, void>(
+                create: _UpdaterTestController.new,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Counter: 0'), findsOneWidget);
+
+        final context = tester.element(find.text('Counter: 0'));
+        final controller = context.getMvcService<_UpdaterTestController>();
+
+        controller.incrementViaSelector();
+        await tester.pumpAndSettle();
+
+        expect(find.text('Counter: 1'), findsOneWidget);
+      });
+    });
+  });
+}
+
+// Type Selector Test
+class _TypeSelectorController extends MvcController<void> {
+  final Map<String, int> _counters = {
+    'A': 0,
+    'B': 0,
+    'C': 0,
+  };
+
+  void incrementAll() {
+    for (final key in _counters.keys) {
+      _counters[key] = _counters[key]! + 1;
+    }
+    widgetScope.querySelectorAll<_CounterWidget>().update();
+  }
+
+  void incrementFirst() {
+    _counters['A'] = _counters['A']! + 1;
+    widgetScope.querySelector<_CounterWidget>()?.update();
+  }
+
+  int getCounter(String label) => _counters[label] ?? 0;
+
+  @override
+  MvcView view() => _TypeSelectorView();
+}
+
+class _TypeSelectorView extends MvcView<_TypeSelectorController> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      body: Column(
+        children: [
+          _CounterWidget(label: 'A', controller: controller),
+          _CounterWidget(label: 'B', controller: controller),
+          _CounterWidget(label: 'C', controller: controller),
+        ],
+      ),
+    );
+  }
+}
+
+// ID Selector Test
+class _IdSelectorController extends MvcController<void> {
+  final Map<String, int> _counters = {
+    'A': 0,
+    'B': 0,
+    'C': 0,
+  };
+
+  void incrementItemById(String id) {
+    final label = id.split('-').last.toUpperCase();
+    _counters[label] = _counters[label]! + 1;
+    widgetScope.querySelector('#$id')?.update();
+  }
+
+  int getCounter(String label) => _counters[label] ?? 0;
+
+  @override
+  MvcView view() => _IdSelectorView();
+}
+
+class _IdSelectorView extends MvcView<_IdSelectorController> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      body: Column(
+        children: [
+          _CounterWidget(id: 'item-a', label: 'A', controller: controller),
+          _CounterWidget(id: 'item-b', label: 'B', controller: controller),
+          _CounterWidget(id: 'item-c', label: 'C', controller: controller),
+        ],
+      ),
+    );
+  }
+}
+
+// Class Selector Test
+class _ClassSelectorController extends MvcController<void> {
+  final Map<String, int> _counters = {
+    'A': 0,
+    'B': 0,
+    'C': 0,
+  };
+
+  void incrementHighlighted() {
+    _counters['A'] = _counters['A']! + 1;
+    _counters['C'] = _counters['C']! + 1;
+    widgetScope.querySelectorAll('.highlight').update();
+  }
+
+  int getCounter(String label) => _counters[label] ?? 0;
+
+  @override
+  MvcView view() => _ClassSelectorView();
+}
+
+class _ClassSelectorView extends MvcView<_ClassSelectorController> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      body: Column(
+        children: [
+          _CounterWidget(label: 'A', classes: const ['highlight'], controller: controller),
+          _CounterWidget(label: 'B', controller: controller),
+          _CounterWidget(label: 'C', classes: const ['highlight'], controller: controller),
+        ],
+      ),
+    );
+  }
+}
+
+// Common Counter Widget - controller-managed state
+class _CounterWidget extends MvcStatelessWidget {
+  const _CounterWidget({super.id, super.classes, required this.label, required this.controller});
+
+  final String label;
+  final dynamic controller; // Could be any of the controllers
+
+  @override
+  Widget build(BuildContext context) {
+    final count = controller.getCounter(label);
+    return Text('Item $label: $count');
+  }
+}
+
+// Breaker Test
+class _BreakerTestController extends MvcController<void> {
+  final Map<String, int> _counters = {
+    'outside-1': 0,
+    'outside-2': 0,
+    'inside': 0,
+  };
+
+  void incrementAll() {
+    for (final key in _counters.keys) {
+      _counters[key] = _counters[key]! + 1;
+    }
+    widgetScope.querySelectorAll<_BreakerCounterWidget>().update();
+  }
+
+  void incrementAllIgnoringBreaker() {
+    for (final key in _counters.keys) {
+      _counters[key] = _counters[key]! + 1;
+    }
+    widgetScope.querySelectorAll<_BreakerCounterWidget>(null, true).update();
+  }
+
+  int getCounter(String id) => _counters[id] ?? 0;
+
+  @override
+  MvcView view() => _BreakerTestView();
+}
+
+class _BreakerTestView extends MvcView<_BreakerTestController> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      body: Column(
+        children: [
+          _BreakerCounterWidget(id: 'outside-1', label: 'Outside 1', controller: controller),
+          _BreakerCounterWidget(id: 'outside-2', label: 'Outside 2', controller: controller),
+          MvcSelectorBreaker(
+            child: _BreakerCounterWidget(id: 'inside', label: 'Inside', controller: controller),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BreakerCounterWidget extends MvcStatelessWidget {
+  const _BreakerCounterWidget({super.id, required this.label, required this.controller});
+
+  final String label;
+  final _BreakerTestController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = controller.getCounter(id!);
+    return Text('$label: $count');
+  }
+}
+
+// Updater Test
+class _UpdaterTestController extends MvcController<void> {
+  int _count = 0;
+
+  void incrementViaSelector() {
+    _count++;
+    widgetScope.querySelector<_CounterDisplay>()?.update();
+  }
+
+  int get count => _count;
+
+  @override
+  MvcView view() => _UpdaterTestView();
+}
+
+class _UpdaterTestView extends MvcView<_UpdaterTestController> {
+  @override
+  Widget buildView() {
+    return Scaffold(
+      body: _CounterDisplay(controller: controller),
+    );
+  }
+}
+
+class _CounterDisplay extends MvcStatelessWidget {
+  const _CounterDisplay({required this.controller});
+
+  final _UpdaterTestController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Counter: ${controller.count}');
+  }
 }

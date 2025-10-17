@@ -4,16 +4,72 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
-import 'dependency_group_example.dart';
+
+class CounterState {
+  CounterState(this.count);
+  int count;
+}
+
+class CounterState1 {
+  CounterState1(this.count);
+  int count;
+}
 
 void main() {
   runApp(
-    MvcApp(
-      child: MvcDependencyProvider(
-        provider: (collection) {
-          collection.addSingleton<TestService>((_) => TestService());
-        },
-        child: const MyApp(),
+    MaterialApp(
+      home: MvcApp(
+        child: Scaffold(
+          body: Center(
+            child: Column(
+              children: [
+                Builder(
+                  builder: (context) {
+                    final count = context.stateAccessor.useState(
+                      (CounterState state) => state.count,
+                      initializer: () => CounterState(0),
+                    );
+                    return Text(
+                      '$count',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    );
+                  },
+                ),
+                Builder(
+                  builder: (context) {
+                    final count = context.stateAccessor.useState(
+                      (CounterState1 state) => state.count,
+                      initializer: () => CounterState1(0),
+                    );
+                    final count1 = context.stateAccessor.useState(
+                      (CounterState state) => state.count,
+                      initializer: () => CounterState(0),
+                    );
+                    return Text(
+                      '$count',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          floatingActionButton: Builder(
+            builder: (context) {
+              return FloatingActionButton(
+                onPressed: () {
+                  // 3. 获取当前作用域并更新状态
+                  final scope = context.getMvcService<MvcStateScope>();
+                  scope.setState<CounterState>((state) {
+                    state.count++;
+                  });
+                },
+                tooltip: 'Increment',
+                child: const Icon(Icons.add),
+              );
+            },
+          ),
+        ),
       ),
     ),
   );
@@ -101,11 +157,11 @@ class TestMvcController extends MvcController<TestModel> {
   }
 }
 
-class CounterState {
-  CounterState(this.count, [this.count1 = 0]);
-  int count;
-  int count1;
-}
+// class CounterState {
+//   CounterState(this.count, [this.count1 = 0]);
+//   int count;
+//   int count1;
+// }
 
 /// The View
 class TestMvcView extends MvcView<TestMvcController> {
@@ -143,7 +199,7 @@ class TestMvcView extends MvcView<TestMvcController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  MvcBuilder(
+                  MvcWidgetScopeBuilder(
                     classes: const ["timerCount"],
                     builder: (context) {
                       return Text(
@@ -152,7 +208,7 @@ class TestMvcView extends MvcView<TestMvcController> {
                       );
                     },
                   ),
-                  MvcBuilder(
+                  MvcWidgetScopeBuilder(
                     id: "count",
                     builder: (context) {
                       return Text(
@@ -178,18 +234,10 @@ class TestMvcView extends MvcView<TestMvcController> {
                     child: const Text("update footer"),
                   ),
                   CupertinoButton(
-                    onPressed: () => controller.widgetScope.setState<CounterState>((state) {
+                    onPressed: () => controller.stateScope.setState<CounterState>((state) {
                       state.count++;
                     }),
                     child: const Text("update counter"),
-                  ),
-                  CupertinoButton(
-                    onPressed: () => Navigator.of(controller.context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const DependencyGroupExamplePage(),
-                      ),
-                    ),
-                    child: const Text("依赖分组示例"),
                   ),
                 ],
               ),

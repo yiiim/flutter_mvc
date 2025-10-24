@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mvc/src/framework.dart';
 
-/// Extension methods for collections of [MvcWidgetUpdater].
-extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
+/// Extension methods for collections of [MvcWidgetScope].
+extension MvcWidgetScopeCollection on Iterable<MvcWidgetScope> {
   /// Triggers an update for all widgets in the collection.
   ///
   /// If [fn] is provided, it is called once before the updates are triggered.
@@ -25,7 +25,7 @@ extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
   ///
   /// This performs a `querySelectorAll` on each widget in the current collection
   /// and returns a new collection containing all the results.
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) {
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors]) {
     return expand((e) => e.querySelectorAll<T>(selectors));
   }
 
@@ -33,24 +33,13 @@ extension MvcWidgetUpdaterCollection on Iterable<MvcWidgetUpdater> {
   ///
   /// It iterates through the widgets in the current collection and returns the first
   /// match found by `querySelector`.
-  MvcWidgetUpdater? querySelector<T>([String? selectors]) {
+  MvcWidgetScope? querySelector<T>([String? selectors]) {
     for (var updater in this) {
       var result = updater.querySelector<T>(selectors);
       if (result != null) return result;
     }
     return null;
   }
-}
-
-/// An interface for an object that can update an [MvcWidget].
-abstract class MvcWidgetUpdater extends MvcWidgetSelector {
-  /// Triggers a rebuild of the associated widget.
-  ///
-  /// If [fn] is provided, it is called before the widget is marked for rebuild.
-  void update([void Function()? fn]);
-
-  /// The context of the widget that can be updated.
-  MvcWidgetScope get widgetScope;
 }
 
 /// An interface for an object that can query for [MvcWidget]s using selectors.
@@ -71,12 +60,12 @@ abstract class MvcWidgetSelector {
   /// // Find all MyItemWidget widgets with the class 'highlight'
   /// context.querySelectorAll<MyItemWidget>('.highlight');
   /// ```
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]);
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]);
 
   /// Finds the first descendant [MvcWidget] that matches the given [selectors].
   ///
   /// See [querySelectorAll] for more details on selectors.
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]);
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]);
 }
 
 class MvcSelectorBreaker extends MvcStatefulWidget {

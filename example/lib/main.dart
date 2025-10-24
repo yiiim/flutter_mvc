@@ -59,7 +59,7 @@ void main() {
               return FloatingActionButton(
                 onPressed: () {
                   // 3. 获取当前作用域并更新状态
-                  final scope = context.getMvcService<MvcStateScope>();
+                  final scope = context.getService<MvcStateScope>();
                   scope.setState<CounterState>((state) {
                     state.count++;
                   });

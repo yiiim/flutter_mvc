@@ -17,7 +17,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(Scaffold));
-      final controller = context.getMvcService<_SingleTickerController>();
+      final controller = context.getService<_SingleTickerController>();
 
       // Controller can create animation controller
       final animController = AnimationController(
@@ -44,7 +44,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(Scaffold));
-      final controller = context.getMvcService<_MultiTickerController>();
+      final controller = context.getService<_MultiTickerController>();
 
       // Controller can create multiple animation controllers
       final animController1 = AnimationController(
@@ -80,7 +80,7 @@ void main() {
       expect(find.text('Animation: 0.0'), findsOneWidget);
 
       final context = tester.element(find.byType(Scaffold));
-      final controller = context.getMvcService<_AnimationController>();
+      final controller = context.getService<_AnimationController>();
 
       // Start animation
       controller.startAnimation();

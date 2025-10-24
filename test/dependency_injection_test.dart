@@ -17,7 +17,7 @@ void main() {
               home: Scaffold(
                 body: Builder(
                   builder: (context) {
-                    final service = context.getMvcService<_TestService>();
+                    final service = context.getService<_TestService>();
                     return Text(service.value);
                   },
                 ),
@@ -43,7 +43,7 @@ void main() {
                 child: Scaffold(
                   body: Builder(
                     builder: (context) {
-                      final service = context.getMvcService<_TestService>();
+                      final service = context.getService<_TestService>();
                       return Text(service.value);
                     },
                   ),
@@ -70,7 +70,7 @@ void main() {
                 children: [
                   Builder(
                     builder: (context) {
-                      final service = context.getMvcService<_TestService>();
+                      final service = context.getService<_TestService>();
                       return Text('Parent: ${service.value}');
                     },
                   ),
@@ -82,7 +82,7 @@ void main() {
                     },
                     child: Builder(
                       builder: (context) {
-                        final service = context.getMvcService<_TestService>();
+                        final service = context.getService<_TestService>();
                         return Text('Child: ${service.value}');
                       },
                     ),
@@ -116,13 +116,13 @@ void main() {
                 children: [
                   Builder(
                     builder: (context) {
-                      instance1 = context.getMvcService<_TestService>();
+                      instance1 = context.getService<_TestService>();
                       return Text('Instance 1: ${instance1!.value}');
                     },
                   ),
                   Builder(
                     builder: (context) {
-                      instance2 = context.getMvcService<_TestService>();
+                      instance2 = context.getService<_TestService>();
                       return Text('Instance 2: ${instance2!.value}');
                     },
                   ),
@@ -152,13 +152,13 @@ void main() {
                 children: [
                   Builder(
                     builder: (context) {
-                      instance1 = context.getMvcService<_TestService>();
+                      instance1 = context.getService<_TestService>();
                       return Text('Instance 1: ${instance1!.value}');
                     },
                   ),
                   Builder(
                     builder: (context) {
-                      instance2 = context.getMvcService<_TestService>();
+                      instance2 = context.getService<_TestService>();
                       return Text('Instance 2: ${instance2!.value}');
                     },
                   ),
@@ -228,7 +228,7 @@ void main() {
               home: Scaffold(
                 body: Builder(
                   builder: (context) {
-                    final service = context.getMvcService<_DependentService>();
+                    final service = context.getService<_DependentService>();
                     return Text(service.getMessage());
                   },
                 ),
@@ -281,7 +281,7 @@ class _ServiceRegisteringView extends MvcView<_ServiceRegisteringController> {
     return Scaffold(
       body: Builder(
         builder: (context) {
-          final service = context.getMvcService<_TestService>();
+          final service = context.getService<_TestService>();
           return Text('Controller Service: ${service.value}');
         },
       ),

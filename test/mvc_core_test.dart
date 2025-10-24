@@ -23,7 +23,7 @@ void main() {
 
         // Access controller through context
         final context = tester.element(find.text('Model: 42'));
-        final controller = context.getMvcService<_LifecycleController>();
+        final controller = context.getService<_LifecycleController>();
 
         // Verify lifecycle methods were called
         expect(controller.initCalled, isTrue);
@@ -44,7 +44,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.text('Model: 10'));
-        final controller = context.getMvcService<_LifecycleController>();
+        final controller = context.getService<_LifecycleController>();
 
         expect(controller.didUpdateModelCalled, isFalse);
 
@@ -81,7 +81,7 @@ void main() {
         expect(find.text('Count: 0'), findsOneWidget);
 
         final context = tester.element(find.text('Count: 0'));
-        final controller = context.getMvcService<_CounterController>();
+        final controller = context.getService<_CounterController>();
 
         controller.increment();
         await tester.pumpAndSettle();
@@ -149,7 +149,7 @@ void main() {
         expect(find.text('Count: 0'), findsOneWidget);
 
         final context = tester.element(find.text('Count: 0'));
-        final controller = context.getMvcService<_CounterController>();
+        final controller = context.getService<_CounterController>();
 
         controller.increment();
         await tester.pumpAndSettle();

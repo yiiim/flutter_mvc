@@ -120,12 +120,12 @@ abstract class MvcController<TModelType> with DependencyInjectionService impleme
   void update([void Function()? fn]) => _state!._update(fn);
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<T>(
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<T>(
         selectors,
         ignoreSelectorBreaker,
       );
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<T>(
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<T>(
         selectors,
         ignoreSelectorBreaker,
       );
@@ -171,8 +171,8 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
   ///
   /// Examples: `#my-id`, `.my-class`, `[data-value='123']`, `MyWidget`.
   ///
-  /// Returns an iterable list of [MvcWidgetUpdater]s that can be used to update the queried widgets.
-  static Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors]) {
+  /// Returns an iterable list of [MvcWidgetScope]s that can be used to update the queried widgets.
+  static Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors]) {
     return MvcImplicitRootNode.instance.querySelectorAll<T>(selectors);
   }
 
@@ -180,8 +180,8 @@ class Mvc<TControllerType extends MvcController<TModelType>, TModelType> extends
   ///
   /// [selectors] is a CSS-like selector string.
   ///
-  /// Returns an [MvcWidgetUpdater] instance, or `null` if not found.
-  static MvcWidgetUpdater? querySelector<T>([String? selectors]) {
+  /// Returns an [MvcWidgetScope] instance, or `null` if not found.
+  static MvcWidgetScope? querySelector<T>([String? selectors]) {
     return MvcImplicitRootNode.instance.querySelector<T>(selectors);
   }
 }

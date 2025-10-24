@@ -38,7 +38,7 @@ MvcDependencyProvider(
     child: Builder(
       builder: (context) {
         // 获取 SomeService，将得到子作用域中的 "Child" 实例
-        final someService = context.getMvcService<SomeService>();
+        final someService = context.getService<SomeService>();
         return Text(someService.name); // 屏幕上显示 "Child"
       },
     ),
@@ -125,7 +125,7 @@ MvcDependencyProvider(
   child: Builder(
     builder: (context) {
       // 必须从 DI 容器中获取 MyService 实例
-      context.getMvcService<MyService>().doSomething(); // OK
+      context.get<MyService>().doSomething(); // OK
       
       // 错误的做法
       // MyService().doSomething(); // 这会 Crash，因为它没有关联到任何作用域
@@ -145,13 +145,13 @@ MvcDependencyProvider(
 
 ```dart
 // 获取服务，如果找不到会抛出异常
-final SomeService service = context.getMvcService<SomeService>();
+final SomeService service = context.getService<SomeService>();
 
 // 尝试获取服务，如果找不到返回 null
-final SomeService? service = context.tryGetMvcService<SomeService>();
+final SomeService? service = context.tryGetService<SomeService>();
 ```
 
-`context.getMvcService<T>()` 会从当前 `BuildContext` 开始，沿着 Widget 树向上查找最近的 `MvcWidget`，并从其对应的作用域中获取服务。
+`context.getService<T>()` 会从当前 `BuildContext` 开始，沿着 Widget 树向上查找最近的 `MvcWidget`，并从其对应的作用域中获取服务。
 
 **作用域规则**：你只能获取在**当前作用域或其祖先作用域**中注册的服务。尝试获取在子作用域中注册的服务将会失败。
 
@@ -159,7 +159,7 @@ final SomeService? service = context.tryGetMvcService<SomeService>();
 Builder(
   builder: (context) {
     // 错误：此时 SomeService 尚未在可访问的作用域中注册
-    // context.getMvcService<SomeService>(); // 这会抛出异常
+    // context.getService<SomeService>(); // 这会抛出异常
 
     return MvcDependencyProvider(
       provider: (collection) {
@@ -168,7 +168,7 @@ Builder(
       child: Builder(
         builder: (context) {
           // 正确：现在 SomeService 在当前作用域中是可用的
-          final someService = context.getMvcService<SomeService>();
+          final someService = context.get<SomeService>();
           return Container();
         },
       ),

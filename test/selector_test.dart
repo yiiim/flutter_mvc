@@ -22,7 +22,7 @@ void main() {
         expect(find.text('Item C: 0'), findsOneWidget);
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_TypeSelectorController>();
+        final controller = context.getService<_TypeSelectorController>();
 
         controller.incrementAll();
         await tester.pumpAndSettle();
@@ -46,7 +46,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_TypeSelectorController>();
+        final controller = context.getService<_TypeSelectorController>();
 
         controller.incrementFirst();
         await tester.pumpAndSettle();
@@ -72,7 +72,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_IdSelectorController>();
+        final controller = context.getService<_IdSelectorController>();
 
         controller.incrementItemById('item-b');
         await tester.pumpAndSettle();
@@ -98,7 +98,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_ClassSelectorController>();
+        final controller = context.getService<_ClassSelectorController>();
 
         controller.incrementHighlighted();
         await tester.pumpAndSettle();
@@ -124,7 +124,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_BreakerTestController>();
+        final controller = context.getService<_BreakerTestController>();
 
         // Try to update all items from root
         controller.incrementAll();
@@ -149,7 +149,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(Scaffold));
-        final controller = context.getMvcService<_BreakerTestController>();
+        final controller = context.getService<_BreakerTestController>();
 
         controller.incrementAllIgnoringBreaker();
         await tester.pumpAndSettle();
@@ -161,7 +161,7 @@ void main() {
       });
     });
 
-    group('MvcWidgetUpdater Methods', () {
+    group('MvcWidgetScope Methods', () {
       testWidgets('update() method rebuilds widget', (tester) async {
         await tester.pumpWidget(
           const MvcApp(
@@ -177,7 +177,7 @@ void main() {
         expect(find.text('Counter: 0'), findsOneWidget);
 
         final context = tester.element(find.text('Counter: 0'));
-        final controller = context.getMvcService<_UpdaterTestController>();
+        final controller = context.getService<_UpdaterTestController>();
 
         controller.incrementViaSelector();
         await tester.pumpAndSettle();

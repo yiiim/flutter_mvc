@@ -288,6 +288,7 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    assert(widget is MvcWidget);
     assert(MvcApp._debugHasMvcApp(parent));
     ServiceProvider? parentServiceProvider = _InheritedServiceProvider.of(parent!);
     assert(
@@ -432,9 +433,9 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<E>(selectors, ignoreSelectorBreaker);
+  Iterable<MvcWidgetScope> querySelectorAll<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<E>(selectors, ignoreSelectorBreaker);
   @override
-  MvcWidgetUpdater? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<E>(selectors, ignoreSelectorBreaker);
+  MvcWidgetScope? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<E>(selectors, ignoreSelectorBreaker);
 }
 
 final class MvcWidgetScope with DependencyInjectionService {
@@ -465,14 +466,14 @@ final class MvcWidgetScope with DependencyInjectionService {
   /// // Find all MyItemWidget widgets with the class 'highlight'
   /// context.querySelectorAll<MyItemWidget>('.highlight');
   /// ```
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     return _element.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
   }
 
   /// Finds the first descendant [MvcWidget] that matches the given [selectors].
   ///
   /// See [querySelectorAll] for more details on selectors.
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     return _element.querySelector<T>(selectors, ignoreSelectorBreaker);
   }
 
@@ -727,7 +728,7 @@ class MvcRawStore<T extends Object> with MvcDependableObject {
   R useState<R>(BuildContext context, [R Function(T state)? use]) {
     assert(context.debugDoingBuild, 'can only be called during build');
     final value = use != null ? use(state) : state as R;
-    context.dependOnMvcService(
+    context.dependOnObject(
       this,
       aspect: _MvcStateStoreAspect<T, R>(
         selector: use,
@@ -998,7 +999,7 @@ class MvcStateAccessor with DependencyInjectionService {
 extension MvcServicesExtension on BuildContext {
   /// Gets a service of type [T] from the nearest [ServiceProvider].
   /// Throws an error if the service is not found.
-  T getMvcService<T extends Object>() {
+  T getService<T extends Object>() {
     assert(MvcApp._debugHasMvcApp(this));
     if (this is MvcBasicElement) {
       return (this as MvcBasicElement).getService<T>();
@@ -1008,7 +1009,7 @@ extension MvcServicesExtension on BuildContext {
 
   /// Tries to get a service of type [T] from the nearest [ServiceProvider].
   /// Returns `null` if the service is not found.
-  T? tryGetMvcService<T extends Object>() {
+  T? tryGetService<T extends Object>() {
     assert(MvcApp._debugHasMvcApp(this));
     if (this is MvcBasicElement) {
       return (this as MvcBasicElement).tryGetService<T>();
@@ -1016,39 +1017,11 @@ extension MvcServicesExtension on BuildContext {
     return _InheritedServiceProvider.of(this)?.tryGet<T>();
   }
 
-  /// Subscribes the widget to a [MvcDependableObject] of type [T].
+  /// Declares a dependency on a [MvcDependableObject].
   ///
-  /// When the service changes, the widget will rebuild.
-  /// The [aspect] can be used to listen to specific parts of the service.
-  T dependOnMvcServiceOfExactType<T extends MvcDependableObject>({Object? aspect}) {
-    assert(MvcApp._debugHasMvcApp(this));
-    var service = getMvcService<T>();
-    dependOnMvcService(
-      service,
-      aspect: aspect,
-    );
-    return service;
-  }
-
-  /// Tries to subscribe the widget to a [MvcDependableObject] of type [T].
-  /// Returns `null` if the service is not found.
-  T? tryDependOnMvcServiceOfExactType<T extends MvcDependableObject>({Object? aspect}) {
-    assert(MvcApp._debugHasMvcApp(this));
-    var service = tryGetMvcService<T>();
-    if (service != null) {
-      dependOnMvcService(
-        service,
-        aspect: aspect,
-      );
-    }
-    return service;
-  }
-
-  /// Establishes a dependency on a [MvcDependableObject].
-  ///
-  /// This is a lower-level method for creating a dependency. Prefer using
-  /// [dependOnMvcServiceOfExactType] when possible.
-  void dependOnMvcService(MvcDependableObject service, {Object? aspect}) {
+  /// When the object changes, the widget will rebuild.
+  /// The optional [aspect] can provide more specific information about the dependency.
+  void dependOnObject(MvcDependableObject service, {Object? aspect}) {
     assert(MvcApp._debugHasMvcApp(this));
     dependOnInheritedWidgetOfExactType<_MvcApp>(
       aspect: _MvcDependentObjectAspect(
@@ -1073,7 +1046,7 @@ extension MvcServicesExtension on BuildContext {
     MvcStateAccessor? accessor = _stateAccessor[this];
     final currentFrame = PlatformDispatcher.instance.frameData.frameNumber;
     if (accessor == null || accessor._frameNumber != currentFrame) {
-      accessor = getMvcService<MvcStateAccessor>();
+      accessor = getService<MvcStateAccessor>();
       _stateAccessor[this] = accessor;
       accessor._frameNumber = currentFrame;
       accessor.setUpBeforeUse(this);

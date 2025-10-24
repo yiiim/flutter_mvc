@@ -69,7 +69,7 @@ void main() {
                       builder: (context) {
                         return ElevatedButton(
                           onPressed: () {
-                            final scope = context.getMvcService<MvcStateScope>();
+                            final scope = context.getService<MvcStateScope>();
                             scope.setState<_CounterState>((state) {
                               state.count++;
                             });
@@ -233,7 +233,7 @@ class _StateUpdateWidget extends StatelessWidget {
             builder: (context) {
               return ElevatedButton(
                 onPressed: () {
-                  final scope = context.getMvcService<MvcStateScope>();
+                  final scope = context.getService<MvcStateScope>();
                   scope.setState<_CounterState>((state) {
                     state.count++;
                   });
@@ -277,7 +277,7 @@ class _SelectorTestWidget extends StatelessWidget {
             builder: (context) {
               return ElevatedButton(
                 onPressed: () {
-                  final scope = context.getMvcService<MvcStateScope>();
+                  final scope = context.getService<MvcStateScope>();
                   scope.setState<_ComplexState>((state) {
                     state.count++;
                   });
@@ -290,7 +290,7 @@ class _SelectorTestWidget extends StatelessWidget {
             builder: (context) {
               return ElevatedButton(
                 onPressed: () {
-                  final scope = context.getMvcService<MvcStateScope>();
+                  final scope = context.getService<MvcStateScope>();
                   scope.setState<_ComplexState>((state) {
                     state.name = 'Updated';
                   });
@@ -326,7 +326,7 @@ class _ScopeIsolationWidget extends StatelessWidget {
             builder: (context) {
               return ElevatedButton(
                 onPressed: () {
-                  final scope = context.getMvcService<MvcStateScope>();
+                  final scope = context.getService<MvcStateScope>();
                   scope.setState<_CounterState>((state) {
                     state.count++;
                   });
@@ -366,7 +366,7 @@ class _ScopedSection extends StatelessWidget {
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    final scope = context.getMvcService<MvcStateScope>();
+                    final scope = context.getService<MvcStateScope>();
                     scope.setState<_CounterState>((state) {
                       state.count++;
                     });

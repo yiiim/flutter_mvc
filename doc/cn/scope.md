@@ -26,8 +26,7 @@
 ### 如何获取
 
 -   在 `MvcController` 或 `MvcWidgetState` 中，可以直接通过 `widgetScope` 属性访问。
--   在 `MvcWidgetScopeBuilder` 的 `builder` 函数中，会通过参数传入。
--   在 `build` 方法中，可以通过 `(context as MvcBasicElement).widgetScope` 获取。
+-   通过依赖注入获取类型为`MvcWidgetScope`的实例。通过依赖注入获取时需要注意作用域规则，确保你获取的是正确作用域中的实例。
 
 ## MvcStateScope
 
@@ -39,7 +38,7 @@
     `MvcStateScope` 允你在控件树的不同部分创建独立的状态容器。当你在一个新的 `MvcStateScope` 中创建一个状态时，它不会与父级作用域中相同类型的状态冲突。这对于构建可复用的、自包含的组件至关重要。
 
 2.  **作用域嵌套和查找**:
-    作用域可以嵌套。当你尝试获取一个状态时（例如通过 `context.state.getState<MyState>()`），框架会首先在当前 `MvcStateScope` 中查找。如果找不到，它会沿着控件树向上，到父级 `MvcStateScope` 中继续查找，直到找到为止或到达根部。
+    作用域可以嵌套。当你尝试获取一个状态时（例如通过 `context.stateAccessor.useState`），框架会首先在当前 `MvcStateScope` 中查找。如果找不到，它会沿着控件树向上，到父级 `MvcStateScope` 中继续查找，直到找到为止或到达根部。
 
 ### 如何创建新的 `MvcStateScope`
 
@@ -79,7 +78,7 @@
 ### 主要功能
 
 -   **创建状态 (`createState`)**: 在当前作用域内创建一个新的状态。
--   **获取状态 (`getState`, `getStore`)**: 获取当前或父级作用y域中的状态实例或其存储对象 (`MvcRawStore`)。
+-   **获取状态 (`getState`, `getStore`)**: 获取当前或父级作用域中的状态实例或其存储对象 (`MvcRawStore`)。
 -   **更新状态 (`setState`)**: 更新作用域内的状态，并通知所有监听该状态的控件进行重建。
 -   **监听状态 (`listenState`)**: 允许非控件对象监听状态变化。
 

@@ -144,3 +144,5 @@ class IndexPageView extends MvcView<IndexController> {
   }
 }
 ```
+
+Next: [`State Management (Store)`](store.md)

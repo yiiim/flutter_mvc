@@ -144,3 +144,5 @@ class IndexPageView extends MvcView<IndexController> {
   }
 }
 ```
+
+下一篇：[`Store 状态管理`](store.md)

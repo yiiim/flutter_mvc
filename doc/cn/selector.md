@@ -98,3 +98,5 @@ final items = querySelectorAll('#container > .item');
 - **可查找对象**: 只有继承自 `MvcWidget` 的 Widget 才能被选择器系统识别和查找。
 - **查询方向**: 选择器只能向下（后代）或向内查找，**不支持查找兄弟或祖先节点**。
 - **规范**: 确保你的选择器字符串符合 CSS 选择器规范。
+
+下一篇：[`Widget 依赖于对象`](depend_on_service.md)

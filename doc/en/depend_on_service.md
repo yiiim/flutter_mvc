@@ -71,7 +71,7 @@ void main() {
                 return FloatingActionButton(
                   onPressed: () {
                     // Get the service instance and call the method
-                    context.get<CounterService>().increment();
+                    context.getService<CounterService>().increment();
                   },
                   tooltip: 'Increment',
                   child: const Icon(Icons.add),

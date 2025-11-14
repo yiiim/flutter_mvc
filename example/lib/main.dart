@@ -11,14 +11,65 @@ void main() {
   runApp(const MyApp());
 }
 
+class CounterService with MvcDependableObject {
+  int _count = 0;
+  int get count => _count;
+
+  void increment() {
+    _count++;
+    // 3. 当状态改变时，通知所有依赖者
+    notifyAllDependents();
+  }
+}
+
+// UI Widget
+class CounterText extends StatelessWidget {
+  const CounterText({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // 2. Get the service instance and establish a dependency
+    final counterService = context.getService<CounterService>();
+    context.dependOnObject(counterService);
+
+    return Text(
+      '${counterService.count}',
+      style: Theme.of(context).textTheme.headlineMedium,
+    );
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MvcApp(
-      child: Mvc(
-        create: () => CounterController(),
+    return MaterialApp(
+      home: MvcApp(
+        child: MvcDependencyProvider(
+          provider: (collection) {
+            // Note: To ensure multiple widgets share the same instance,
+            // it must be injected as a singleton.
+            collection.addSingleton<CounterService>((_) => CounterService());
+          },
+          child: Scaffold(
+            body: const Center(
+              child: CounterText(), // Use the independent widget
+            ),
+            floatingActionButton: Builder(
+              builder: (context) {
+                return FloatingActionButton(
+                  onPressed: () {
+                    // Get the service instance and call the method
+                    context.getService<CounterService>().increment();
+                  },
+                  tooltip: 'Increment',
+                  child: const Icon(Icons.add),
+                );
+              },
+            ),
+          ),
+        ),
       ),
     );
   }

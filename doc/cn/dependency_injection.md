@@ -125,7 +125,7 @@ MvcDependencyProvider(
   child: Builder(
     builder: (context) {
       // 必须从 DI 容器中获取 MyService 实例
-      context.get<MyService>().doSomething(); // OK
+      context.getService<MyService>().doSomething(); // OK
       
       // 错误的做法
       // MyService().doSomething(); // 这会 Crash，因为它没有关联到任何作用域
@@ -168,7 +168,7 @@ Builder(
       child: Builder(
         builder: (context) {
           // 正确：现在 SomeService 在当前作用域中是可用的
-          final someService = context.get<SomeService>();
+          final someService = context.getService<SomeService>();
           return Container();
         },
       ),
@@ -176,3 +176,5 @@ Builder(
   },
 );
 ```
+
+下一篇：[`Mvc基础`](mvc.md)

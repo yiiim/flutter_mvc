@@ -98,3 +98,5 @@ final items = querySelectorAll('#container > .item');
 - **Queryable Objects**: Only widgets that inherit from `MvcWidget` can be recognized and found by the selector system.
 - **Query Direction**: Selectors can only search downwards (descendants) or inwards. **They do not support finding siblings or ancestors.**
 - **Specification**: Ensure your selector string conforms to the CSS selector specification.
+
+Next: [`Widget Depends on Object`](depend_on_service.md)

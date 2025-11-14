@@ -70,7 +70,7 @@ void main() {
                 return FloatingActionButton(
                   onPressed: () {
                     // 获取服务实例并调用方法
-                    context.get<CounterService>().increment();
+                    context.getService<CounterService>().increment();
                   },
                   tooltip: 'Increment',
                   child: const Icon(Icons.add),

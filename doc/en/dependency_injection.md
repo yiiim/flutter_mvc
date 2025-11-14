@@ -125,7 +125,7 @@ MvcDependencyProvider(
   child: Builder(
     builder: (context) {
       // The MyService instance must be retrieved from the DI container
-      context.get<MyService>().doSomething(); // OK
+      context.getService<MyService>().doSomething(); // OK
       
       // Incorrect way
       // MyService().doSomething(); // This will crash because it's not associated with any scope
@@ -168,7 +168,7 @@ Builder(
       child: Builder(
         builder: (context) {
           // Correct: SomeService is now available in the current scope
-          final someService = context.get<SomeService>();
+          final someService = context.getService<SomeService>();
           return Container();
         },
       ),
@@ -176,3 +176,5 @@ Builder(
   },
 );
 ```
+
+Next: [`MVC Basics`](mvc.md)

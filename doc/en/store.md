@@ -1,4 +1,3 @@
-````markdown
 # State Management (Store)
 
 `flutter_mvc` provides a lightweight, reactive state management mechanism, with `MvcStateScope` and `context.stateAccessor` at its core. This system allows you to create, access, and listen to state anywhere in the widget tree, and automatically rebuild relevant widgets when the state changes.
@@ -320,6 +319,7 @@ class CounterView extends MvcView<CounterController> {
   }
 }
 ```
+
 `MvcStateScope` can manage all states stored in its scope and parent scopes. It is shared, and all child widgets can access it. It can also be obtained through dependency injection. Using it allows for sharing state across multiple widgets and updating state across components and services. This is both dangerous and powerful.
 
 ## Deleting State
@@ -329,4 +329,5 @@ When the widget containing the `MvcStateScope` is unmounted, all state instances
 ```dart
 stateScope.deleteState<CounterState>();
 ```
-````
+
+

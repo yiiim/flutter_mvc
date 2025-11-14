@@ -1,4 +1,3 @@
-````markdown
 # Scopes
 
 In `flutter_mvc`, there are two important scope concepts: `MvcWidgetScope` and `MvcStateScope`.
@@ -97,4 +96,4 @@ There are two main ways to create a new state scope:
 - **Delete State (`deleteState`)**: Deletes a specific type of state instance from the current scope.
 
 Through these two scopes, `flutter_mvc` achieves flexible decoupling and precise control between the UI layer (via `MvcWidgetScope`) and the data layer (via `MvcStateScope`).
-````
+

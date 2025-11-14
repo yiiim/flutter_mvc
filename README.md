@@ -1,24 +1,24 @@
 # flutter_mvc
 
-`flutter_mvc` is a Flutter state management framework focused on separating UI from business logic. It uses the MVC (Model-View-Controller) design pattern and incorporates modern programming concepts such as dependency injection and service location, aiming to provide a clear, maintainable, and scalable application architecture.
+`flutter_mvc` is a Flutter state management framework focused on separating UI from business logic. It uses the MVC (Model-View-Controller) design pattern, combined with modern programming concepts like dependency injection and service location, to provide a clear, maintainable, and scalable application architecture.
 
-English | [简体中文](README_CN.md)
+[English](README.md) | [简体中文](README_CN.md)
 
 ## Features
 
-- **Separation of Concerns**: Strictly separates `Model` (data), `View` (presentation), and `Controller` (logic) to make code responsibilities clearer.
-- **Dependency Injection**: Built-in powerful dependency injection system that easily manages object lifecycles and dependency relationships.
-- **Widget Depends on Objects**: Through dependency injection, you can make individual widgets depend on specific types of objects, triggering widget rebuilds through object updates.
-- **Store State Management**: The framework provides a lightweight state management approach, supporting state management in `Controller` and any dependency-injected objects, with automatic UI updates for dependent states.
-- **Lifecycle Management**: Provides clear lifecycle methods for `Controller` and even any dependency-injected objects.
-- **Context Access**: You can easily obtain `BuildContext` for any dependency-injected object.
-- **Precise Widget Targeting**: Similar to `querySelector` in Web, precisely target/update widgets through ID, Class, or even widget types.
+- **Separation of Concerns**: Strictly divides `Model` (data), `View` (UI), and `Controller` (logic) to make code responsibilities clearer.
+- **Dependency Injection**: A powerful built-in dependency injection system that easily manages object lifecycles and dependencies, while allowing you to streamline Controllers by distributing logic into service objects.
+- **Widget-to-Object Dependency**: Through dependency injection, you can make a single Widget dependent on a specific type of object, triggering widget rebuilds when the object is updated.
+- **Store State Management**: The framework provides a lightweight state management solution, supporting state management in `Controller`s and any dependency-injected object, and automatically updating the UI that depends on that state.
+- **Lifecycle Management**: Provides clear lifecycle methods for `Controller`s and any dependency-injected objects.
+- **Context Access**: You can easily obtain the `BuildContext` for any dependency-injected object.
+- **Precise Widget Targeting**: Similar to `querySelector` in web development, you can precisely target and update widgets by ID, Class, or even Widget type.
 
 ## Dependency Injection
 
-`flutter_mvc` is based on the powerful dependency injection library [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection), which allows you to associate dependency-injected objects with widgets to gain powerful functionality. For detailed information, please refer to the [Dependency Injection section](./doc/en/dependency_injection.md).
+`flutter_mvc` is built on the powerful dependency injection library [dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection), which allows you to associate dependency-injected objects with widgets to unlock powerful features. For more details, please refer to the [Dependency Injection chapter](./doc/en/dependency_injection.md).
 
-> `flutter_mvc` has an internal **dependency injection scope tree**, so you must use an MvcApp as the root widget to provide the root dependency injection container.
+> `flutter_mvc` has an internal **dependency injection scope tree**, so you must use an `MvcApp` as the root widget to provide the root dependency injection container.
 
 ## Counter Example
 
@@ -44,11 +44,11 @@ class CounterState {
 class CounterController extends MvcController<void> {
   @override
   void init() {
-    widgetScope.createState(CounterState(0));
+    stateScope.createState(CounterState(0));
   }
 
   void increment() {
-    widgetScope.setState(
+    stateScope.setState(
       (CounterState state) {
         state.count++;
       },
@@ -68,7 +68,7 @@ class CounterView extends MvcView<CounterController> {
       builder: (context) {
         return MaterialApp(
           home: Scaffold(
-            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text('Flutter Demo Home Page')),
+            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: const Text('Flutter Demo Home Page')),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -104,5 +104,5 @@ class CounterView extends MvcView<CounterController> {
 - [Dependency Injection](./doc/en/dependency_injection.md)
 - [MVC Basics](./doc/en/mvc.md)
 - [Store State Management](./doc/en/store.md)
-- [CSS Selector](./doc/en/selector.md)
-- [Widget Depends on Service](./doc/en/depend_on_service.md)
+- [CSS Selectors](./doc/en/selector.md)
+- [Widget-to-Object Dependency](./doc/en/depend_on_service.md)

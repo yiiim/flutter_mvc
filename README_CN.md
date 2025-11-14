@@ -7,10 +7,10 @@
 ## 特性
 
 - **关注点分离 (Separation of Concerns)**: 严格划分 `Model` (数据)、`View` (视图) 和 `Controller` (逻辑)，使代码职责更清晰。
-- **依赖注入**: 内置强大的依赖注入系统，轻松管理对象的生命周期和依赖关系。
+- **依赖注入**: 内置强大的依赖注入系统，轻松管理对象的生命周期和依赖关系，同时可以精简 Controller 将逻辑分散到服务对象中。
 - **Widget 依赖于对象**: 通过依赖注入，您可以将单个 Widget 依赖于特定类型的对象，通过对象更新来触发 Widget 的重建。
 - **Store 状态管理**: 框架提供了一种轻量级的状态管理方式，支持在 `Controller` 和任意依赖注入对象中管理状态，并自动更新依赖该状态的 UI。
-- **生命周期管理**: 为 `Controller` 甚至是依赖注入的任意对象提供了清晰的生命周期方法。
+- **生命周期管理**: 为 `Controller` 以及依赖注入的任意对象提供了清晰的生命周期方法。
 - **context 访问**: 您可以轻松的为任意依赖注入对象获取 `BuildContext`。
 - **Widget 精确定位**: 类似 Web 中的 `querySelector`，通过 ID 、Class 甚至是 Widget 类型来精确定位/更新 Widget。
 
@@ -44,11 +44,11 @@ class CounterState {
 class CounterController extends MvcController<void> {
   @override
   void init() {
-    widgetScope.createState(CounterState(0));
+    stateScope.createState(CounterState(0));
   }
 
   void increment() {
-    widgetScope.setState(
+    stateScope.setState(
       (CounterState state) {
         state.count++;
       },
@@ -68,7 +68,7 @@ class CounterView extends MvcView<CounterController> {
       builder: (context) {
         return MaterialApp(
           home: Scaffold(
-            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text('Flutter Demo Home Page')),
+            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: const Text('Flutter Demo Home Page')),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

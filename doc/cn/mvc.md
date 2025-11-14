@@ -52,10 +52,15 @@ class IndexController extends MvcController {
   // --- 生命周期方法 ---
 
   @override
-  void onInit() {
-    super.onInit();
+  void init() {
+    super.init();
     // 在 Controller 初始化时调用，适合执行一次性设置
-    print("Controller initialized");
+  }
+
+  @override
+  void didUpdateModel(TModelType oldModel) {
+    super.didUpdateModel(oldModel);
+    // 在模型更新时调用，适合处理模型变化
   }
 }
 ```

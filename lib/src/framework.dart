@@ -919,50 +919,131 @@ class _MvcStoreRepository with DependencyInjectionService implements MvcStateSco
   }
 }
 
+/// Manages a scoped container for state objects.
+///
+/// State scopes can be nested. When a state is requested, the framework searches
+/// upwards from the current scope through its parents. States are automatically
+/// disposed when their scope is destroyed.
+///
+/// New scopes can be created using [MvcStateScopeBuilder], or by widgets like
+/// [Mvc] that create them by default.
+///
+/// Access the nearest scope via `context.stateScope`.
 abstract class MvcStateScope {
-  /// Creates and registers a new state of type [T].
-  /// Throws an error if a state of the same type already exists in the current scope.
+  /// Creates a new state of type [T] within the current scope.
+  ///
+  /// Throws an error if a state of the same type [T] already exists in this scope.
+  ///
+  /// Returns an [MvcSetState] function to update the state.
+  ///
+  /// See also:
+  ///
+  ///  * [createStateIfAbsent], which is safer as it won't throw if the state exists.
   MvcSetState<T> createState<T extends Object>(T state);
 
-  /// If a state of type [T] already exists in the current or parent scope,
-  /// returns the [MvcSetState] function for that existing state.
+  /// Ensures a state of type [T] exists and returns its update function.
   ///
-  /// If no state exists, creates a new state using [initializer] and returns
-  /// its [MvcSetState] function.
+  /// If the state already exists in the current or a parent scope, it returns
+  /// the update function for the existing state.
+  ///
+  /// If the state does not exist, it calls [initializer] to create a new one
+  /// in the **current** scope and returns its update function.
+  ///
+  /// ```dart
+  /// final setState = context.stateScope.createStateIfAbsent<MyState>(() => MyState());
+  /// setState((s) => s.count++);
+  /// ```
   MvcSetState<T> createStateIfAbsent<T extends Object>(T Function() initializer);
 
-  /// Updates a state of type [T].
-  /// The [set] function receives the current state and can modify it.
+  /// Updates a state of type [T] found in the current or parent scopes.
+  ///
+  /// The [set] function receives the state and can modify it. Widgets listening
+  /// to the state will be rebuilt.
+  ///
+  /// Throws an error if no state of type [T] is found.
+  ///
+  /// ```dart
+  /// context.stateScope.setState<MyState>((s) => s.count++);
+  /// ```
   void setState<T extends Object>([void Function(T state)? set]);
 
-  /// Gets the current state of type [T].
-  /// Returns `null` if the state does not exist.
+  /// Gets the state object of type [T] from the current or parent scopes.
+  ///
+  /// Returns `null` if the state does not exist. This method does not subscribe
+  /// the widget to changes. For reactive updates, use [MvcStateAccessor.useState].
   T? getState<T extends Object>();
 
-  /// Gets the raw store for a state of type [T].
-  /// Returns `null` if the store does not exist.
+  /// Gets the underlying [MvcRawStore] for a state of type [T].
+  ///
+  /// The store holds the state and manages listeners. Returns `null` if not found.
   MvcRawStore<T>? getStore<T extends Object>();
 
-  /// A more specific version of [getStore] that allows specifying the exact store type.
+  /// A version of [getStore] for a specific store type [R].
   R? getStoreOfExactType<T extends Object, R extends MvcRawStore<T>>();
 
-  /// Deletes a state of type [T] from the current scope.
+  /// Deletes a state of type [T] from the **current** scope.
+  ///
+  /// This does not affect parent scopes. Throws an error if the state is not
+  /// found within the current scope.
   void deleteState<T extends Object>();
 
-  /// Listens to changes in a state of type [T] and returns a value of type [R].
+  /// Subscribes a non-widget listener to a state of type [T].
   ///
-  /// The [listener] is called whenever the selected part of the state changes.
-  /// The [use] function selects the part of the state to listen to.
+  /// The [listener] is called when the part of the state selected by [use] changes.
+  ///
+  /// Returns the initial value selected by the [use] function.
   R listenState<T extends Object, R>(MvcStateListener listener, [R Function(T state)? use]);
 
-  /// Removes a state listener.
+  /// Removes a previously registered [MvcStateListener] for a state of type [T].
   void removeStateListener<T extends Object>(MvcStateListener listener);
 }
 
+/// A mixin that combines a [DependencyInjectionService] with state management capabilities.
+///
+/// This provides a convenient way to create and manage a state object [T] within
+/// a service. The state is automatically created when the service is initialized
+/// and is managed by the nearest [MvcStateScope].
+///
+/// This is the recommended approach for managing state that is tied to business
+/// logic, as it encapsulates state and its mutations within a service.
+///
+/// ### Usage
+///
+/// 1.  Create a class that uses this mixin.
+/// 2.  Implement the [initializeState] method to provide the initial state.
+/// 3.  Use the [setState] method to update the state.
+///
+/// ```dart
+/// class CounterService with DependencyInjectionService, MvcStatefulService<CounterState> {
+///   @override
+///   CounterState initializeState() {
+///     return CounterState(0);
+///   }
+///
+///   void increment() {
+///     setState((state) => state.count++);
+///   }
+/// }
+///
+/// // Register the service:
+/// collection.addSingleton((_) => CounterService());
+///
+/// // In a widget, get the service and use it:
+/// context.getService<CounterService>().increment();
+///
+/// // In another widget, listen to the state changes:
+/// final count = context.stateAccessor.useState((CounterState s) => s.count);
+/// ```
 mixin MvcStatefulService<T extends Object> on DependencyInjectionService {
+  /// The underlying store that holds the state.
   late MvcRawStore<T> store;
+
+  /// Called to create the initial state object when the service is initialized.
   T initializeState();
 
+  /// Updates the state and notifies listeners.
+  ///
+  /// The [set] function receives the current state and can modify it.
   @protected
   void setState(void Function(T state) set) {
     store.setState(set);
@@ -981,12 +1062,18 @@ mixin MvcStatefulService<T extends Object> on DependencyInjectionService {
   }
 }
 
-/// A widget that creates a new state scope.
+/// A widget that creates a new [MvcStateScope].
 ///
-/// States created within this scope will not conflict with states of the same
-/// type in parent scopes.
+/// ```dart
+/// MvcStateScopeBuilder(
+///   builder: (context) {
+///     // Descendants of this builder will use a new state scope.
+///     return MyFeatureWidget();
+///   },
+/// )
+/// ```
 class MvcStateScopeBuilder extends MvcStatefulWidget {
-  /// Creates a state scope widget.
+  /// Creates a widget that establishes a new state scope.
   const MvcStateScopeBuilder({
     super.key,
     super.classes,
@@ -996,9 +1083,11 @@ class MvcStateScopeBuilder extends MvcStatefulWidget {
     this.onStateScopeCreated,
   });
 
-  /// A builder for the child widget.
+  /// A builder for the child widget. The `context` provided to this builder
+  /// will be associated with the new state scope.
   final WidgetBuilder builder;
 
+  /// An optional callback that is invoked when the new [MvcStateScope] is created.
   final void Function(MvcStateScope scope)? onStateScopeCreated;
 
   @override
@@ -1023,7 +1112,29 @@ class _MvcStateScopeState extends MvcWidgetState<MvcStateScopeBuilder> {
 
 /// Provides access to the state store for reading and subscribing to state changes.
 ///
-/// This should be used within a widget's `build` method via `context.stateAccessor`.
+/// This class is the primary way for widgets to interact with state in a reactive
+/// manner. It should be used within a widget's `build` method via the
+/// `context.stateAccessor` extension.
+///
+/// When a widget uses [useState], it automatically subscribes to changes in the
+/// selected state. If the state changes, the widget will be rebuilt.
+///
+/// ### Usage
+///
+/// ```dart
+/// class MyWidget extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) {
+///     // Subscribes to `MyState` and rebuilds if `someValue` changes.
+///     final someValue = context.stateAccessor.useState(
+///       (MyState state) => state.someValue,
+///       initializer: () => MyState(), // Optional: creates the state if it doesn't exist.
+///     );
+///
+///     return Text('Value: $someValue');
+///   }
+/// }
+/// ```
 class MvcStateAccessor with DependencyInjectionService {
   late final _MvcStoreRepository _stateScope = getService<_MvcStoreRepository>();
   BuildContext? _context;
@@ -1031,9 +1142,10 @@ class MvcStateAccessor with DependencyInjectionService {
   static bool _debugPostFrameClearAccessor = true;
   int _frameNumber = 0;
 
+  /// @internal
   /// Prepares the accessor for use within the current build context.
   /// This is called automatically by `context.stateAccessor`.
-  void setUpBeforeUse(BuildContext context) {
+  void _setUpBeforeUse(BuildContext context) {
     assert(_context == null);
     assert(context.debugDoingBuild, 'can only be called during build');
     final _MvcAppElement element = context.getElementForInheritedWidgetOfExactType<_MvcApp>() as _MvcAppElement;
@@ -1056,12 +1168,18 @@ class MvcStateAccessor with DependencyInjectionService {
     _context = context;
   }
 
-  /// Subscribes to a state of type [T] and returns a value of type [R].
+  /// Subscribes to a state of type [T] and returns a selected value of type [R].
   ///
-  /// The [fn] function selects the part of the state to listen to. The widget
-  /// will only rebuild if the selected value changes.
+  /// The widget calling this method will rebuild whenever the value returned by
+  /// the selector function [fn] changes.
   ///
-  /// If the state does not exist, [initializer] will be called to create it.
+  /// - [fn]: A function that selects a value from the state object. The widget
+  ///   will only listen to changes in this specific value.
+  /// - [initializer]: An optional function that creates the state if it is not
+  ///   found in the current or any parent scope. The new state is created in the
+  ///   current scope.
+  /// - [storeInitializer]: An optional function to customize the creation of the
+  ///   [MvcRawStore] that holds the state.
   R useState<T extends Object, R>(R Function(T use) fn, {T Function()? initializer, MvcRawStore<T> Function(T state)? storeInitializer}) {
     return useStateOfExactRawStoreType<T, R, MvcRawStore<T>>(fn, initializer: initializer, storeInitializer: storeInitializer);
   }
@@ -1077,7 +1195,7 @@ class MvcStateAccessor with DependencyInjectionService {
     return useStateOfExactRawStore<T, R, E>(store!, fn);
   }
 
-  /// Subscribes to a specific store instance.
+  /// Subscribes to a specific, pre-existing store instance.
   R useStateOfExactRawStore<T extends Object, R, E extends MvcRawStore<T>>(E store, R Function(T use) fn) {
     assert(_context != null, "please call setUpBeforUse(context) before useState");
     assert(_context!.debugDoingBuild, 'can only be called during build');
@@ -1139,7 +1257,7 @@ extension MvcServicesExtension on BuildContext {
       accessor = getService<MvcStateAccessor>();
       _stateAccessor[this] = accessor;
       accessor._frameNumber = currentFrame;
-      accessor.setUpBeforeUse(this);
+      accessor._setUpBeforeUse(this);
     }
     return accessor;
   }

@@ -69,6 +69,9 @@ abstract class MvcWidget implements Widget {
   Map<Object, String>? get attributes;
 }
 
+/// A stateless widget for the MVC framework.
+///
+/// For details on how to update this widget, see [MvcWidget].
 abstract class MvcStatelessWidget extends StatelessWidget implements MvcWidget {
   /// Creates an [MvcStatelessWidget].
   const MvcStatelessWidget({this.id, this.classes, this.attributes, super.key});
@@ -468,13 +471,40 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with
   MvcWidgetScope? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<E>(selectors, ignoreSelectorBreaker);
 }
 
+
+/// Provides the ability to interact with a specific [MvcWidget] instance,
+/// including accessing its context, triggering rebuilds, and querying other widgets.
+///
+/// Every `MvcWidget` (i.e., [MvcStatelessWidget], [MvcStatefulWidget], [Mvc], etc.)
+/// has a corresponding [MvcWidgetScope].
+///
+/// ### How to Obtain
+/// - In an [MvcController] or [MvcWidgetState], you can directly access it through
+///   the `widgetScope` property.
+/// - By getting an instance of type [MvcWidgetScope] through dependency injection.
+///   When using dependency injection, be mindful of the scope rules to ensure you
+///   get the instance from the correct scope.
 final class MvcWidgetScope with DependencyInjectionService {
   late final MvcBasicElement _element;
 
+  /// The [BuildContext] of the associated widget.
   BuildContext get context {
     return _element;
   }
 
+  /// Marks the associated widget as needing to be rebuilt.
+  ///
+  /// The optional [fn] callback will be executed before marking the widget for rebuild.
+  /// This is useful for making state changes that should be reflected in the UI.
+  ///
+  /// ```dart
+  /// // In a controller:
+  /// void refreshWidget() {
+  ///   widgetScope.update(() {
+  ///     // Update state here
+  ///   });
+  /// }
+  /// ```
   void update([VoidCallback? fn]) {
     fn?.call();
     _element.markNeedsBuild();
@@ -894,24 +924,11 @@ abstract class MvcStateScope {
   /// Throws an error if a state of the same type already exists in the current scope.
   MvcSetState<T> createState<T extends Object>(T state);
 
-  /// Creates a state of type [T] if it doesn't exist, otherwise returns the existing one.
-  ///
   /// If a state of type [T] already exists in the current or parent scope,
   /// returns the [MvcSetState] function for that existing state.
   ///
   /// If no state exists, creates a new state using [initializer] and returns
   /// its [MvcSetState] function.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Create state if absent
-  /// final setState = stateScope.createStateIfAbsent<CounterState>(
-  ///   () => CounterState(0),
-  /// );
-  ///
-  /// // Update the state
-  /// setState((state) => state.count++);
-  /// ```
   MvcSetState<T> createStateIfAbsent<T extends Object>(T Function() initializer);
 
   /// Updates a state of type [T].

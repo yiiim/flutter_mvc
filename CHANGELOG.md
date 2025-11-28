@@ -1,3 +1,19 @@
+## 5.0.1
+
+* 5.0.0 release
+
+## 5.0.0
+
+* 5.0.0 release
+
+## 5.0.0-dev.2
+
+* upgrade to 5.0.0
+
+## 5.0.0-dev.1
+
+* upgrade to 5.0.0
+
 ## 4.2.1+2
 
 * Fix bugs

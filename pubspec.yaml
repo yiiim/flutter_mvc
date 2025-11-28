@@ -1,16 +1,16 @@
 name: flutter_mvc
 description: A state management framework that focuses on the separation of UI and logic.
-version: 4.2.1+2
+version: 5.0.1
 homepage: https://github.com/yiiim/flutter_mvc
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ">=3.6.0 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  dart_dependency_injection: ^1.0.1+10
+  dart_dependency_injection: ^1.2.0
   collection: ^1.16.0
   csslib: ^1.0.0
 

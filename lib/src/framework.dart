@@ -6,83 +6,75 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mvc/flutter_mvc.dart';
 import 'package:flutter_mvc/src/selector/node.dart';
 
-/// Mvc framework context
-///
-/// This is the [MvcWidget]'s context, can be get in [MvcStatelessWidget.build] method or [MvcWidgetState.context].
-abstract class MvcContext extends BuildContext implements MvcWidgetSelector {
-  MvcWidgetScope get scope;
-}
+typedef MvcSetState<T> = void Function(Function(T state));
+typedef MvcStateEqualityComparer<T> = bool Function(T oldState, T newState);
 
-/// Mvc framework widget
+/// A base class for widgets in the MVC framework.
 ///
-/// Don't use this class directly, use [MvcStatelessWidget] or [MvcStatefulWidget] instead.
+/// Do not use this class directly. Instead, use [MvcStatelessWidget] or [MvcStatefulWidget].
 ///
-/// Can be update by [MvcController.querySelectorAll] if extends [MvcStatelessWidget] or [MvcStatefulWidget].
+/// Widgets extending [MvcStatelessWidget] or [MvcStatefulWidget] can be updated
+/// via [MvcController.querySelectorAll].
 ///
-/// Example:
+/// Example of updating by type:
 /// ```dart
+/// String text = "Initial Text";
 /// class MyWidget extends MvcStatelessWidget {
-///   const MyWidget({required this.title, super.key, super.id, super.classes});
-///   final String title;
+///   const MyWidget({super.key, super.id, super.classes, super.attributes});
 ///   @override
 ///   Widget build(BuildContext context) {
-///     return Text(title);
+///     return Text(text);
 ///   }
 /// }
-/// // In the controller
+///
+/// // In the controller:
 /// class MyController extends MvcController {
 ///   void updateMyWidget() {
-///     querySelectorAll<MyWidget>().update(() => title = "MyWidget Title Updated");
-///   }
-/// }
-/// // In the view
-/// class MyView extends MvcView {
-///   @override
-///   MvcViewBuilder build(BuildContext context) {
-///     return MyWidget(title: controller.title);
+///     // This will find all MyWidget instances and trigger their rebuild.
+///     text = "Updated Text";
+///     querySelectorAll<MyWidget>().update();
 ///   }
 /// }
 /// ```
 ///
-/// Also can be update by [MvcController.querySelectorAll] if [MvcWidget.id] or [MvcWidget.classes] be set.
+/// Widgets can also be targeted by `id` or `classes`.
 ///
-/// Example:
+/// Example of updating by selector:
 /// ```dart
-/// class MyWidget extends MvcStatelessWidget {
-///   const MyWidget({required this.title, super.key, super.id, super.classes});
-///   final String title;
-///   @override
-///   Widget build(BuildContext context) {
-///     return Text(title);
-///   }
-/// }
-/// // In the controller
-/// class MyController extends MvcController {
-///   String title = "MyWidget Title";
-///   void updateMyWidget() {
-///     querySelectorAll("#my-widget").update(() => title = "MyWidget Title Updated");; // or querySelectorAll(".my-widget").update(() => title = "MyWidget Title Updated");;
-///   }
-/// }
-/// // In the view
+/// // In the view:
 /// class MyView extends MvcView {
 ///   @override
-///   MvcViewBuilder build(BuildContext context) {
-///     return MyWidget(title: controller.title, id: "my-widget", classes: ["my-widget"]);
+///   Widget build(BuildContext context) {
+///     return MyWidget(id: "my-widget", classes: ["my-class"]);
+///   }
+/// }
+///
+/// // In the controller:
+/// class MyController extends MvcController {
+///   void updateMyWidget() {
+///     // Query by ID
+///     querySelector("#my-widget")?.update();
+///     // Or query by class
+///     querySelectorAll(".my-class").update();
 ///   }
 /// }
 /// ```
 abstract class MvcWidget implements Widget {
+  /// A unique identifier for the widget, used for selector queries.
   String? get id;
+
+  /// A list of class names for the widget, used for selector queries.
   List<String>? get classes;
+
+  /// A map of attributes for the widget, used for attribute-based selector queries.
   Map<Object, String>? get attributes;
 }
 
-/// Mvc framework stateless widget
+/// A stateless widget for the MVC framework.
 ///
-/// [build] method context can cast to [MvcContext]
-///
-/// About how to update this widget, see [MvcWidget]
+/// For details on how to update this widget, see [MvcWidget].
 abstract class MvcStatelessWidget extends StatelessWidget implements MvcWidget {
+  /// Creates an [MvcStatelessWidget].
   const MvcStatelessWidget({this.id, this.classes, this.attributes, super.key});
 
   @override
@@ -96,10 +88,11 @@ abstract class MvcStatelessWidget extends StatelessWidget implements MvcWidget {
   StatelessElement createElement() => MvcStatelessElement(this);
 }
 
-/// Mvc framework stateful widget
+/// A stateful widget for the MVC framework.
 ///
-/// About how to update this widget, see [MvcWidget]
+/// For details on how to update this widget, see [MvcWidget].
 abstract class MvcStatefulWidget extends StatefulWidget implements MvcWidget {
+  /// Creates an [MvcStatefulWidget].
   const MvcStatefulWidget({this.id, this.classes, this.attributes, super.key});
 
   @override
@@ -129,14 +122,49 @@ class _InheritedServiceProvider extends InheritedWidget {
   }
 }
 
+/// The root widget for an MVC application.
+///
+/// It sets up the root dependency injection scope and other essential services
+/// for the framework. Every application using `flutter_mvc` should have an
+/// [MvcApp] at the root of its widget tree.
+///
+/// ```dart
+/// void main() {
+///   runApp(
+///     MaterialApp(
+///       home: MvcApp(
+///         serviceProviderBuilder: (collection) {
+///           collection.addSingleton<MyService>((_) => MyService());
+///         },
+///         child: MyHomeScreen(),
+///       ),
+///     ),
+///   );
+/// }
+/// ```
 class MvcApp extends StatelessWidget {
+  /// Creates the root widget for an MVC application.
   const MvcApp({
     required this.child,
     this.serviceProvider,
+    this.serviceProviderBuilder,
+    this.onStateScopeCreated,
     super.key,
   });
+
+  /// The widget below this widget in the tree.
   final Widget child;
+
+  /// An optional pre-built [ServiceProvider]. If provided, it will be used as the root
+  /// service provider.
   final ServiceProvider? serviceProvider;
+
+  /// A builder function to register services in the root scope.
+  final void Function(ServiceCollection collection)? serviceProviderBuilder;
+
+  /// A callback that is invoked when the [MvcStateScope] is created.
+  final void Function(MvcStateScope scope)? onStateScopeCreated;
+
   static bool _debugHasMvcApp(BuildContext? context) {
     assert(() {
       if (context?.getElementForInheritedWidgetOfExactType<_MvcApp>() == null) {
@@ -151,6 +179,8 @@ class MvcApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _MvcApp(
       serviceProvider: serviceProvider,
+      serviceProviderBuilder: serviceProviderBuilder,
+      onStateScopeCreated: onStateScopeCreated,
       child: child,
     );
   }
@@ -159,10 +189,13 @@ class MvcApp extends StatelessWidget {
 class _MvcApp extends InheritedWidget {
   const _MvcApp({
     this.serviceProvider,
+    this.serviceProviderBuilder,
+    this.onStateScopeCreated,
     required super.child,
   });
   final ServiceProvider? serviceProvider;
-
+  final void Function(ServiceCollection collection)? serviceProviderBuilder;
+  final void Function(MvcStateScope scope)? onStateScopeCreated;
   @override
   InheritedElement createElement() => _MvcAppElement(this);
 
@@ -171,30 +204,74 @@ class _MvcApp extends InheritedWidget {
 }
 
 class _MvcDependentObjectAspect {
-  _MvcDependentObjectAspect(this.service, {this.aspect});
-  final MvcDependableObject service;
+  _MvcDependentObjectAspect(this.object, {this.aspect});
+  final MvcDependableObject object;
   final Object? aspect;
 
   @override
-  bool operator ==(Object other) => other is _MvcDependentObjectAspect && other.service == service && other.aspect == aspect;
+  bool operator ==(Object other) => other is _MvcDependentObjectAspect && other.object == object && other.aspect == aspect;
 
   @override
-  int get hashCode => service.hashCode ^ (aspect?.hashCode ?? 0);
+  int get hashCode => object.hashCode ^ (aspect?.hashCode ?? 0);
 }
 
 class _MvcAppElement extends InheritedElement {
   _MvcAppElement(_MvcApp widget) : super(widget);
+  ServiceProvider? _serviceProvider;
+  @override
+  void mount(Element? parent, Object? newSlot) {
+    _initServiceProvider(widget as _MvcApp);
+    super.mount(parent, newSlot);
+  }
+
+  @override
+  void update(covariant ProxyWidget newWidget) {
+    final newMvcAppWidget = newWidget as _MvcApp;
+    if (newMvcAppWidget.serviceProviderBuilder != (widget as _MvcApp).serviceProviderBuilder || newMvcAppWidget.serviceProvider != (widget as _MvcApp).serviceProvider) {
+      _initServiceProvider(newMvcAppWidget);
+    }
+    super.update(newWidget);
+  }
+
+  @override
+  void unmount() {
+    _serviceProvider?.dispose();
+    _serviceProvider = null;
+    super.unmount();
+  }
+
+  void _initServiceProvider(_MvcApp widget) {
+    _serviceProvider?.dispose();
+    _serviceProvider = (widget.serviceProvider ?? ServiceCollection().build()).buildScoped(
+      builder: (collection) {
+        widget.serviceProviderBuilder?.call(collection);
+        collection.add<MvcStateAccessor>((_) => MvcStateAccessor());
+        collection.addScopedSingleton(
+          (_) => MvcWidgetScope(),
+        );
+        collection.addSingleton<_MvcAppElement>(
+          (_) => this,
+        );
+        collection.addSingleton<_MvcStoreRepository>(
+          (_) => _MvcStoreRepository._internal(null),
+        );
+        collection.addSingleton<MvcStateScope>(
+          (serviceProvider) => serviceProvider.get<_MvcStoreRepository>(),
+        );
+      },
+    );
+    widget.onStateScopeCreated?.call(_serviceProvider!.get<MvcStateScope>());
+  }
 
   @override
   void updateDependencies(Element dependent, Object? aspect) {
-    WidgetsFlutterBinding.ensureInitialized();
     final Set<_MvcDependentObjectAspect>? dependencies = getDependencies(dependent) as Set<_MvcDependentObjectAspect>?;
     if (aspect == null) {
       setDependencies(dependent, HashSet<_MvcDependentObjectAspect>());
     } else {
       assert(aspect is _MvcDependentObjectAspect);
       _MvcDependentObjectAspect serviceAspect = aspect as _MvcDependentObjectAspect;
-      serviceAspect.service.updateDependencies(dependent, aspect: serviceAspect.aspect);
+      serviceAspect.object.updateDependencies(_MvcDependableElementListener(dependent), aspect: serviceAspect.aspect);
       setDependencies(dependent, (dependencies ?? HashSet<_MvcDependentObjectAspect>())..add(serviceAspect));
     }
   }
@@ -203,12 +280,12 @@ class _MvcAppElement extends InheritedElement {
   void removeDependent(Element dependent) {
     final Set<MvcDependableObject>? dependencies = (getDependencies(dependent) as Set<_MvcDependentObjectAspect>?)
         ?.map(
-          (e) => e.service,
+          (e) => e.object,
         )
         .toSet();
     if (dependencies != null) {
       for (var element in dependencies) {
-        element.removeDependencies(dependent);
+        element.removeDependencies(_MvcDependableElementListener(dependent));
       }
     }
     super.removeDependent(dependent);
@@ -217,93 +294,59 @@ class _MvcAppElement extends InheritedElement {
   @override
   Widget build() {
     return _InheritedServiceProvider(
-      serviceProvider: (widget as _MvcApp).serviceProvider ?? ServiceCollection().build(),
-      child: MvcDependencyProvider(
-        child: MvcStateScope(builder: (_) => super.build()),
-        provider: (collection) {
-          collection.add<MvcStateAccessor>((_) => MvcStateAccessor());
-          collection.addScopedSingleton(
-            (_) => MvcWidgetScope(),
-            initializeWhenServiceProviderBuilt: true,
-          );
-          collection.addSingleton<_MvcStoreRepository>(
-            (_) => _MvcStoreRepository._internal(null),
-            initializeWhenServiceProviderBuilt: true,
-          );
-        },
-      ),
+      serviceProvider: _serviceProvider!,
+      child: super.build(),
     );
   }
 
   void clearObjectDependencies(Element dependent) {
-    setDependencies(dependent, null);
+    removeDependent(dependent);
   }
 }
 
-class _MvcWeakReferenceList<T extends Object> {
-  final Expando<T> _expando = Expando<T>();
-  final List<Finalizer> _list = [];
-
-  void add(T value) {
-    Finalizer? finalizer;
-    finalizer = Finalizer(
-      (_) {
-        _list.remove(finalizer);
-      },
-    );
-    finalizer.attach(value, this, detach: value);
-    _expando[finalizer] = value;
-    _list.add(finalizer);
-  }
-
-  void remove(T value) {
-    for (var element in _list) {
-      final T? v = _expando[element];
-      if (v == value) {
-        element.detach(value);
-        _list.remove(element);
-        break;
-      }
-    }
-  }
-
-  void dispose() {
-    for (var element in _list) {
-      final T? value = _expando[element];
-      if (value != null) {
-        element.detach(value);
-      }
-    }
-    _list.clear();
-  }
-
-  Iterable<T> get values => _list.map((container) => _expando[container]).whereType<T>();
-}
-
-mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements MvcContext {
+/// A mixin for `Element`s that provides basic MVC framework functionalities,
+/// including dependency injection scope management.
+mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements MvcWidgetSelector {
   ServiceProvider? scopedServiceProvider;
-  late final _MvcWeakReferenceList<MvcWidgetService> _elementServices = _MvcWeakReferenceList();
+
+  /// Determines whether this element creates a new state scope.
   bool get createStateScope => false;
-  @override
-  late final MvcWidgetScope scope = getMvcService<MvcWidgetScope>();
+  MvcWidgetScope? _widgetScope;
+  MvcWidgetScope get widgetScope {
+    assert(scopedServiceProvider != null, 'use after mount');
+    _widgetScope ??= scopedServiceProvider!.get<MvcWidgetScope>();
+    return _widgetScope!;
+  }
+
+  MvcStateScope? _stateScope;
+  MvcStateScope get stateScope {
+    assert(scopedServiceProvider != null, 'use after mount');
+    _stateScope ??= scopedServiceProvider!.get<MvcStateScope>();
+    return _stateScope!;
+  }
+
   @override
   void mount(Element? parent, Object? newSlot) {
+    assert(widget is MvcWidget);
     assert(MvcApp._debugHasMvcApp(parent));
-    ServiceProvider? parentServiceProvider;
-    if (parent != null) {
-      parentServiceProvider = _InheritedServiceProvider.of(parent);
-    }
-    if (parentServiceProvider != null) {
-      scopedServiceProvider = parentServiceProvider.buildScoped(
-        builder: (collection) {
-          initServices(collection, parentServiceProvider);
-        },
-      );
-    } else {
-      ServiceCollection collection = ServiceCollection();
-      initServices(collection, null);
-      scopedServiceProvider = collection.build();
-    }
+    ServiceProvider? parentServiceProvider = _InheritedServiceProvider.of(parent!);
+    assert(
+      () {
+        if (parentServiceProvider == null) {
+          return false;
+        }
+        if (parentServiceProvider.tryGet<_MvcAppElement>() == null) {
+          return false;
+        }
+        return true;
+      }(),
+      "No ServiceProvider found in context. Make sure MvcApp is at the root of the widget tree.",
+    );
+    scopedServiceProvider = parentServiceProvider!.buildScoped(
+      builder: (collection) {
+        initServices(collection, parentServiceProvider);
+      },
+    );
     super.mount(parent, newSlot);
   }
 
@@ -317,15 +360,6 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements
   void dispose() {
     super.dispose();
     scopedServiceProvider?.dispose();
-    _elementServices.dispose();
-  }
-
-  @override
-  void deactivate() {
-    super.deactivate();
-    for (var element in _elementServices.values) {
-      element.mvcWidgetDeactivate();
-    }
   }
 
   @override
@@ -333,10 +367,19 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements
     super.activate();
     ServiceProvider? parentServiceProvider;
     parentServiceProvider = _InheritedServiceProvider.of(this);
+    assert(
+      () {
+        if (parentServiceProvider == null) {
+          return false;
+        }
+        if (parentServiceProvider.tryGet<_MvcAppElement>() == null) {
+          return false;
+        }
+        return true;
+      }(),
+      "No ServiceProvider found in context. Make sure MvcApp is at the root of the widget tree.",
+    );
     scopedServiceProvider!.transferScope(parentServiceProvider);
-    for (var element in _elementServices.values) {
-      element.mvcWidgetActivate();
-    }
   }
 
   @override
@@ -354,16 +397,16 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements
       (serviceProvider) => this,
       initializeWhenServiceProviderBuilt: true,
     );
-    collection.addSingleton<MvcContext>(
-      (serviceProvider) => this,
-      initializeWhenServiceProviderBuilt: true,
-    );
+    collection.add<BuildContext>((_) => this);
     if (createStateScope) {
       collection.addSingleton<_MvcStoreRepository>(
         (serviceProvider) => _MvcStoreRepository._internal(
-          parent?.tryGet<_MvcStoreRepository>(),
+          parent!.get<_MvcStoreRepository>(),
         ),
         initializeWhenServiceProviderBuilt: true,
+      );
+      collection.addSingleton<MvcStateScope>(
+        (serviceProvider) => serviceProvider.get<_MvcStoreRepository>(),
       );
     }
   }
@@ -371,17 +414,18 @@ mixin MvcBasicElement on ComponentElement, DependencyInjectionService implements
 
 /// mvc framework stateless element
 class MvcStatelessElement<TControllerType extends MvcController> extends StatelessElement with DependencyInjectionService, MvcBasicElement, MvcNodeMixin {
+  /// Creates an element for the given [MvcStatelessWidget].
   MvcStatelessElement(MvcStatelessWidget widget) : super(widget);
 }
 
-/// mvc framework stateful element
+/// The element for an [MvcStatefulWidget].
 class MvcStatefulElement<TControllerType extends MvcController> extends StatefulElement with DependencyInjectionService, MvcBasicElement, MvcNodeMixin {
+  /// Creates an element for the given [MvcStatefulWidget].
   MvcStatefulElement(MvcStatefulWidget widget) : super(widget);
   @override
   bool get createStateScope => (state as MvcWidgetState).createStateScope;
   @override
   bool get isSelectorBreaker => (state as MvcWidgetState).isSelectorBreaker;
-
   @override
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     (state as MvcWidgetState?)?.initServices(collection, parent);
@@ -393,15 +437,26 @@ mixin _DisposeHelper<T extends StatefulWidget> on State<T> {
   void _dispose() => super.dispose();
 }
 
+/// The base class for the `State` of an [MvcStatefulWidget].
+///
+/// It provides access to the [MvcContext] and lifecycle methods for service initialization.
 abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with _DisposeHelper, DependencyInjectionService implements MvcWidgetSelector {
+  /// Determines whether this state's widget creates a new state scope.
+  /// Defaults to `false`.
   bool get createStateScope => false;
 
-  /// Whether to allow queries from superiors to continue looking for children
+  /// Whether to break the propagation of selector queries from parent widgets.
+  /// If `true`, queries will not search children of this widget.
+  /// Defaults to `false`.
   bool get isSelectorBreaker => false;
-  @override
-  MvcContext get context => super.context as MvcContext;
 
-  /// you can be inject some services here when [ServiceProvider] is created
+  /// The [MvcWidgetScope] associated with this widget.
+  MvcWidgetScope get widgetScope => (context as MvcBasicElement).widgetScope;
+
+  /// The [MvcStateScope] associated with this widget.
+  MvcStateScope get stateScope => (context as MvcBasicElement).stateScope;
+
+  /// Called when the [ServiceProvider] is created, allowing for service injection.
   @mustCallSuper
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     collection.addSingleton<MvcWidgetState>(
@@ -418,14 +473,116 @@ abstract class MvcWidgetState<T extends MvcStatefulWidget> extends State<T> with
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<E>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelectorAll<E>(selectors, ignoreSelectorBreaker);
+  Iterable<MvcWidgetScope> querySelectorAll<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelectorAll<E>(selectors, ignoreSelectorBreaker);
   @override
-  MvcWidgetUpdater? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => context.querySelector<E>(selectors, ignoreSelectorBreaker);
+  MvcWidgetScope? querySelector<E>([String? selectors, bool ignoreSelectorBreaker = false]) => widgetScope.querySelector<E>(selectors, ignoreSelectorBreaker);
 }
 
+/// Provides the ability to interact with a specific [MvcWidget] instance,
+/// including accessing its context, triggering rebuilds, and querying other widgets.
+///
+/// Every `MvcWidget` (i.e., [MvcStatelessWidget], [MvcStatefulWidget], [Mvc], etc.)
+/// has a corresponding [MvcWidgetScope].
+///
+/// ### How to Obtain
+/// - In an [MvcController] or [MvcWidgetState], you can directly access it through
+///   the `widgetScope` property.
+/// - By getting an instance of type [MvcWidgetScope] through dependency injection.
+///   When using dependency injection, be mindful of the scope rules to ensure you
+///   get the instance from the correct scope.
+final class MvcWidgetScope with DependencyInjectionService {
+  late final MvcBasicElement _element;
+
+  /// The [BuildContext] of the associated widget.
+  BuildContext get context {
+    return _element;
+  }
+
+  /// Marks the associated widget as needing to be rebuilt.
+  ///
+  /// The optional [fn] callback will be executed before marking the widget for rebuild.
+  /// This is useful for making state changes that should be reflected in the UI.
+  ///
+  /// ```dart
+  /// // In a controller:
+  /// void refreshWidget() {
+  ///   widgetScope.update(() {
+  ///     // Update state here
+  ///   });
+  /// }
+  /// ```
+  void update([VoidCallback? fn]) {
+    fn?.call();
+    _element.markNeedsBuild();
+  }
+
+  /// Finds all descendant [MvcWidget]s that match the given [selectors].
+  ///
+  /// You can use a querySelectorAll-like syntax from the W3C standard to query Widgets.
+  /// Sibling lookups are not supported.
+  ///
+  /// When you provide a type [T], it is used as a type selector, equivalent to
+  /// prepending the type name to the [selectors] string.
+  ///
+  /// [ignoreSelectorBreaker] allows the query to bypass widgets that would normally
+  /// stop selector propagation (i.e., where `isSelectorBreaker` is true).
+  ///
+  /// Example:
+  /// ```dart
+  /// // Find all MyItemWidget widgets with the class 'highlight'
+  /// context.querySelectorAll<MyItemWidget>('.highlight');
+  /// ```
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+    return _element.querySelectorAll<T>(selectors, ignoreSelectorBreaker);
+  }
+
+  /// Finds the first descendant [MvcWidget] that matches the given [selectors].
+  ///
+  /// See [querySelectorAll] for more details on selectors.
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+    return _element.querySelector<T>(selectors, ignoreSelectorBreaker);
+  }
+
+  @override
+  FutureOr dependencyInjectionServiceInitialize() {
+    final element = tryGetService<MvcBasicElement>();
+    assert(element != null, "can't find MvcWidget in context");
+    _element = element!;
+  }
+}
+
+class MvcWidgetScopeBuilder extends MvcStatefulWidget {
+  const MvcWidgetScopeBuilder({super.key, super.classes, super.id, super.attributes, required this.builder, this.onWidgetScopeCreated});
+  final Widget Function(BuildContext context) builder;
+  final void Function(MvcWidgetScope scope)? onWidgetScopeCreated;
+  @override
+  MvcWidgetState<MvcStatefulWidget> createState() => _MvcWidgetScopeBuilderState();
+}
+
+class _MvcWidgetScopeBuilderState extends MvcWidgetState<MvcWidgetScopeBuilder> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onWidgetScopeCreated?.call(widgetScope);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context);
+  }
+}
+
+/// A widget that provides a dependency injection scope to its descendants.
+///
+/// Services registered via [provider] are available to all descendant widgets.
 class MvcDependencyProvider extends MvcStatefulWidget {
+  /// Creates a dependency provider widget.
   const MvcDependencyProvider({required this.child, required this.provider, super.key});
+
+  /// The function to register services.
   final void Function(ServiceCollection collection)? provider;
+
+  /// The widget below this widget in the tree.
   final Widget child;
 
   @override
@@ -449,39 +606,136 @@ class _MvcDependencyProviderState extends MvcWidgetState<MvcDependencyProvider> 
   }
 }
 
-mixin MvcDependableObject {
-  final Map<Element, Object?> _dependents = HashMap<Element, Object?>();
+/// An interface for listeners that can be notified of changes in a [MvcDependableObject].
+abstract class MvcDependableListener {
+  /// Called when the dependency has changed.
+  /// [aspect] can provide more specific information about the change.
+  void onDependencyChanged(Object? aspect);
 
+  /// Determines whether the aspect should be updated after notification.
+  bool shouldUpdateAspectAfterNotify() => true;
+
+  /// Updates the aspect after notification.
+  Object? updateAspectAfterNotify(Object? aspect) => aspect;
+}
+
+/// A function-based implementation of [MvcDependableListener].
+class MvcDependableFunctionListener extends MvcDependableListener {
+  /// Creates a listener from a function.
+  MvcDependableFunctionListener(this.listener);
+
+  /// The function to call on dependency change.
+  final void Function(Object? aspect) listener;
+  @override
+  void onDependencyChanged(Object? aspect) {
+    listener(aspect);
+  }
+}
+
+class _MvcDependableElementListener extends MvcDependableListener {
+  _MvcDependableElementListener(this.element);
+  final Element element;
+  @override
+  bool shouldUpdateAspectAfterNotify() => false;
+
+  @override
+  void onDependencyChanged(Object? aspect) {
+    element.markNeedsBuild();
+  }
+
+  @override
+  bool operator ==(Object other) => other is _MvcDependableElementListener && other.element == element;
+
+  @override
+  int get hashCode => element.hashCode;
+}
+
+abstract class MvcStateListener {
+  void onMvcStateChanged(Object state);
+}
+
+class _MvcDependableStateListener<T extends Object, R> extends MvcDependableListener {
+  _MvcDependableStateListener({
+    required this.store,
+    required this.listener,
+    this.selector,
+    this.comparer,
+  });
+  final MvcRawStore<T> store;
+  final MvcStateListener listener;
+  final R Function(T state)? selector;
+  final MvcStateEqualityComparer<R>? comparer;
+  @override
+  void onDependencyChanged(Object? aspect) {
+    listener.onMvcStateChanged(store.state);
+  }
+
+  @override
+  Object? updateAspectAfterNotify(Object? aspect) {
+    if (selector != null) {
+      final R newValue = selector!.call(store.state);
+      return _MvcStateStoreAspect<T, R>(
+        selector: selector,
+        value: newValue,
+        comparer: comparer,
+      );
+    }
+    return null;
+  }
+}
+
+/// A mixin for objects that can be depended upon by widgets.
+///
+/// When the object changes, it can notify its dependents to rebuild.
+/// This is the foundation for reactive state management in the framework.
+mixin MvcDependableObject {
+  final Map<MvcDependableListener, Object?> _dependents = HashMap<MvcDependableListener, Object?>();
+
+  /// Gets the dependency aspect for a given listener.
   @protected
-  Object? getDependencies(Element dependent) {
+  Object? getDependencies(MvcDependableListener dependent) {
     return _dependents[dependent];
   }
 
+  /// Sets the dependency aspect for a given listener.
   @protected
-  void setDependencies(Element dependent, Object? value) {
+  void setDependencies(MvcDependableListener dependent, Object? value) {
     _dependents[dependent] = value;
   }
 
+  /// Updates the dependencies for a listener.
   @protected
-  void updateDependencies(Element dependent, {Object? aspect}) {
-    setDependencies(dependent, null);
+  void updateDependencies(MvcDependableListener dependent, {Object? aspect}) {
+    setDependencies(dependent, aspect);
   }
 
+  /// Removes a dependent listener.
   @protected
-  void removeDependencies(Element element) {
+  void removeDependencies(MvcDependableListener element) {
     _dependents.remove(element);
   }
 
   @protected
-  void notifyDependent(Element dependent, {Object? aspect}) {
-    dependent.markNeedsBuild();
+  void removeWhere(bool Function(MvcDependableListener dependent, Object? aspect) test) {
+    final toRemove = _dependents.entries.where((entry) => test(entry.key, entry.value)).map((entry) => entry.key).toList();
+    for (var element in toRemove) {
+      removeDependencies(element);
+    }
   }
 
+  /// Notifies a specific dependent of a change.
   @protected
-  bool shouldNotifyDependents(Element dependent, {Object? aspect}) {
+  void notifyDependent(MvcDependableListener dependent, {Object? aspect}) {
+    dependent.onDependencyChanged(aspect);
+  }
+
+  /// Determines if a dependent should be notified of a change.
+  @protected
+  bool shouldNotifyDependents(MvcDependableListener dependent, {Object? aspect}) {
     return true;
   }
 
+  /// Notifies all dependents of a change.
   @protected
   void notifyAllDependents() {
     for (var element in _dependents.entries) {
@@ -493,31 +747,42 @@ mixin MvcDependableObject {
 }
 
 class _MvcStateStoreAspect<T, R> {
-  _MvcStateStoreAspect({this.selector, required this.value});
+  _MvcStateStoreAspect({this.selector, required this.value, this.comparer});
   final R Function(T state)? selector;
-  final R value;
+  R value;
+  final MvcStateEqualityComparer<R>? comparer;
 
   @override
-  bool operator ==(Object other) => other is _MvcStateStoreAspect<T, R> && other.selector == selector && other.value == value;
+  bool operator ==(Object other) => other is _MvcStateStoreAspect<T, R> && other.selector == selector && other.value == value && other.comparer == comparer;
 
   @override
-  int get hashCode => selector.hashCode ^ value.hashCode;
+  int get hashCode => selector.hashCode ^ value.hashCode ^ (comparer?.hashCode ?? 0);
 
   bool shouldNotify(T state) {
     if (selector == null || value == state) {
       return true;
     }
-    return selector!.call(state) != value;
+    final R newValue = selector!.call(state);
+    if (comparer != null && comparer!.call(value, newValue) == false) {
+      return true;
+    }
+    return newValue != value;
   }
 }
 
-class MvcRawStore<T> with MvcDependableObject {
+/// A raw store that holds a state object [T] and manages its dependencies.
+///
+/// This is the core of the state management system.
+class MvcRawStore<T extends Object> with MvcDependableObject {
+  /// The state object.
   final T state;
 
+  /// Creates a raw store with the initial state.
   MvcRawStore(this.state);
 
+  @protected
   @override
-  void updateDependencies(Element dependent, {Object? aspect}) {
+  void updateDependencies(MvcDependableListener dependent, {Object? aspect}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
     if (dependencies != null && dependencies.isEmpty) {
       return;
@@ -527,12 +792,16 @@ class MvcRawStore<T> with MvcDependableObject {
       setDependencies(dependent, HashSet<_MvcStateStoreAspect>());
     } else {
       assert(aspect is _MvcStateStoreAspect);
-      setDependencies(dependent, (dependencies ?? HashSet<_MvcStateStoreAspect>())..add(aspect as _MvcStateStoreAspect));
+      setDependencies(
+        dependent,
+        (dependencies ?? HashSet<_MvcStateStoreAspect>())..add(aspect as _MvcStateStoreAspect),
+      );
     }
   }
 
+  @protected
   @override
-  bool shouldNotifyDependents(Element dependent, {Object? aspect}) {
+  bool shouldNotifyDependents(MvcDependableListener dependent, {Object? aspect}) {
     final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
     if (dependencies == null) {
       return false;
@@ -545,76 +814,417 @@ class MvcRawStore<T> with MvcDependableObject {
     return false;
   }
 
-  R useState<R>(BuildContext context, [R Function(T state)? use]) {
+  @override
+  @protected
+  void notifyDependent(MvcDependableListener dependent, {Object? aspect}) {
+    super.notifyDependent(dependent, aspect: aspect);
+    if (dependent.shouldUpdateAspectAfterNotify()) {
+      final Set<_MvcStateStoreAspect>? dependencies = getDependencies(dependent) as Set<_MvcStateStoreAspect>?;
+      final Set<_MvcStateStoreAspect>? newDependencies = dependencies?.map((e) {
+        return dependent.updateAspectAfterNotify(e) as _MvcStateStoreAspect<T, dynamic>? ?? e;
+      }).toSet();
+      if (newDependencies != null) {
+        setDependencies(dependent, newDependencies);
+      }
+    }
+  }
+
+  /// Subscribes the widget to a part of the state.
+  ///
+  /// When the selected part of the state changes, the widget will rebuild.
+  /// The [use] function selects the part of the state to listen to.
+  ///
+  /// This method must be called within a widget's `build` method.
+  R useState<R>(BuildContext context, [R Function(T state)? use, MvcStateEqualityComparer<R>? comparer]) {
     assert(context.debugDoingBuild, 'can only be called during build');
-    final value = use?.call(state) ?? state as R;
-    context.dependOnMvcService(
+    final value = use != null ? use(state) : state as R;
+    context.dependOnObject(
       this,
       aspect: _MvcStateStoreAspect<T, R>(
         selector: use,
         value: value,
+        comparer: comparer,
       ),
     );
     return value;
   }
 
-  void setState(void Function(T state) set) {
-    set(state);
+  /// Updates the state and notifies listening widgets.
+  ///
+  /// The [set] function receives the current state and can modify it.
+  void setState([void Function(T state)? set]) {
+    set?.call(state);
     notifyAllDependents();
   }
+
+  R listen<R>(MvcStateListener listener, [R Function(T state)? use, MvcStateEqualityComparer<R>? comparer]) {
+    final value = use != null ? use.call(state) : state as R;
+    updateDependencies(
+      _MvcDependableStateListener(
+        store: this,
+        listener: listener,
+        selector: use,
+        comparer: comparer,
+      ),
+      aspect: _MvcStateStoreAspect<T, R>(
+        selector: use,
+        value: value,
+        comparer: comparer,
+      ),
+    );
+    return value;
+  }
+
+  void removeListener(MvcStateListener listener) {
+    removeWhere(
+      (dependent, aspect) => dependent is _MvcDependableStateListener && dependent.store == this && dependent.listener == listener,
+    );
+  }
+
+  void call([void Function(T state)? set]) => setState(set);
 }
 
-class _MvcStoreRepository with DependencyInjectionService {
+class _MvcStoreRepository with DependencyInjectionService implements MvcStateScope {
   _MvcStoreRepository._internal(this._parent);
   final _MvcStoreRepository? _parent;
   final Map<Type, MvcRawStore> _stores = {};
-  late final Widget debugWidget;
-  R? getStore<T, R extends MvcRawStore<T>>() {
-    return _stores[T] as R? ?? _parent?.getStore<T, R>();
-  }
+  late final Widget? debugWidget;
 
-  void addStore<T, R extends MvcRawStore<T>>(R store) {
+  void addStore<T extends Object, R extends MvcRawStore<T>>(R store) {
     assert(!_stores.containsKey(T), "state $T already exists");
     _stores[T] = store;
+  }
+
+  @override
+  MvcSetState<T> createState<T extends Object>(T state) {
+    return createStateOfExactStoreType<T, MvcRawStore<T>>(state);
+  }
+
+  @override
+  MvcSetState<T> createStateIfAbsent<T extends Object>(T Function() initializer) {
+    final existingStore = getStoreOfExactType<T, MvcRawStore<T>>();
+    if (existingStore != null) {
+      return existingStore;
+    }
+    return createState<T>(initializer());
+  }
+
+  @override
+  R createStateOfExactStoreType<T extends Object, R extends MvcRawStore<T>>(
+    T state, {
+    R Function(T state)? initializer,
+  }) {
+    final store = initializer?.call(state) ?? MvcRawStore<T>(state);
+    addStore<T, R>(store as R);
+    return store;
+  }
+
+  @override
+  void setState<T extends Object>([void Function(T state)? set]) {
+    setStateOfExactStoreType<T, MvcRawStore<T>>(set);
+  }
+
+  void setStateOfExactStoreType<T extends Object, E extends MvcRawStore<T>>([void Function(T state)? set]) {
+    final store = getStoreOfExactType<T, E>();
+    assert(store != null, "can't find state $T in scope");
+    store!.setState(set);
+  }
+
+  @override
+  T? getState<T extends Object>() => getStore<T>()?.state;
+
+  @override
+  MvcRawStore<T>? getStore<T extends Object>() {
+    return getStoreOfExactType<T, MvcRawStore<T>>();
+  }
+
+  @override
+  R? getStoreOfExactType<T extends Object, R extends MvcRawStore<T>>() {
+    return _stores[T] as R? ?? _parent?.getStoreOfExactType<T, R>();
+  }
+
+  @override
+  R listenState<T extends Object, R>(MvcStateListener listener, [R Function(T state)? use]) {
+    final store = getStore<T>();
+    assert(store != null, "can't find state $T in scope");
+    return store!.listen<R>(listener, use);
+  }
+
+  @override
+  void deleteState<T extends Object>() {
+    assert(_stores.containsKey(T), "can't find state $T in scope");
+    _stores.remove(T);
+  }
+
+  @override
+  void removeStateListener<T extends Object>(MvcStateListener listener) {
+    if (T == dynamic) {
+      for (var store in _stores.values) {
+        store.removeListener(listener);
+      }
+      _parent?.removeStateListener(listener);
+      return;
+    }
+    final store = getStore<T>();
+    assert(store != null, "can't find state $T in scope");
+    store!.removeListener(listener);
   }
 
   @override
   FutureOr dependencyInjectionServiceInitialize() {
     assert(() {
       final element = tryGetService<MvcBasicElement>();
-      assert(element != null, "can't find MvcBasicElement");
-      debugWidget = element!.widget;
+      debugWidget = element?.widget;
       return true;
     }());
   }
 }
 
-class MvcStateScope extends MvcStatefulWidget {
-  const MvcStateScope({required this.builder, super.key});
+/// Manages a scoped container for state objects.
+///
+/// State scopes can be nested. When a state is requested, the framework searches
+/// upwards from the current scope through its parents. States are automatically
+/// disposed when their scope is destroyed.
+///
+/// New scopes can be created using [MvcStateScopeBuilder], or by widgets like
+/// [Mvc] that create them by default.
+///
+/// Access the nearest scope via `context.stateScope`.
+abstract class MvcStateScope {
+  /// Creates a new state of type [T] within the current scope.
+  ///
+  /// Throws an error if a state of the same type [T] already exists in this scope.
+  ///
+  /// Returns an [MvcSetState] function to update the state.
+  ///
+  /// See also:
+  ///
+  ///  * [createStateIfAbsent], which is safer as it won't throw if the state exists.
+  MvcSetState<T> createState<T extends Object>(T state);
+
+  /// Ensures a state of type [T] exists and returns its update function.
+  ///
+  /// If the state already exists in the current or a parent scope, it returns
+  /// the update function for the existing state.
+  ///
+  /// If the state does not exist, it calls [initializer] to create a new one
+  /// in the **current** scope and returns its update function.
+  ///
+  /// ```dart
+  /// final setState = context.stateScope.createStateIfAbsent<MyState>(() => MyState());
+  /// setState((s) => s.count++);
+  /// ```
+  MvcSetState<T> createStateIfAbsent<T extends Object>(T Function() initializer);
+
+  /// A version of [createState] for a specific store type [R].
+  R createStateOfExactStoreType<T extends Object, R extends MvcRawStore<T>>(
+    T state, {
+    R Function(T state)? initializer,
+  });
+
+  /// Updates a state of type [T] found in the current or parent scopes.
+  ///
+  /// The [set] function receives the state and can modify it. Widgets listening
+  /// to the state will be rebuilt.
+  ///
+  /// Throws an error if no state of type [T] is found.
+  ///
+  /// ```dart
+  /// context.stateScope.setState<MyState>((s) => s.count++);
+  /// ```
+  void setState<T extends Object>([void Function(T state)? set]);
+
+  /// Gets the state object of type [T] from the current or parent scopes.
+  ///
+  /// Returns `null` if the state does not exist. This method does not subscribe
+  /// the widget to changes. For reactive updates, use [MvcStateAccessor.useState].
+  T? getState<T extends Object>();
+
+  /// Gets the underlying [MvcRawStore] for a state of type [T].
+  ///
+  /// The store holds the state and manages listeners. Returns `null` if not found.
+  MvcRawStore<T>? getStore<T extends Object>();
+
+  /// A version of [getStore] for a specific store type [R].
+  R? getStoreOfExactType<T extends Object, R extends MvcRawStore<T>>();
+
+  /// Deletes a state of type [T] from the **current** scope.
+  ///
+  /// This does not affect parent scopes. Throws an error if the state is not
+  /// found within the current scope.
+  void deleteState<T extends Object>();
+
+  /// Subscribes a non-widget listener to a state of type [T].
+  ///
+  /// The [listener] is called when the part of the state selected by [use] changes.
+  ///
+  /// Returns the initial value selected by the [use] function.
+  R listenState<T extends Object, R>(MvcStateListener listener, [R Function(T state)? use]);
+
+  /// Removes a previously registered [MvcStateListener] for a state of type [T].
+  void removeStateListener<T extends Object>(MvcStateListener listener);
+}
+
+/// A mixin that combines a [DependencyInjectionService] with state management capabilities.
+///
+/// This provides a convenient way to create and manage a state object [T] within
+/// a service. The state is automatically created when the service is initialized
+/// and is managed by the nearest [MvcStateScope].
+///
+/// This is the recommended approach for managing state that is tied to business
+/// logic, as it encapsulates state and its mutations within a service.
+///
+/// ### Usage
+///
+/// 1.  Create a class that uses this mixin.
+/// 2.  Implement the [initializeState] method to provide the initial state.
+/// 3.  Use the [setState] method to update the state.
+///
+/// ```dart
+/// class CounterService with DependencyInjectionService, MvcStatefulService<CounterState> {
+///   @override
+///   CounterState initializeState() {
+///     return CounterState(0);
+///   }
+///
+///   void increment() {
+///     setState((state) => state.count++);
+///   }
+/// }
+///
+/// // Register the service:
+/// collection.addSingleton((_) => CounterService());
+///
+/// // In a widget, get the service and use it:
+/// context.getService<CounterService>().increment();
+///
+/// // In another widget, listen to the state changes:
+/// final count = context.stateAccessor.useState((CounterState s) => s.count);
+/// ```
+mixin MvcStatefulService<T extends Object> on DependencyInjectionService {
+  /// The underlying store that holds the state.
+  late MvcRawStore<T> store;
+  late MvcStateScope _stateScope;
+
+  /// The current state object.
+  T get state => store.state;
+
+  /// Called to create the initial state object when the service is initialized.
+  T initializeState();
+
+  /// Updates the state and notifies listeners.
+  ///
+  /// The [set] function receives the current state and can modify it.
+  @protected
+  void setState(void Function(T state) set) {
+    store.setState(set);
+  }
+
+  @mustCallSuper
+  @override
+  void dispose() {
+    super.dispose();
+    _stateScope.deleteState<T>();
+  }
+
+  @mustCallSuper
+  @override
+  FutureOr dependencyInjectionServiceInitialize() async {
+    final stateScope = tryGetService<MvcStateScope>();
+    assert(() {
+      assert(stateScope != null, "use this service in MVC.");
+      return true;
+    }());
+    _stateScope = stateScope!;
+    store = _stateScope.createStateOfExactStoreType<T, MvcRawStore<T>>(initializeState());
+    return super.dependencyInjectionServiceInitialize();
+  }
+}
+
+/// A widget that creates a new [MvcStateScope].
+///
+/// ```dart
+/// MvcStateScopeBuilder(
+///   builder: (context) {
+///     // Descendants of this builder will use a new state scope.
+///     return MyFeatureWidget();
+///   },
+/// )
+/// ```
+class MvcStateScopeBuilder extends MvcStatefulWidget {
+  /// Creates a widget that establishes a new state scope.
+  const MvcStateScopeBuilder({
+    super.key,
+    super.classes,
+    super.id,
+    super.attributes,
+    required this.builder,
+    this.onStateScopeCreated,
+  });
+
+  /// A builder for the child widget. The `context` provided to this builder
+  /// will be associated with the new state scope.
   final WidgetBuilder builder;
+
+  /// An optional callback that is invoked when the new [MvcStateScope] is created.
+  final void Function(MvcStateScope scope)? onStateScopeCreated;
 
   @override
   MvcWidgetState<MvcStatefulWidget> createState() => _MvcStateScopeState();
 }
 
-class _MvcStateScopeState extends MvcWidgetState<MvcStatefulWidget> {
+class _MvcStateScopeState extends MvcWidgetState<MvcStateScopeBuilder> {
   @override
   bool get createStateScope => true;
 
   @override
+  void initState() {
+    super.initState();
+    widget.onStateScopeCreated?.call(stateScope);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return (widget as MvcStateScope).builder(context);
+    return widget.builder(context);
   }
 }
 
-class MvcStateAccessor with DependencyInjectionService, MvcDependableObject {
-  late final _MvcStoreRepository _storeRepository = getService<_MvcStoreRepository>();
+/// Provides access to the state store for reading and subscribing to state changes.
+///
+/// This class is the primary way for widgets to interact with state in a reactive
+/// manner. It should be used within a widget's `build` method via the
+/// `context.stateAccessor` extension.
+///
+/// When a widget uses [useState], it automatically subscribes to changes in the
+/// selected state. If the state changes, the widget will be rebuilt.
+///
+/// ### Usage
+///
+/// ```dart
+/// class MyWidget extends StatelessWidget {
+///   @override
+///   Widget build(BuildContext context) {
+///     // Subscribes to `MyState` and rebuilds if `someValue` changes.
+///     final someValue = context.stateAccessor.useState(
+///       (MyState state) => state.someValue,
+///       initializer: () => MyState(), // Optional: creates the state if it doesn't exist.
+///     );
+///
+///     return Text('Value: $someValue');
+///   }
+/// }
+/// ```
+class MvcStateAccessor with DependencyInjectionService {
+  late final _MvcStoreRepository _stateScope = getService<_MvcStoreRepository>();
   BuildContext? _context;
   static final List<BuildContext> _debugStateAccessorContext = [];
   static bool _debugPostFrameClearAccessor = true;
-  int _frameNumber = 0;
+  int? _frameNumber;
 
-  void setUpBeforeUse(BuildContext context) {
+  /// @internal
+  /// Prepares the accessor for use within the current build context.
+  /// This is called automatically by `context.stateAccessor`.
+  void _setUpBeforeUse(BuildContext context) {
     assert(_context == null);
     assert(context.debugDoingBuild, 'can only be called during build');
     final _MvcAppElement element = context.getElementForInheritedWidgetOfExactType<_MvcApp>() as _MvcAppElement;
@@ -637,100 +1247,65 @@ class MvcStateAccessor with DependencyInjectionService, MvcDependableObject {
     _context = context;
   }
 
-  R useState<T, R>(R Function(T use) fn, {T Function()? initializer, MvcRawStore<T> Function(T state)? storeInitializer}) {
-    return useStateOfExactRawStoreType<T, R, MvcRawStore<T>>(fn, initializer: initializer, storeInitializer: storeInitializer);
+  /// Subscribes to a state of type [T] and returns a selected value of type [R].
+  ///
+  /// The widget calling this method will rebuild whenever the value returned by
+  /// the selector function [fn] changes.
+  ///
+  /// - [fn]: A function that selects a value from the state object. The widget
+  ///   will only listen to changes in this specific value.
+  /// - [initializer]: An optional function that creates the state if it is not
+  ///   found in the current or any parent scope. The new state is created in the
+  ///   current scope.
+  /// - [storeInitializer]: An optional function to customize the creation of the
+  ///   [MvcRawStore] that holds the state.
+  R useState<T extends Object, R>(
+    R Function(T use) fn, {
+    T Function()? initializer,
+    MvcRawStore<T> Function(T state)? storeInitializer,
+    MvcStateEqualityComparer<R>? comparer,
+  }) {
+    return useStateOfExactRawStoreType<T, R, MvcRawStore<T>>(
+      fn,
+      initializer: initializer,
+      storeInitializer: storeInitializer,
+      comparer: comparer,
+    );
   }
 
-  R useStateOfExactRawStoreType<T, R, E extends MvcRawStore<T>>(R Function(T use) fn, {T Function()? initializer, E Function(T state)? storeInitializer}) {
-    E? store = _storeRepository.getStore<T, E>();
+  /// A more specific version of [useState] that allows specifying the exact store type.
+  R useStateOfExactRawStoreType<T extends Object, R, E extends MvcRawStore<T>>(
+    R Function(T use) fn, {
+    T Function()? initializer,
+    E Function(T state)? storeInitializer,
+    MvcStateEqualityComparer<R>? comparer,
+  }) {
+    E? store = _stateScope.getStoreOfExactType<T, E>();
     if (store == null && initializer != null) {
       store = storeInitializer?.call(initializer()) ?? MvcRawStore<T>(initializer()) as E;
-      _storeRepository.addStore<T, E>(store);
+      _stateScope.addStore<T, E>(store);
     }
     assert(store != null, "can't find state $T in context");
-    return useStateOfExactRawStore<T, R, E>(store!, fn);
+    return useStateOfExactRawStore<T, R, E>(store!, fn, comparer: comparer);
   }
 
-  R useStateOfExactRawStore<T, R, E extends MvcRawStore<T>>(E store, R Function(T use) fn) {
+  /// Subscribes to a specific, pre-existing store instance.
+  R useStateOfExactRawStore<T extends Object, R, E extends MvcRawStore<T>>(
+    E store,
+    R Function(T use) fn, {
+    MvcStateEqualityComparer<R>? comparer,
+  }) {
     assert(_context != null, "please call setUpBeforUse(context) before useState");
     assert(_context!.debugDoingBuild, 'can only be called during build');
-    return store.useState<R>(_context!, fn);
+    return store.useState<R>(_context!, fn, comparer);
   }
 }
 
-mixin MvcWidgetService on DependencyInjectionService {
-  MvcBasicElement? _element;
-
-  MvcContext get context {
-    assert(_element != null, "context unable");
-    return _element!;
-  }
-
-  void update(VoidCallback fn) {
-    assert(_element != null, "context unable");
-    fn();
-    _element?.markNeedsBuild();
-  }
-
-  @mustCallSuper
-  void mvcWidgetActivate() {}
-
-  @mustCallSuper
-  void mvcWidgetDeactivate() {}
-
-  @mustCallSuper
-  @override
-  void dispose() {
-    _element?._elementServices.remove(this);
-    _element = null;
-    super.dispose();
-  }
-
-  @mustCallSuper
-  @override
-  FutureOr dependencyInjectionServiceInitialize() {
-    _element = tryGetService<MvcBasicElement>();
-    _element?._elementServices.add(this);
-  }
-}
-
-class MvcWidgetScope with DependencyInjectionService {
-  late final _MvcStoreRepository _repository = getService<_MvcStoreRepository>();
-
-  T createState<T>(T state) {
-    return createStateOfExactStoreType<T, MvcRawStore<T>>(state).state;
-  }
-
-  R createStateOfExactStoreType<T, R extends MvcRawStore<T>>(
-    T state, {
-    R Function(T state)? initializer,
-  }) {
-    final store = initializer?.call(state) ?? MvcRawStore<T>(state);
-    _repository.addStore<T, R>(store as R);
-    return store;
-  }
-
-  void setState<T>(void Function(T state) set) {
-    setStateOfExactStoreType<T, MvcRawStore<T>>(set);
-  }
-
-  void setStateOfExactStoreType<T, E extends MvcRawStore<T>>(void Function(T state) set) {
-    final store = _repository.getStore<T, E>();
-    assert(store != null, "can't find state $T in scope");
-    store?.setState(set);
-  }
-
-  MvcRawStore<T>? getStore<T>() {
-    return _repository.getStore<T, MvcRawStore<T>>();
-  }
-
-  R? getStoreOfExactType<T, R extends MvcRawStore<T>>() {
-    return _repository.getStore<T, R>();
-  }
-}
-
+/// Extension methods for [BuildContext] to interact with the MVC framework.
 extension MvcServicesExtension on BuildContext {
-  T getMvcService<T extends Object>() {
+  /// Gets a service of type [T] from the nearest [ServiceProvider].
+  /// Throws an error if the service is not found.
+  T getService<T extends Object>() {
     assert(MvcApp._debugHasMvcApp(this));
     if (this is MvcBasicElement) {
       return (this as MvcBasicElement).getService<T>();
@@ -738,7 +1313,9 @@ extension MvcServicesExtension on BuildContext {
     return _InheritedServiceProvider.of(this)!.get<T>();
   }
 
-  T? tryGetMvcService<T extends Object>() {
+  /// Tries to get a service of type [T] from the nearest [ServiceProvider].
+  /// Returns `null` if the service is not found.
+  T? tryGetService<T extends Object>() {
     assert(MvcApp._debugHasMvcApp(this));
     if (this is MvcBasicElement) {
       return (this as MvcBasicElement).tryGetService<T>();
@@ -746,46 +1323,52 @@ extension MvcServicesExtension on BuildContext {
     return _InheritedServiceProvider.of(this)?.tryGet<T>();
   }
 
-  T dependOnMvcServiceOfExactType<T extends MvcDependableObject>({Object? aspect}) {
+  /// Declares a dependency on a [MvcDependableObject].
+  ///
+  /// When the object changes, the widget will rebuild.
+  /// The optional [aspect] can provide more specific information about the dependency.
+  void dependOnObject(MvcDependableObject service, {Object? aspect}) {
     assert(MvcApp._debugHasMvcApp(this));
-    var service = getMvcService<T>();
-    dependOnMvcService(
-      service,
-      aspect: aspect,
-    );
-    return service;
-  }
-
-  T? tryDependOnMvcServiceOfExactType<T extends MvcDependableObject>({Object? aspect}) {
-    assert(MvcApp._debugHasMvcApp(this));
-    var service = tryGetMvcService<T>();
-    if (service != null) {
-      dependOnMvcService(
+    dependOnInheritedWidgetOfExactType<_MvcApp>(
+      aspect: _MvcDependentObjectAspect(
         service,
         aspect: aspect,
-      );
-    }
-    return service;
-  }
-
-  void dependOnMvcService(MvcDependableObject service, {Object? aspect}) {
-    assert(MvcApp._debugHasMvcApp(this));
-    dependOnInheritedWidgetOfExactType<_MvcApp>(aspect: _MvcDependentObjectAspect(service, aspect: aspect));
+      ),
+    );
   }
 
   static final Expando<MvcStateAccessor> _stateAccessor = Expando<MvcStateAccessor>();
+
+  /// Provides access to the state store for reading and subscribing to state changes.
+  ///
+  /// This must be called within a widget's `build` method.
+  ///
+  /// ```dart
+  /// final count = context.stateAccessor.useState((CounterState state) => state.count);
+  /// ```
   MvcStateAccessor get stateAccessor {
     assert(debugDoingBuild, 'can only be called during build');
     assert(MvcApp._debugHasMvcApp(this));
     MvcStateAccessor? accessor = _stateAccessor[this];
     final currentFrame = PlatformDispatcher.instance.frameData.frameNumber;
     if (accessor == null || accessor._frameNumber != currentFrame) {
-      accessor = getMvcService<MvcStateAccessor>();
+      accessor = getService<MvcStateAccessor>();
       _stateAccessor[this] = accessor;
       accessor._frameNumber = currentFrame;
-      accessor.setUpBeforeUse(this);
+      accessor._setUpBeforeUse(this);
     }
-    Timer.run(() => accessor); // keep accessor alive until this frame end
     return accessor;
+  }
+
+  /// Gets the nearest ancestor [MvcWidgetScope] from this context.
+  MvcWidgetScope get widgetScope {
+    assert(MvcApp._debugHasMvcApp(this));
+    return getService<MvcBasicElement>().widgetScope;
+  }
+
+  /// Gets the nearest ancestor [MvcStateScope] from this context.
+  MvcStateScope get stateScope {
+    assert(MvcApp._debugHasMvcApp(this));
+    return getService<MvcBasicElement>().stateScope;
   }
 }

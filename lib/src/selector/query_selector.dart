@@ -16,7 +16,12 @@ MvcNode? querySelector(MvcNode node, String selector, {bool ignoreSelectorBreake
 
 List<MvcNode> querySelectorAll(MvcNode node, String selector, {bool ignoreSelectorBreaker = false}) {
   final results = <MvcNode>[];
-  SelectorEvaluator().querySelectorAll(node, _parseSelectorList(selector), results);
+  SelectorEvaluator().querySelectorAll(
+    node,
+    _parseSelectorList(selector),
+    results,
+    ignoreSelectorBreaker: ignoreSelectorBreaker,
+  );
   return results;
 }
 

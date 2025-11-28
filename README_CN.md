@@ -7,19 +7,18 @@
 ## 特性
 
 - **关注点分离 (Separation of Concerns)**: 严格划分 `Model` (数据)、`View` (视图) 和 `Controller` (逻辑)，使代码职责更清晰。
-- **依赖注入**: 内置强大的依赖注入系统，轻松管理对象的生命周期和依赖关系。
-- **Widget 依赖于对象**: 通过依赖注入，您可以将单个 Widget 依赖于特定类型的对象，通过对象更新来触发 Widget 的重建。
-- **Store状态管理**: 框架提供了一种轻量级的状态管理方式，支持在 `Controller` 和任意依赖注入对象中管理状态，并自动更新依赖该状态的 UI。
-- **生命周期管理**: 为 `Controller` 甚至是依赖注入的任意对象提供了清晰的生命周期方法。
-- **context 访问**: 您可以轻松的为任意依赖注入对象获取 `BuildContext`。
+- **依赖注入**: 内置强大的依赖注入系统，将 Widget 树与依赖注入作用域融合，轻松管理对象的生命周期和依赖关系，同时可以精简 Controller 将逻辑分散到服务对象中。
+- **Widget 依赖于对象**: 您可以将 Widget 依赖于特定类型的对象，通过对象更新来触发 Widget 的重建。
+- **Store 状态管理**: 框架提供了一种轻量级的状态管理方式，支持在 `Controller` 和任意依赖注入对象中管理状态，并自动更新依赖该状态的 UI。
+- **context 访问**: 您可以轻松的从任意依赖注入对象获取 `BuildContext`。
 - **Widget 精确定位**: 类似 Web 中的 `querySelector`，通过 ID 、Class 甚至是 Widget 类型来精确定位/更新 Widget。
+- **易于学习**: 设计简洁直观，Api 易于理解，适合各种规模的项目。
 
 ## 依赖注入
 
-`flutter_mvc` 基于强大的依赖注入库[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)，它允许你将依赖注入对象与 Widget 关联以获取强大的功能。详细内容请参考[依赖注入章节](./docs/cn/dependency_injection.md)。
+`flutter_mvc` 基于强大的依赖注入库[dart_dependency_injection](https://github.com/yiiim/dart_dependency_injection)，它允许你将依赖注入对象与 Widget 关联以获取强大的功能。详细内容请参考[依赖注入章节](./doc/cn/dependency_injection.md)。
 
 > `flutter_mvc` 内部有一个**依赖注入范围树**，所以必须使用一个 MvcApp 作为根 Widget 以便提供根依赖注入容器。
-
 
 ## Counter 示例
 
@@ -30,10 +29,10 @@ import 'package:flutter_mvc/flutter_mvc.dart';
 void main() {
   runApp(
     MvcApp(
-      child: Mvc<CounterController, void>(
+      child: Mvc(
         create: () => CounterController(),
       ),
-    ),  
+    ),
   );
 }
 
@@ -57,7 +56,7 @@ class CounterController extends MvcController<void> {
   }
 
   @override
-  MvcView<MvcController<dynamic>> view() {
+  MvcView view() {
     return CounterView();
   }
 }
@@ -69,7 +68,7 @@ class CounterView extends MvcView<CounterController> {
       builder: (context) {
         return MaterialApp(
           home: Scaffold(
-            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: Text('Flutter Demo Home Page')),
+            appBar: AppBar(backgroundColor: Theme.of(context).colorScheme.inversePrimary, title: const Text('Flutter Demo Home Page')),
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -102,8 +101,12 @@ class CounterView extends MvcView<CounterController> {
 
 ## 文档目录
 
-- [依赖注入](./docs/cn/dependency_injection.md)
-- [MVC 基础](./docs/cn/mvc.md)
-- [Css 选择器](./docs/cn/selector.md)
-- [Store 状态管理](./docs/cn/store.md)
-- [Widget 依赖于对象](./docs/cn/depend_on_service.md)
+- [依赖注入](./doc/cn/dependency_injection.md)
+- [MVC 基础](./doc/cn/mvc.md)
+- [Store 状态管理](./doc/cn/store.md)
+- [Css 选择器](./doc/cn/selector.md)
+- [Widget 依赖于对象](./doc/cn/depend_on_service.md)
+
+## 教程
+
+- [登录示例](./doc/cn/tutorials/login.md)

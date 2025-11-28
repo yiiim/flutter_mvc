@@ -12,7 +12,7 @@ String _typeLocalName(Type type) {
   return result;
 }
 
-abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
+abstract class MvcNode implements MvcWidgetSelector {
   String get id;
   MvcNode? get parent;
   String get localName;
@@ -24,23 +24,27 @@ abstract class MvcNode implements MvcWidgetUpdater, MvcWidgetSelector {
   MvcNode? get previousElementSibling;
   bool get isSelectorBreaker;
 
+  MvcWidgetScope get widgetScope;
+
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
     final result = query_selector.querySelectorAll(
       this,
       "${T != dynamic ? _typeLocalName(T) : ""}${selectors ?? ""}",
       ignoreSelectorBreaker: ignoreSelectorBreaker,
     );
-    return result;
+    return result.map((e) => e.widgetScope);
   }
 
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
-    return query_selector.querySelector(
-      this,
-      "${T != dynamic ? _typeLocalName(T) : ""}${selectors ?? ""}",
-      ignoreSelectorBreaker: ignoreSelectorBreaker,
-    );
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) {
+    return query_selector
+        .querySelector(
+          this,
+          "${T != dynamic ? _typeLocalName(T) : ""}${selectors ?? ""}",
+          ignoreSelectorBreaker: ignoreSelectorBreaker,
+        )
+        ?.widgetScope;
   }
 }
 
@@ -88,13 +92,7 @@ class MvcElementNode extends MvcNode {
   MvcNode? get previousElementSibling => null;
 
   @override
-  void update([void Function()? fn]) {
-    fn?.call();
-    element.markNeedsBuild();
-  }
-
-  @override
-  MvcContext get context => element as MvcContext;
+  MvcWidgetScope get widgetScope => element.widgetScope;
 }
 
 class MvcImplicitRootNode extends MvcNode {
@@ -121,18 +119,10 @@ class MvcImplicitRootNode extends MvcNode {
   MvcNode? get previousElementSibling => null;
 
   @override
-  void update([void Function()? fn]) {
-    fn?.call();
-    for (var element in elements) {
-      element.markNeedsBuild();
-    }
-  }
-
-  @override
   bool get isSelectorBreaker => false;
 
   @override
-  MvcContext get context => throw UnimplementedError();
+  MvcWidgetScope get widgetScope => throw UnimplementedError();
 }
 
 mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
@@ -141,14 +131,14 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
   late final MvcElementNode _mvcNode = MvcElementNode(this);
 
   @visibleForTesting
-  MvcWidgetUpdater get debugUpdater => _mvcNode;
+  MvcWidgetScope get debugUpdater => _mvcNode.widgetScope;
 
   /// Whether to allow queries from superiors to continue looking for children
   bool get isSelectorBreaker => false;
 
   @override
   void mount(Element? parent, Object? newSlot) {
-    _parentElement = parent?.tryGetMvcService<MvcNodeMixin>();
+    _parentElement = parent?.tryGetService<MvcNodeMixin>();
     _parentElement?._childrenElements.add(this);
     if (_parentElement == null) {
       MvcImplicitRootNode.instance.elements.add(this);
@@ -162,7 +152,7 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
     assert(_parentElement == null);
     visitAncestorElements(
       (element) {
-        _parentElement = element.tryGetMvcService<MvcNodeMixin>();
+        _parentElement = element.tryGetService<MvcNodeMixin>();
         _parentElement?._childrenElements.add(this);
         return false;
       },
@@ -182,6 +172,7 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
     _parentElement = null;
   }
 
+  @mustCallSuper
   @override
   void initServices(ServiceCollection collection, ServiceProvider? parent) {
     super.initServices(collection, parent);
@@ -189,13 +180,13 @@ mixin MvcNodeMixin on MvcBasicElement implements MvcWidgetSelector {
   }
 
   @override
-  Iterable<MvcWidgetUpdater> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelectorAll<T>(
+  Iterable<MvcWidgetScope> querySelectorAll<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelectorAll<T>(
         selectors,
         ignoreSelectorBreaker,
       );
 
   @override
-  MvcWidgetUpdater? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelector<T>(
+  MvcWidgetScope? querySelector<T>([String? selectors, bool ignoreSelectorBreaker = false]) => _mvcNode.querySelector<T>(
         selectors,
         ignoreSelectorBreaker,
       );
